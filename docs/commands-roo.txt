@@ -1,0 +1,1 @@
+project --topLevelPackage org.vardb.util --projectName vardb-util --java 6
