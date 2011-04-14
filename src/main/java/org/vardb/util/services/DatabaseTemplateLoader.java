@@ -13,10 +13,10 @@ import org.vardb.util.CAbstractDaoImpl;
 import freemarker.cache.TemplateLoader;
 
 //http://nurkiewicz.blogspot.com/2010/01/writing-custom-freemarker-template.html
-@Repository
+//@Repository
 public class DatabaseTemplateLoader<T> implements TemplateLoader //extends CAbstractDaoImpl 
 {
-	@PersistenceContext
+	//@PersistenceContext
     private transient EntityManager entityManager;
 	
 	@Override

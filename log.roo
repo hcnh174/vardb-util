@@ -2,3 +2,5 @@
 project --topLevelPackage org.vardb.util --projectName vardb-util --java 6
 exit
 // Spring Roo 1.1.1.RELEASE [rev 156ccd6] log closed at 2011-02-21 14:42:43
+// Spring Roo 1.1.2.RELEASE [rev fbc33bb] log opened at 2011-04-12 10:39:25
+// Spring Roo 1.1.2.RELEASE [rev fbc33bb] log closed at 2011-04-12 16:56:18
