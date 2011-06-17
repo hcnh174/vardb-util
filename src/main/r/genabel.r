@@ -22,7 +22,7 @@ qualityControlStep1 <- function(data0)
 	
 	#make a subset of the data removing flagged ids and snps
 	data1 <- data0[qc1$idok, qc1$snpok]
-	data1 <- Xfix(data1)
+	#data1 <- Xfix(data1)
 	
 	#recheck HWE inflation 
 	descriptives.marker(data1)[2]
