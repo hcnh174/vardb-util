@@ -23,35 +23,40 @@ qualityControl <- function(data0, maf=0.05, make.plot=FALSE)
 	return(data1)
 }
 
+
 analyzeSnps <- function(model, data, data.summary, gtmode='additive', top=10, trait.type='guess', sort='Pc1df', show.plot=T)
 {
+	response <- as.character(model[2])
+	print(check.trait(response,data=data, graph=FALSE))
 	data.qt <- mlreg(model, data, trait.type=trait.type, gtmode=gtmode)
 	topsnps <- descriptives.scan(data.qt, top=top, sort=sort)
-	snptable <- extractSnpTable(topsnps,data.summary)#,p.value.col=sort)
+	snptable <- extractSnpTable(topsnps,data.summary)
+	snptable <- addTraitSummaryData(data, snptable, response)
 	print(lambda(data.qt))
 	print(snptable)
 	if (show.plot)
-		plot(data.qt, df="Pc1df")
+	{
+		par(mfrow=c(1,2))
+		createManhattanPlot(data.qt)
+		createQQPlot(data.qt)
+		par(mfrow=c(1,1))
+	}
 	return(list(qt=data.qt, topsnps=topsnps, snptable=snptable))
 }
+#results <- analyzeSnps(plt01 ~ 1, data1maf5, data.summary, show.plot=T)
 
-extractSnpTable <- function(topsnps, data.summary, cutoff=0.05)#, p.value.col='Pc1df')
+extractSnpTable <- function(topsnps, data.summary, cutoff=0.05)
 {
-	#data.qt <- qtscore(plt4 ~ plt0, data5)
-	#topsnps <- descriptives.scan(data.qt, sort="Pc1df")
 	snptable <- data.frame(row.names=row.names(topsnps),
 			Chromosome=topsnps$Chromosome,
 			Position=topsnps$Position,
 			N=topsnps$N,
 			P=topsnps$Pc1df,
-			#P=topsnps[[p.value.col]],
-			#P1df=topsnps$P1df,
-			#P2df=topsnps$P2df,
-			#P=topsnps$Pc1df,
 			stringsAsFactors=FALSE)
 	
 	for (snp in row.names(snptable))
 	{
+		snptable[snp,"Alleles"] <- paste(data.summary[snp,c('A1','A2')],collapse='')
 		snptable[snp,"MAF"] <- data.summary[snp,"Q.2"]
 		snptable[snp,"AA"] <- data.summary[snp,"P.11"]
 		snptable[snp,"AB"] <- data.summary[snp,"P.12"]
@@ -62,16 +67,82 @@ extractSnpTable <- function(topsnps, data.summary, cutoff=0.05)#, p.value.col='P
 	return(snptable)
 }
 
+addTraitSummaryData <- function(data, snptable, response)
+{
+	snps <- rownames(snptable)
+	#snptable <- results$snptable
+	phdata <- addSnpsToPhdata(data,snps)
+	for (snp in snps)
+	{
+		phdata.sub <- subsetNA(phdata,c(response,snp))
+		temp <- by(phdata.sub[[response]], phdata.sub[[snp]], function(x)
+		{
+			c(n=length(x), mean=mean(x, na.rm=TRUE), sd=sd(x, na.rm=TRUE))
+		})
+		
+		snptable[snp,"n11"] <- temp[1][[1]][['n']]
+		snptable[snp,"n12"] <- temp[2][[1]][['n']]
+		snptable[snp,"n22"] <- temp[3][[1]][['n']]
+		
+		snptable[snp,"ave11"] <- temp[1][[1]][['mean']]
+		snptable[snp,"ave12"] <- temp[2][[1]][['mean']]
+		snptable[snp,"ave22"] <- temp[3][[1]][['mean']]
+		
+		snptable[snp,"sd11"] <- temp[1][[1]][['sd']]
+		snptable[snp,"sd12"] <- temp[2][[1]][['sd']]
+		snptable[snp,"sd22"] <- temp[3][[1]][['sd']]
+	}
+	print(snptable)
+	return(snptable)
+}
+#
+#analyzeSnps <- function(model, data, data.summary, gtmode='additive', top=10, trait.type='guess', sort='Pc1df', show.plot=T)
+#{
+#	data.qt <- mlreg(model, data, trait.type=trait.type, gtmode=gtmode)
+#	topsnps <- descriptives.scan(data.qt, top=top, sort=sort)
+#	snptable <- extractSnpTable(topsnps,data.summary)#,p.value.col=sort)
+#	print(lambda(data.qt))
+#	print(snptable)
+#	if (show.plot)
+#		plot(data.qt, df="Pc1df")
+#	return(list(qt=data.qt, topsnps=topsnps, snptable=snptable))
+#}
+#
+#extractSnpTable <- function(topsnps, data.summary, cutoff=0.05)
+#{
+#	snptable <- data.frame(row.names=row.names(topsnps),
+#			Chromosome=topsnps$Chromosome,
+#			Position=topsnps$Position,
+#			N=topsnps$N,
+#			P=topsnps$Pc1df,
+#			#P=topsnps[[p.value.col]],
+#			#P1df=topsnps$P1df,
+#			#P2df=topsnps$P2df,
+#			#P=topsnps$Pc1df,
+#			stringsAsFactors=FALSE)
+#	
+#	for (snp in row.names(snptable))
+#	{
+#		snptable[snp,"MAF"] <- data.summary[snp,"Q.2"]
+#		snptable[snp,"AA"] <- data.summary[snp,"P.11"]
+#		snptable[snp,"AB"] <- data.summary[snp,"P.12"]
+#		snptable[snp,"BB"] <- data.summary[snp,"P.22"]
+#		snptable[snp,"HW"] <- data.summary[snp,"Pexact"]
+#	}
+#	snptable <- subset(snptable, P<cutoff)
+#	return(snptable)
+#}
+
 createQQPlot <- function(data.qt)
 {
 	print(estlambda(data.qt@results$Pc1df))
 }
 #createQQPlot(results$qt)
 
-createManhattanPlot <- function(an)
+createManhattanPlot <- function(data.qt, df="Pc1df")
 {
-	plot(an)
-	add.plot(an, df="Pc1df", col=c("lightblue","lightgreen"))
+	plot(data.qt, df=df)
+	#add.plot(an, df="Pc1df", col=c("lightblue","lightgreen"))
 }
 
 showTopSnps <- function(an)
@@ -92,30 +163,6 @@ addSnpsToPhdata <- function(data,snps)
 	}
 	return(phdata)
 }
-#
-#addSnpsToPhdata <- function(data,snps)
-#{
-#	phdata <- data@phdata
-#	for (snp in splitFields(snps))
-#	{
-#		phdata[[snp]] <- sapply(as.character(data[,snp]),function(value){sub('/', '', value)})
-#		phdata[[snp]] <- factor(phdata[[snp]])
-#	}
-#	return(phdata)
-#}
-#
-##returns a data object instead of phdata
-#addSnpsToData <- function(data,snps)
-#{
-#	for (snp in snps)
-#	{
-#		data@phdata[[snp]] <- sapply(as.character(data[,snp]),function(value){sub('/', '', value)})
-#		data@phdata[[snp]] <- factor(data@phdata[[snp]])
-#		data@phdata[[paste(snp,'num',sep='')]] <- sapply(data@phdata[[snp]], function(value){as.numeric(value)-1})
-#	}
-#	return(data)
-#}
-
 
 #library(genetics)
 calculateLinkageDisequilibrium <- function(data,snps)
@@ -141,30 +188,6 @@ makeLinkageMap <- function(data, snp, numbases=1000, snp.names=snp)
 }
 #makeLinkageMap(data4,'rs8099917',1000)# c('rs8099917','rs12979860'))
 
-#makeSnpBoxplot <- function(response,predictors, data, snp)
-#{
-#	data@phdata <- addSnpsToPhdata(data,snp)
-#	model <- paste(response,'~',paste(c(snp,splitFields(predictors)),collapse=' + '))
-#	fit <- lm(model, data)
-#	summary(fit)
-#	boxplot(as.formula(paste(response,'~',snp)), data, xlab=snp, ylab=response, main=model)
-#}
-
-#makeSnpBoxplots <- function(response,predictors, data, snps)
-#{
-#	par(ask=T)
-#	data@phdata <- addSnpsToPhdata(data,snps)
-#	for (snp in splitFields(snps))
-#	{
-#		print(snp)
-#		model <- paste(response,'~',paste(c(snp,splitFields(predictors)),collapse=' + '))
-#		fit <- lm(model, data@phdata)
-#		print(anova(fit))
-#		boxplot(as.formula(paste(response,'~',snp)), data, xlab=snp, ylab=response, main=model)
-#	}
-#	par(ask=F)
-#}
-
 makeSnpBoxplots <- function(data, response, snp, predictors='')
 {
 	par(ask=T)
@@ -188,7 +211,6 @@ makeSnpBoxplot <- function(data, response, snp, predictors='')
 	boxplot(as.formula(paste(response,'~',snp)), phdata, xlab=snp, ylab=response, main=model, sub=p.value)
 }
 #makeSnpBoxplot(data1maf5, 'hbdiff', 'rs6051639')
-
 
 displayMaf <- function(data)
 {

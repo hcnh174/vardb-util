@@ -103,3 +103,11 @@ getPolymorphicSnpIds <- function(data)
 		print(paste(snp,length(unique(data[[snp]]))))
 	}
 }
+
+#count lines
+#wc -l L32_Cutoff_AB_090508_FinalReport_extr_plus.csv
+#extract lines from [DATA] starting from line 10 to the end
+#mid 10 566566 L32_Cutoff_AB_090508_FinalReport_extr_plus.csv > data.csv
+#remove fourth column and replace commas with space  
+#cut -f 1-3,5- --delimiter=',' --output-delimiter=' ' data.csv > data.txt
+
