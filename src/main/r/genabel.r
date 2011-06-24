@@ -45,13 +45,14 @@ analyzeSnps <- function(model, data, data.summary, gtmode='additive', top=10, tr
 }
 #results <- analyzeSnps(plt01 ~ 1, data1maf5, data.summary, show.plot=T)
 
-extractSnpTable <- function(topsnps, data.summary, cutoff=0.05)
+extractSnpTable <- function(topsnps, data.summary) #, cutoff=0.05)
 {
 	snptable <- data.frame(row.names=row.names(topsnps),
 			Chromosome=topsnps$Chromosome,
 			Position=topsnps$Position,
 			N=topsnps$N,
-			P=topsnps$Pc1df,
+			P=topsnps$P1df,
+			Padj=topsnps$Pc1df,
 			stringsAsFactors=FALSE)
 	
 	for (snp in row.names(snptable))
@@ -63,14 +64,13 @@ extractSnpTable <- function(topsnps, data.summary, cutoff=0.05)
 		snptable[snp,"BB"] <- data.summary[snp,"P.22"]
 		snptable[snp,"HW"] <- data.summary[snp,"Pexact"]
 	}
-	snptable <- subset(snptable, P<cutoff)
+	#snptable <- subset(snptable, P<cutoff)
 	return(snptable)
 }
 
 addTraitSummaryData <- function(data, snptable, response)
 {
 	snps <- rownames(snptable)
-	#snptable <- results$snptable
 	phdata <- addSnpsToPhdata(data,snps)
 	for (snp in snps)
 	{
@@ -80,58 +80,33 @@ addTraitSummaryData <- function(data, snptable, response)
 			c(n=length(x), mean=mean(x, na.rm=TRUE), sd=sd(x, na.rm=TRUE))
 		})
 		
-		snptable[snp,"n11"] <- temp[1][[1]][['n']]
-		snptable[snp,"n12"] <- temp[2][[1]][['n']]
-		snptable[snp,"n22"] <- temp[3][[1]][['n']]
+		temp11 <- temp[1][[1]]
+		temp12 <- temp[2][[1]]
+		temp22 <- temp[3][[1]]
 		
-		snptable[snp,"ave11"] <- temp[1][[1]][['mean']]
-		snptable[snp,"ave12"] <- temp[2][[1]][['mean']]
-		snptable[snp,"ave22"] <- temp[3][[1]][['mean']]
+		snptable[snp,"n11"] <- temp11[['n']]
+		snptable[snp,"n12"] <- temp12[['n']]
+		snptable[snp,"n22"] <- temp22[['n']]
 		
-		snptable[snp,"sd11"] <- temp[1][[1]][['sd']]
-		snptable[snp,"sd12"] <- temp[2][[1]][['sd']]
-		snptable[snp,"sd22"] <- temp[3][[1]][['sd']]
+		snptable[snp,"ave11"] <- temp11[['mean']]
+		snptable[snp,"ave12"] <- temp12[['mean']]
+		snptable[snp,"ave22"] <- temp22[['mean']]
+		
+		snptable[snp,"sd11"] <- temp11[['sd']]
+		snptable[snp,"sd12"] <- temp12[['sd']]
+		snptable[snp,"sd22"] <- temp22[['sd']]
+		
+		# add Pearson correlation
+		try({
+			snpnum <- paste(snp,'num',sep='')
+			cor.res <- cor.test(as.formula(paste('~',response,'+',snpnum)), phdata)
+			#print(cor.res)
+			snptable[snp,'Pcor'] <- cor.res$p.value
+		}, silent=FALSE)
 	}
 	print(snptable)
 	return(snptable)
 }
-#
-#analyzeSnps <- function(model, data, data.summary, gtmode='additive', top=10, trait.type='guess', sort='Pc1df', show.plot=T)
-#{
-#	data.qt <- mlreg(model, data, trait.type=trait.type, gtmode=gtmode)
-#	topsnps <- descriptives.scan(data.qt, top=top, sort=sort)
-#	snptable <- extractSnpTable(topsnps,data.summary)#,p.value.col=sort)
-#	print(lambda(data.qt))
-#	print(snptable)
-#	if (show.plot)
-#		plot(data.qt, df="Pc1df")
-#	return(list(qt=data.qt, topsnps=topsnps, snptable=snptable))
-#}
-#
-#extractSnpTable <- function(topsnps, data.summary, cutoff=0.05)
-#{
-#	snptable <- data.frame(row.names=row.names(topsnps),
-#			Chromosome=topsnps$Chromosome,
-#			Position=topsnps$Position,
-#			N=topsnps$N,
-#			P=topsnps$Pc1df,
-#			#P=topsnps[[p.value.col]],
-#			#P1df=topsnps$P1df,
-#			#P2df=topsnps$P2df,
-#			#P=topsnps$Pc1df,
-#			stringsAsFactors=FALSE)
-#	
-#	for (snp in row.names(snptable))
-#	{
-#		snptable[snp,"MAF"] <- data.summary[snp,"Q.2"]
-#		snptable[snp,"AA"] <- data.summary[snp,"P.11"]
-#		snptable[snp,"AB"] <- data.summary[snp,"P.12"]
-#		snptable[snp,"BB"] <- data.summary[snp,"P.22"]
-#		snptable[snp,"HW"] <- data.summary[snp,"Pexact"]
-#	}
-#	snptable <- subset(snptable, P<cutoff)
-#	return(snptable)
-#}
 
 createQQPlot <- function(data.qt)
 {
@@ -155,31 +130,15 @@ addSnpsToPhdata <- function(data,snps)
 	phdata <- data@phdata
 	for (snp in splitFields(snps))
 	{
-		#if (is.null(phdata[[snp]]))
+		if (is.null(phdata[[snp]]))
 		{
 			print(snp)
 			phdata[[snp]] <- factor(sapply(as.character(data[,snp]),function(value){sub('/', '', value)}))
-			#phdata[[paste(snp,'num',sep='')]] <- sapply(phdata[[snp]], function(value){as.numeric(value)-1})
 			phdata[[paste(snp,'num',sep='')]] <- as.numeric(data[,snp])
 		}
 	}
 	return(phdata)
 }
-#phdata <- addSnpsToPhdata(data1maf5, 'rs6051639')
-#
-#addSnpsToPhdata <- function(data,snps)
-#{
-#	phdata <- data@phdata
-#	for (snp in splitFields(snps))
-#	{
-#		if (is.null(phdata[[snp]]))
-#		{
-#			phdata[[snp]] <- factor(sapply(as.character(data[,snp]),function(value){sub('/', '', value)}))
-#			phdata[[paste(snp,'num',sep='')]] <- sapply(phdata[[snp]], function(value){as.numeric(value)-1})
-#		}
-#	}
-#	return(phdata)
-#}
 
 #library(genetics)
 calculateLinkageDisequilibrium <- function(data,snps)
@@ -245,14 +204,55 @@ displayMaf <- function(data)
 
 ##############################################################################3
 
+plotIbs <- function(data1)
+{
+	#detecting genetic substructure
+	data1.gkin <- ibs(data1[, data1@gtdata@chromosome != "X"], weight="freq")
+	
+	#create a distance matrix
+	data1.dist <- as.dist(0.5 - data1.gkin)
+	data1.mds <- cmdscale(data1.dist)
+	plot(data1.mds)
+	return(data1.mds)
+}
+#data1maf5.mds <- plotIbs(data1maf5)
 
+extractCluster <- function(data1, data1.mds=NULL)
+{
+	if (is.null(data1.mds))
+		data1.mds <- plotIbs(data1)
+	
+	cat('\n','Enter the number of clusters to create based on the image','\n')
+	numclusters <- scan(n=1) 
+	
+	# just return the original data set if no value is entered
+	if (length(numclusters)==0 | numclusters==1)
+	{
+		return(data1)
+	}
+	
+	#identify points by cluster
+	km <- kmeans(data1.mds, centers=numclusters, nstart=1000)
+	for (clusternum in 1:numclusters)
+	{
+		cluster <- names(which(km$cluster==clusternum))
+		print(paste('cluster ',clusternum,': ',length(cluster), separator=''))
+	}
+	
+	cat('\n','Enter the number(s) of the clusters to use','\n')
+	useclusters <- scan()
+	
+	ids <- c()
+	for (clusternum in useclusters)
+	{
+		ids <- c(ids,names(which(km$cluster==clusternum)))
+	}
+	data2 <- data1[ids, ]
+	return(data2)
+}
+#data2maf5 <- extractCluster(data1maf5, data1maf5.mds)
 
-
-
-
-
-
-
+##########################################################################
 
 #
 #qualityControlStep1 <- function(data0)
