@@ -21,7 +21,7 @@ options(contrasts=c("contr.sum","contr.poly"))
 
 loadUtilFiles <- function(filenames)
 {
-	libdir <- paste(Sys.getenv("SEQTAGUTILS_HOME"),'/r/',sep='')
+	libdir <- Sys.getenv("VARDB_RUTIL_HOME")
 	for (filename in splitFields(filenames))
 	{
 		source(paste(libdir,filename,'.r',sep=''))

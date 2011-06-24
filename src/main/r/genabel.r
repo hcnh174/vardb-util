@@ -155,14 +155,31 @@ addSnpsToPhdata <- function(data,snps)
 	phdata <- data@phdata
 	for (snp in splitFields(snps))
 	{
-		if (is.null(phdata[[snp]]))
+		#if (is.null(phdata[[snp]]))
 		{
+			print(snp)
 			phdata[[snp]] <- factor(sapply(as.character(data[,snp]),function(value){sub('/', '', value)}))
-			phdata[[paste(snp,'num',sep='')]] <- sapply(phdata[[snp]], function(value){as.numeric(value)-1})
+			#phdata[[paste(snp,'num',sep='')]] <- sapply(phdata[[snp]], function(value){as.numeric(value)-1})
+			phdata[[paste(snp,'num',sep='')]] <- as.numeric(data[,snp])
 		}
 	}
 	return(phdata)
 }
+#phdata <- addSnpsToPhdata(data1maf5, 'rs6051639')
+#
+#addSnpsToPhdata <- function(data,snps)
+#{
+#	phdata <- data@phdata
+#	for (snp in splitFields(snps))
+#	{
+#		if (is.null(phdata[[snp]]))
+#		{
+#			phdata[[snp]] <- factor(sapply(as.character(data[,snp]),function(value){sub('/', '', value)}))
+#			phdata[[paste(snp,'num',sep='')]] <- sapply(phdata[[snp]], function(value){as.numeric(value)-1})
+#		}
+#	}
+#	return(phdata)
+#}
 
 #library(genetics)
 calculateLinkageDisequilibrium <- function(data,snps)
