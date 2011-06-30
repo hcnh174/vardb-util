@@ -339,9 +339,11 @@ makeLogisticPlot <- function(data, response, predictor)
 
 getR2shrinkage <- function(fit)
 {
-	v <- validate(fit, B=140)
-	optimism <- v['R2','optimism']
-	return(optimism)
+	try({
+		v <- validate(fit, B=140)
+		optimism <- v['R2','optimism']
+		return(optimism)
+	}, silent=FALSE)
 }
 
 makeLogisticDiagnosticPlots <- function(fit, data)
