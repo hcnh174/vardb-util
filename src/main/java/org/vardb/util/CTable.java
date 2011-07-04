@@ -39,7 +39,7 @@ public class CTable
 	
 	public CTable(String str)
 	{
-		parse(str,this);
+		parse(str,this,"\t");
 	}
 	
 	public CTable(String str, boolean hasHeaders)
@@ -47,7 +47,7 @@ public class CTable
 		this.hasHeaders=hasHeaders;
 		if (!this.hasHeaders)
 			str="header1\theader2\n"+str;
-		parse(str,this);
+		parse(str,this,"\t");
 	}
 	
 	public CTable(String str, String identifier)
@@ -355,74 +355,29 @@ public class CTable
 		return buffer.toString();
 	}
 	
-	/*
-	public static CTable parseCvsFile(String filename)
-	{
-		return parseCvsFile(filename,Charsets.UTF_8);
-	}
-	
-	public static CTable parseCvsFile(String filename, Charset encoding)
-	{
-		BufferedReader filereader=null;
-		try		
-		{
-			CTable table=new CTable();
-			filereader=new BufferedReader(new InputStreamReader(new FileInputStream(filename),encoding.toString()));
-			CSVReader reader = new CSVReader(filereader);
-		    String[] fields;
-		    boolean firstline=true;
-		    while ((fields = reader.readNext()) != null)
-		    {
-		    	if (firstline)
-		    	{
-		    		readHeader(fields,table);
-		    		firstline=false;
-		    	}
-		    	else
-		    	{
-		    		readLine(fields,table);
-		    	}
-		    }
-		    return table;
-		}
-		catch(Exception e)
-		{
-			throw new CException(e);
-		}
-		finally
-		{
-			CFileHelper.closeReader(filereader);
-		}		
-	}
-	
-	private static void readHeader(String[] fields, CTable table)
-	{
-		for (String field : fields)
-		{
-			table.getHeader().add(field);
-		}
-	}
-	
-	private static void readLine(String[] values, CTable table)
-	{
-		if (values.length!=table.getHeader().size())
-			throw new CException("CTable.readLine: numbers of fields and headings don't match: fields="+values.length+", columns="+table.getHeader().size());
-		CTable.Row row=table.addRow();
-		for (String value : values)
-		{			
-			row.add(value);
-		}
-	}	
-	*/
-	
 	public static CTable parse(String str)
 	{
+		return parseTabDelimited(str);
+	}
+	
+	public static CTable parseTabDelimited(String str)
+	{
+		return parse(str,"\t");
+	}
+	
+	public static CTable parseCsv(String str)
+	{
+		return parse(str,",");
+	}
+	
+	public static CTable parse(String str, String delimiter)
+	{
 		CTable table=new CTable();
-		parse(str,table);
+		parse(str,table,delimiter);
 		return table;
 	}
 	
-	private static void parse(String str, CTable table)
+	private static void parse(String str, CTable table, String delimiter)
 	{
 		try
 		{
@@ -430,7 +385,7 @@ public class CTable
 			boolean firstline=true;
 			for (String line=reader.readLine(); line!=null; line=reader.readLine())
 			{
-				readLine(line,firstline,table);
+				readLine(line,firstline,table,delimiter);
 				firstline=false;
 			}
 		}
@@ -440,35 +395,20 @@ public class CTable
 		}
 	}
 	
-	public static CTable parseFile(String filename)
+	public static CTable parseFile(String filename, String delimiter)
+	{
+		CTable table=new CTable();
+		parseFile(filename,table,delimiter);
+		return table;		
+	}
+	
+	public static void parseFile(String filename, CTable table, String delimiter)
 	{
 		String str=CFileHelper.readFile(filename);
-		return CTable.parse(str);
+		parse(str,table,delimiter);
 	}
 	
-	/*
-	public static CTable parseFile(String filename)
-	{
-		final CTable table=new CTable();
-		AbstractMultilineFileReader reader=new AbstractMultilineFileReader()
-		{
-			protected boolean firstline=true;
-			
-			protected void handleMultiline(String line)
-			{
-				CTable.readLine(line,this.firstline,table);
-				this.firstline=false;
-			}
-		};
-		reader.readFile(filename);
-		if (table.isEmpty())
-			return null;
-		table.setIdentifier(CFileHelper.getIdentifierFromFilename(filename));
-		return table;
-	}
-	*/
-	
-	private static void readLine(String line, boolean firstline, CTable table)
+	private static void readLine(String line, boolean firstline, CTable table, String delimiter)
 	{
 		if (CStringHelper.isEmpty(line))
 			return;
@@ -478,7 +418,7 @@ public class CTable
 		if (firstline)
 			row=table.getHeader();
 		else row=table.addRow();
-		for (String value : CStringHelper.split(line,"\t"))
+		for (String value : CStringHelper.split(line,delimiter))
 		{
 			row.add(CStringHelper.trim(value));
 		}
