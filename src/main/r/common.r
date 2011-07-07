@@ -611,4 +611,7 @@ writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE)
 		print(paste('wrote table to file:',filename))
 }
 
-
+concat <- function(...)
+{
+	return(paste(..., sep=''))
+}
