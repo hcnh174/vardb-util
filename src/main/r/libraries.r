@@ -12,6 +12,7 @@ install.packages('GenABEL')
 install.packages('popbio')
 install.packages('gvlma')
 install.packages('coin')
+install.packages('gsubfn')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")

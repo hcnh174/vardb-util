@@ -512,6 +512,11 @@ appendValues <- function(values1,values2)
 #appendValues('a,b,c,d,e,f,g','h,i,j,k,l')
 #appendValues(c(),'q')
 
+appendUniqueValues <- function(values1,values2)
+{
+	return(unique(appendValues(values1,values2)))
+}
+
 removeElements <- function(x, y)
 {
 	newvalues <- c()
