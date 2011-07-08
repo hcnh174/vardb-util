@@ -615,3 +615,9 @@ concat <- function(...)
 {
 	return(paste(..., sep=''))
 }
+
+appendFile <- function(file, ...)
+{
+	print(concat(...))
+	cat(...,'\n', sep='', file=file, append=TRUE)
+}

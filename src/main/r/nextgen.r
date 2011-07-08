@@ -22,6 +22,39 @@ loadVariants <- function(filename='variants.txt')
 	return(data)
 }
 
+#############################################################################
+
+preprocess <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
+		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
+{
+	samples <- loadSamples()
+	cat('', file=file)
+	appendFile('cd ',dir, file=file)
+	appendFile('mkdir ',temp.dir, file=file)
+	appendFile('mkdir ',fastq.dir, file=file)
+	appendFile('rm -r ',temp.dir,'/*', file=file)
+	appendFile('rm ',fastq.dir,'/*', file=file)
+	#cat('mkdir ',fastq.dir,'\n', sep='', file=file, append=TRUE)
+	for (identifier in samples$identifier)
+	{
+		row <- samples[identifier,]
+		dir.to <- concat(dir,temp.dir,'/',identifier)
+		project <- row$project
+		barcode <- row$barcode
+		lane <- row$lane
+		dir.from <- concat(dir,path,'/Project_',project,'/Sample_',project,'/')
+		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
+		
+		appendFile('mkdir ',dir.to, file=file)
+		appendFile('cd ',dir.from, file=file)
+		appendFile('cp ',filename,' ',dir.to, file=file)
+		appendFile('gunzip ',dir.to,'/*', file=file)
+		appendFile('cat ',dir.to,'/* > ',dir,fastq.dir,'/',identifier,'.fq', file=file)
+		appendFile('cd ',dir, file=file)
+		appendFile('', file=file)
+	}
+}
+
 #########################################################################3
 
 getVarRefName <- function(refid, index)
@@ -64,7 +97,7 @@ makeVariantsForRef <- function(refid,refs,variants)
 	return(varseqs)
 }
 
-writeVariantsForRef <- function(refid, varseqs, out.dir) #='out/')
+writeVariantsForRef <- function(refid, varseqs, ref.dir) #='out/')
 {
 	for (index in 1:nrow(varseqs))
 	{
@@ -73,8 +106,8 @@ writeVariantsForRef <- function(refid, varseqs, out.dir) #='out/')
 		#	name <- refid
 		#else name <- paste(refid,'var',(index-1), sep='')
 		varseq <- paste(varseqs[index,], collapse='')
-		filename <- paste(out.dir,name,'.fasta', sep='')
-		print(paste('writing variant file',filename))
+		filename <- concat(ref.dir,'/',name,'.fasta')
+		print(concat('writing variant file ',filename))
 		cat('>',name,'\n',varseq,'\n', sep='', file=filename)
 	}
 }
@@ -85,6 +118,8 @@ writeVariantsForRef <- function(refid, varseqs, out.dir) #='out/')
 # determine varref names by counting how many variants are present for a particular sample
 getVarRefNames <- function(ref)
 {
+	refs <- loadRefs()
+	variants <- loadVariants()
 	varseqs <- makeVariantsForRef(ref,refs,variants)
 	refnames <- c()
 	for (index in 1:nrow(varseqs))
@@ -94,13 +129,33 @@ getVarRefNames <- function(ref)
 	return(refnames)
 }
 
+indexReferences <- function(refid, varseqs, file, ref.dir='ref', index.dir='indexes')
+{	
+	for (index in 1:nrow(varseqs))
+	{
+		name <- getVarRefName(refid,index)
+		cat('bowtie-build ',ref.dir,'/',name,'.fasta',' ',index.dir,'/',name,'\n', sep='', file=file, append=TRUE)	
+	}
+	
+	for (index in 1:nrow(varseqs))
+	{
+		name <- getVarRefName(refid,index)
+		cat('bwa index ',ref.dir,'/',name,'.fasta','\n', sep='', file=file, append=TRUE)
+	}
+}
 
-makeVariants <- function(refs,variants, out.dir='out/')
+makeVariants <- function(ref.dir='ref', index.dir='indexes', file='out/index_refs.txt')
 {
+	refs <- loadRefs()
+	variants <- loadVariants()
+	system(concat('mkdir ',ref.dir))
+	system(concat('mkdir ',index.dir))
+	cat('', file=file)
 	for (refid in rownames(refs))
 	{
-		varseqs <- makeVariantsForRef(refid,refs,variants)
-		writeVariantsForRef(refid,varseqs,out.dir)
+		varseqs <- makeVariantsForRef(refid, refs, variants)
+		writeVariantsForRef(refid, varseqs, ref.dir)
+		indexReferences(refid, varseqs, file)
 	}
 }
 
@@ -141,7 +196,6 @@ removeAmbiguousCodons <- function(codons)
 #removeAmbiguousCodons(splitFields('GCT,GTT,NGT'))
 
 ###########################################################################
-
 
 getCodonCodeTable <- function()
 {
