@@ -96,6 +96,7 @@ makeVariantsForRef <- function(refid,refs,variants)
 	varseqs <- data.frame(lapply(varseqs, as.character), stringsAsFactors=FALSE)
 	return(varseqs)
 }
+#makeVariantsForRef('KT9',refs,variants)
 
 writeVariantsForRef <- function(refid, varseqs, ref.dir) #='out/')
 {
@@ -121,6 +122,8 @@ getVarRefNames <- function(ref)
 	refs <- loadRefs()
 	variants <- loadVariants()
 	varseqs <- makeVariantsForRef(ref,refs,variants)
+	if (nrow(varseqs)==0)
+		return(ref)
 	refnames <- c()
 	for (index in 1:nrow(varseqs))
 	{
