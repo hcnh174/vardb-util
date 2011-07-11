@@ -473,3 +473,48 @@ plotReadDistributions <- function(filename="histograms.pdf")
 	par(mfrow=c(1,1))
 	dev.off()
 }
+
+####################################################################
+
+
+getCodonPositionsForRegion <- function(region)
+{
+	offset <- 0
+	parent <- regions[region,'parent']
+	if (!is.na(parent))
+		offset <- regions[parent,'start']
+	start <- regions[region,'start'] - offset
+	end <- regions[region,'end'] - offset
+	print(concat(start,':',end))
+	#print(extractSequence(refs['KT9','sequence'], start, end))
+	start <- start - start %% 3
+	end <- end - end %% 3 #end <- (end+3) - (end+3) %% 3
+	print(concat(start,':',end))
+	#start <- offset + start
+	#end <- offset + end
+	#return(seq(start,end,3))
+	positions <- data.frame()
+	codon <- start/3
+	for (position in seq(start,end,3))
+	{
+		positions <- rbind(positions, data.frame(codon=codon, ntnum=offset + position, relpos=position))
+		codon <- codon + 1
+	}
+	#rownames(positions) <- positions$ntnum
+	return(positions)
+}
+#getCodonPositionsForRegion('NS3aa36')
+
+extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
+{
+	nt1 <- data[which(data$position==ntnum),'nt']
+	nt2 <- data[which(data$position==ntnum+1),'nt']
+	nt3 <- data[which(data$position==ntnum+2),'nt']
+	codons <- paste(nt1, nt2, nt3, sep='')		
+	if (drop.ambig)
+		codons <- removeAmbiguousCodons(codons)
+	return(codons)
+}
+#extractCodonData(data,3714)
+
+
