@@ -603,10 +603,10 @@ list2ascii <- function(x,file=paste(deparse(substitute(x)),".txt",sep="")) {
 	
 }
 
-writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE)
+writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE, eol='\n')
 {
 	#col.names <- c('id',names(table))
-	write.table(table, filename, quote=FALSE, row.names = row.names, sep='\t', na = '')
+	c(table, filename, quote=FALSE, row.names = row.names, sep='\t', na = '', eol=eol)
 	if (verbose)
 		print(paste('wrote table to file:',filename))
 }
@@ -614,6 +614,11 @@ writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE)
 concat <- function(...)
 {
 	return(paste(..., sep=''))
+}
+
+createFile <- function(file)
+{
+	cat('', file=file)
 }
 
 appendFile <- function(file, ...)

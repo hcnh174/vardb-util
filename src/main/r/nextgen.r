@@ -1,18 +1,45 @@
-library(gsubfn) 
+library(gsubfn)
+library(seqinr) 
 
+loadRuns <- function(filename='runs.txt')
+{
+	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+	rownames(data) <- data$run
+	return(data)
+}
 
 loadSamples <- function(filename='samples.txt')
 {
-	data <- loadDataframe('samples.txt', stringsAsFactors=FALSE)
-	rownames(data) <- data$identifier
+	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+	rownames(data) <- data$sample
 	return(data)
 }
 
 
-loadRefs <- function(filename='refs.txt')
+#loadRefs <- function(filename='refs.txt')
+#{
+#	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+#	rownames(data) <- data$id
+#	return(data)
+#}
+
+
+loadRefs <- function(filename='refs.txt', fasta.file='refs.fasta')
 {
 	data <- loadDataframe(filename, stringsAsFactors=FALSE)
 	rownames(data) <- data$id
+	sequences <- read.fasta(file = fasta.file, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
+	for (id in rownames(data))
+	{
+		data[id,'sequence'] <- sequences[[id]][1]
+	}	
+	return(data)
+}
+
+loadRegions <- function(filename='regions.txt')
+{
+	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+	rownames(data) <- data$region
 	return(data)
 }
 
@@ -54,6 +81,108 @@ preprocess <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWU
 		appendFile('', file=file)
 	}
 }
+
+#preprocess2 <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
+#		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
+#{
+#	samples <- loadSamples()
+#	createFile(file=file)
+#	appendFile('cd ',dir, file=file)
+#	appendFile('mkdir ',temp.dir, file=file)
+#	appendFile('mkdir ',fastq.dir, file=file)
+#	appendFile('rm -r ',temp.dir,'/*', file=file)
+#	appendFile('rm ',fastq.dir,'/*', file=file)
+#	
+#	for (sample in unique(samples$sample))
+#	{
+#		dir.to <- concat(temp.dir,'/',sample)
+#		appendFile('mkdir ',dir.to, file=file)	
+#	}
+#	appendFile('', file=file)
+#	
+#	for (identifier in rownames(samples)
+#	{
+#		row <- samples[identifier,]
+#		sample <- row$sample
+#		dir.to <- concat(temp.dir,'/',sample)
+#		project <- row$project
+#		barcode <- row$barcode
+#		lane <- row$lane		
+#		dir.from <- concat(path,'/Project_',project,'/Sample_',project,'/')
+#		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
+#		
+#		appendFile('cp ',dir.from,filename,' ',dir.to, file=file)
+#	}
+#	appendFile('', file=file)
+#	
+#	for (sample in unique(samples$sample))
+#	{
+#		dir.from <- concat(temp.dir,'/',sample)
+#		appendFile('gunzip ',dir.from,'/*', file=file)
+#	}
+#	appendFile('', file=file)
+#	
+#	for (sample in unique(samples$sample))
+#	{
+#		dir.from <- concat(temp.dir,'/',sample)
+#		appendFile('cat ',dir.from,'/* > ',fastq.dir,'/',sample,'.fastq', file=file)
+#		
+#	}
+#	appendFile('', file=file)
+#	#appendFile('rm -r ',temp.dir,'/*', file=file)
+#}
+
+# copy all files from the same sample (patient + date) to the same folder
+preprocess2 <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
+		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
+{
+	runs <- loadRuns()
+	createFile(file=file)
+	appendFile('cd ',dir, file=file)
+	appendFile('mkdir ',temp.dir, file=file)
+	appendFile('mkdir ',fastq.dir, file=file)
+	appendFile('rm -r ',temp.dir,'/*', file=file)
+	appendFile('rm ',fastq.dir,'/*', file=file)
+	
+	for (sample in unique(runs$sample))
+	{
+		dir.to <- concat(temp.dir,'/',sample)
+		appendFile('mkdir ',dir.to, file=file)
+	}
+	appendFile('', file=file)
+	
+	for (run in rownames(runs))
+	{
+		row <- runs[run,]
+		sample <- row$sample
+		dir.to <- concat(temp.dir,'/',sample)
+		project <- row$project
+		barcode <- row$barcode
+		lane <- row$lane		
+		dir.from <- concat(path,'/Project_',project,'/Sample_',project,'/')
+		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
+		
+		appendFile('cp ',dir.from,filename,' ',dir.to, file=file)
+	}
+	appendFile('', file=file)
+	
+	for (sample in unique(runs$sample))
+	{
+		dir.from <- concat(temp.dir,'/',sample)
+		appendFile('gunzip ',dir.from,'/*', file=file)
+	}
+	appendFile('', file=file)
+	
+	for (sample in unique(runs$sample))
+	{
+		dir.from <- concat(temp.dir,'/',sample)
+		appendFile('cat ',dir.from,'/* > ',fastq.dir,'/',sample,'.fastq', file=file)
+		
+	}
+	appendFile('', file=file)
+	#appendFile('rm -r ',temp.dir,'/*', file=file)
+}
+
 
 #########################################################################3
 
@@ -98,23 +227,36 @@ makeVariantsForRef <- function(refid,refs,variants)
 }
 #makeVariantsForRef('KT9',refs,variants)
 
+#writeVariantsForRef <- function(refid, varseqs, ref.dir) #='out/')
+#{
+#	for (index in 1:nrow(varseqs))
+#	{
+#		name <- getVarRefName(refid,index)
+#		#if (index==1)
+#		#	name <- refid
+#		#else name <- paste(refid,'var',(index-1), sep='')
+#		varseq <- paste(varseqs[index,], collapse='')
+#		filename <- concat(ref.dir,'/',name,'.fasta')
+#		print(concat('writing variant file ',filename))
+#		cat('>',name,'\n',varseq,'\n', sep='', file=filename)
+#	}
+#}
+#refs <- loadRefs()
+#variants <- loadVariants()
+#makeVariantsForRef('NS3aa156',refs,variants)
+
 writeVariantsForRef <- function(refid, varseqs, ref.dir) #='out/')
 {
 	for (index in 1:nrow(varseqs))
 	{
 		name <- getVarRefName(refid,index)
-		#if (index==1)
-		#	name <- refid
-		#else name <- paste(refid,'var',(index-1), sep='')
 		varseq <- paste(varseqs[index,], collapse='')
 		filename <- concat(ref.dir,'/',name,'.fasta')
 		print(concat('writing variant file ',filename))
-		cat('>',name,'\n',varseq,'\n', sep='', file=filename)
+		write.fasta(s2c(varseq), name, file.out=filename)
+		#write.fasta(strsplit(varseq,"")[[1]], name, file.out=filename)
 	}
 }
-#refs <- loadRefs()
-#variants <- loadVariants()
-#makeVariantsForRef('NS3aa156',refs,variants)
 
 # determine varref names by counting how many variants are present for a particular sample
 getVarRefNames <- function(ref)
@@ -152,7 +294,7 @@ makeVariants <- function(ref.dir='ref', index.dir='indexes', file='out/index_ref
 	refs <- loadRefs()
 	variants <- loadVariants()
 	system(concat('mkdir ',ref.dir))
-	system(concat('mkdir ',index.dir))
+	#system(concat('mkdir ',index.dir))
 	cat('', file=file)
 	for (refid in rownames(refs))
 	{
@@ -200,84 +342,134 @@ removeAmbiguousCodons <- function(codons)
 
 ###########################################################################
 
-getCodonCodeTable <- function()
-{
-	codes <- data.frame()
-	codes['TTT','aa'] <- 'F'
-	codes['TTC','aa'] <- 'F'
-	codes['TTA','aa'] <- 'L'
-	codes['TTG','aa'] <- 'L'
-	codes['CTT','aa'] <- 'L'
-	codes['CTC','aa'] <- 'L'
-	codes['CTA','aa'] <- 'L'
-	codes['CTG','aa'] <- 'L'
-	codes['ATT','aa'] <- 'I'
-	codes['ATC','aa'] <- 'I'
-	codes['ATA','aa'] <- 'I'
-	codes['ATG','aa'] <- 'M'
-	codes['GTT','aa'] <- 'V'
-	codes['GTC','aa'] <- 'V'
-	codes['GTA','aa'] <- 'V'
-	codes['GTG','aa'] <- 'V'
-	codes['TCT','aa'] <- 'S'
-	codes['TCC','aa'] <- 'S'
-	codes['TCA','aa'] <- 'S'
-	codes['TCG','aa'] <- 'S'
-	codes['CCT','aa'] <- 'P'
-	codes['CCC','aa'] <- 'P'
-	codes['CCA','aa'] <- 'P'
-	codes['CCG','aa'] <- 'P'
-	codes['ACT','aa'] <- 'T'
-	codes['ACC','aa'] <- 'T'
-	codes['ACA','aa'] <- 'T'
-	codes['ACG','aa'] <- 'T'
-	codes['GCT','aa'] <- 'A'
-	codes['GCC','aa'] <- 'A'
-	codes['GCA','aa'] <- 'A'
-	codes['GCG','aa'] <- 'A'
-	codes['TAT','aa'] <- 'Y'
-	codes['TAC','aa'] <- 'Y'
-	codes['TAA','aa'] <- 'X'
-	codes['TAG','aa'] <- 'X'
-	codes['CAT','aa'] <- 'H'
-	codes['CAC','aa'] <- 'H'
-	codes['CAA','aa'] <- 'Q'
-	codes['CAG','aa'] <- 'Q'
-	codes['AAT','aa'] <- 'N'
-	codes['AAC','aa'] <- 'N'
-	codes['AAA','aa'] <- 'K'
-	codes['AAG','aa'] <- 'K'
-	codes['GAT','aa'] <- 'D'
-	codes['GAC','aa'] <- 'D'
-	codes['GAA','aa'] <- 'E'
-	codes['GAG','aa'] <- 'E'
-	codes['TGT','aa'] <- 'C'
-	codes['TGC','aa'] <- 'C'
-	codes['TGA','aa'] <- 'X'
-	codes['TGG','aa'] <- 'W'
-	codes['CGT','aa'] <- 'R'
-	codes['CGC','aa'] <- 'R'
-	codes['CGA','aa'] <- 'R'
-	codes['CGG','aa'] <- 'R'
-	codes['AGT','aa'] <- 'S'
-	codes['AGC','aa'] <- 'S'
-	codes['AGA','aa'] <- 'R'
-	codes['AGG','aa'] <- 'R'
-	codes['GGT','aa'] <- 'G'
-	codes['GGC','aa'] <- 'G'
-	codes['GGA','aa'] <- 'G'
-	codes['GGG','aa'] <- 'G'
-	return(codes)
-}
-codes <- getCodonCodeTable()
+#getCodonCodeTable <- function()
+#{
+#	codes <- data.frame()
+#	codes['TTT','aa'] <- 'F'
+#	codes['TTC','aa'] <- 'F'
+#	codes['TTA','aa'] <- 'L'
+#	codes['TTG','aa'] <- 'L'
+#	codes['CTT','aa'] <- 'L'
+#	codes['CTC','aa'] <- 'L'
+#	codes['CTA','aa'] <- 'L'
+#	codes['CTG','aa'] <- 'L'
+#	codes['ATT','aa'] <- 'I'
+#	codes['ATC','aa'] <- 'I'
+#	codes['ATA','aa'] <- 'I'
+#	codes['ATG','aa'] <- 'M'
+#	codes['GTT','aa'] <- 'V'
+#	codes['GTC','aa'] <- 'V'
+#	codes['GTA','aa'] <- 'V'
+#	codes['GTG','aa'] <- 'V'
+#	codes['TCT','aa'] <- 'S'
+#	codes['TCC','aa'] <- 'S'
+#	codes['TCA','aa'] <- 'S'
+#	codes['TCG','aa'] <- 'S'
+#	codes['CCT','aa'] <- 'P'
+#	codes['CCC','aa'] <- 'P'
+#	codes['CCA','aa'] <- 'P'
+#	codes['CCG','aa'] <- 'P'
+#	codes['ACT','aa'] <- 'T'
+#	codes['ACC','aa'] <- 'T'
+#	codes['ACA','aa'] <- 'T'
+#	codes['ACG','aa'] <- 'T'
+#	codes['GCT','aa'] <- 'A'
+#	codes['GCC','aa'] <- 'A'
+#	codes['GCA','aa'] <- 'A'
+#	codes['GCG','aa'] <- 'A'
+#	codes['TAT','aa'] <- 'Y'
+#	codes['TAC','aa'] <- 'Y'
+#	codes['TAA','aa'] <- 'X'
+#	codes['TAG','aa'] <- 'X'
+#	codes['CAT','aa'] <- 'H'
+#	codes['CAC','aa'] <- 'H'
+#	codes['CAA','aa'] <- 'Q'
+#	codes['CAG','aa'] <- 'Q'
+#	codes['AAT','aa'] <- 'N'
+#	codes['AAC','aa'] <- 'N'
+#	codes['AAA','aa'] <- 'K'
+#	codes['AAG','aa'] <- 'K'
+#	codes['GAT','aa'] <- 'D'
+#	codes['GAC','aa'] <- 'D'
+#	codes['GAA','aa'] <- 'E'
+#	codes['GAG','aa'] <- 'E'
+#	codes['TGT','aa'] <- 'C'
+#	codes['TGC','aa'] <- 'C'
+#	codes['TGA','aa'] <- 'X'
+#	codes['TGG','aa'] <- 'W'
+#	codes['CGT','aa'] <- 'R'
+#	codes['CGC','aa'] <- 'R'
+#	codes['CGA','aa'] <- 'R'
+#	codes['CGG','aa'] <- 'R'
+#	codes['AGT','aa'] <- 'S'
+#	codes['AGC','aa'] <- 'S'
+#	codes['AGA','aa'] <- 'R'
+#	codes['AGG','aa'] <- 'R'
+#	codes['GGT','aa'] <- 'G'
+#	codes['GGC','aa'] <- 'G'
+#	codes['GGA','aa'] <- 'G'
+#	codes['GGG','aa'] <- 'G'
+#	return(codes)
+#}
+#codes <- getCodonCodeTable()
+#
+#translateCodon <- function(codon)
+#{
+#	aa <- codes[codon,'aa']
+#	if (is.na(aa))
+#		aa <- 'X'
+#	return(aa)
+#}
+##translateCodon('GGG')
 
 translateCodon <- function(codon)
 {
-	aa <- codes[codon,'aa']
-	if (is.na(aa))
-		aa <- 'X'
-	return(aa)
+	return(translate(s2c(codon)))
 }
 #translateCodon('GGG')
 
+extractSequence <- function(sequence, start, end)
+{
+	sequence <- s2c(sequence)
+	return(c2s(sequence[start:end]))
+}
+#extractSequence(refs['KT9','sequence'],3420,5312)
 
+
+plotReadDistributions <- function(filename="histograms.pdf")
+{
+	pdf(filename)
+	#par(mfrow=c(2,2))
+	#par(ask=TRUE)
+	for (smpl in rownames(samples))
+	{
+		try({
+			ref <- samples[smpl,'ref']
+			filename <- concat('variants/',smpl,'.',ref,'.txt')
+			data <- loadDataframe(filename)
+			table <- createNtCountTable(data, cutoff=0)
+			runs.subset <- subset(runs, sample==smpl)
+			#par(mfrow=c(1,nrow(runs.subset)))
+			par(mfrow=c(2,nrow(runs.subset)))
+			for (run in rownames(runs.subset))
+			{
+				region <- runs.subset[run,'region']
+				start <- regions[region,'start']
+				end <- regions[region,'end']
+				xmin <- min(start)-10
+				xmax <- max(end) + 10
+				ymax <- max(table$total)+10
+				xlab <- concat('position (',xmin,'-',xmax,')')
+				#main <- concat(smpl,': ',run,': ',region,': ',start,':',end)
+				plot(top1 ~ as.numeric(position), table, ylim=c(0,ymax), xlim=c(xmin,xmax), type='h',
+						xlab=xlab, ylab='read coverage', main=run, sub=region)
+				plot(top1 ~ as.numeric(position), table, ylim=c(0,500), xlim=c(xmin,xmax), type='h',
+						xlab=xlab, ylab='read coverage', main=run, sub=region)
+			}
+			#par(mfrow=c(1,1))
+		}, silent=FALSE)
+	}
+	#par(ask=FALSE)
+	par(mfrow=c(1,1))
+	dev.off()
+}

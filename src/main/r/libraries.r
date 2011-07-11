@@ -1,6 +1,5 @@
 #repos <- 'http://cran.md.tsukuba.ac.jp'
 
-#install.packages('Design')
 install.packages('rms')
 install.packages('car')
 install.packages('MASS')
@@ -13,6 +12,7 @@ install.packages('popbio')
 install.packages('gvlma')
 install.packages('coin')
 install.packages('gsubfn')
+install.packages('seqinr')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
