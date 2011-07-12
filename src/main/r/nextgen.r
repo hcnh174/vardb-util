@@ -1,6 +1,6 @@
 library(gsubfn)
 library(seqinr)
-library(methods)
+#library(methods)
 
 setClass("variantdata", representation(nt="data.frame", codons="data.frame", aa="data.frame"))
 

@@ -145,3 +145,21 @@ with(mtcars, {
 
 
 status <- factor(status, ordered=TRUE)
+
+class(data)
+methods("print")
+methods(class='lm')
+
+define classes: setClass()
+create objects: new()
+define generics: setGeneric()
+define methods: setMethods()
+convert objects: as(), setAs()
+check object validity: setValidity(), validObject()
+access registry: showClass(), showMethods(), getMethod()
+
+
+showClass("pixmap")
+showMethods("show")
+getMethod("show", "pixmap")
+
