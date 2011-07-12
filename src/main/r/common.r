@@ -606,7 +606,7 @@ list2ascii <- function(x,file=paste(deparse(substitute(x)),".txt",sep="")) {
 writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE, eol='\n')
 {
 	#col.names <- c('id',names(table))
-	c(table, filename, quote=FALSE, row.names = row.names, sep='\t', na = '', eol=eol)
+	write.table(table, filename, quote=FALSE, row.names = row.names, sep='\t', na = '', eol=eol)
 	if (verbose)
 		print(paste('wrote table to file:',filename))
 }

@@ -1,49 +1,62 @@
 library(gsubfn)
-library(seqinr) 
+library(seqinr)
+library(methods)
 
-loadRuns <- function(filename='runs.txt')
+setClass("variantdata", representation(nt="data.frame", codons="data.frame", aa="data.frame"))
+
+setClass("sampleparams",
+		representation(patient='character', sample='character', region='character', drop.ambig='logical', nt.cutoff='numeric', out.dir='character'),
+		prototype(drop.ambig=TRUE, nt.cutoff=0, out.dir='out/'))
+
+
+config.dir <- 'config/'
+variants.dir <- 'variants/'
+
+loadRuns <- function(filename=concat(config.dir,'runs.txt'))
 {
 	data <- loadDataframe(filename, stringsAsFactors=FALSE)
 	rownames(data) <- data$run
 	return(data)
 }
 
-loadSamples <- function(filename='samples.txt')
+loadSamples <- function(filename=concat(config.dir,'samples.txt'))
 {
 	data <- loadDataframe(filename, stringsAsFactors=FALSE)
 	rownames(data) <- data$sample
 	return(data)
 }
 
-
-#loadRefs <- function(filename='refs.txt')
+#loadRefs <- function(filename=concat(config.dir,'refs.txt'), fasta.file=concat(config.dir,'refs.fasta'))
 #{
 #	data <- loadDataframe(filename, stringsAsFactors=FALSE)
 #	rownames(data) <- data$id
+#	sequences <- read.fasta(file = fasta.file, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
+#	for (id in rownames(data))
+#	{
+#		data[id,'sequence'] <- sequences[[id]][1]
+#	}	
 #	return(data)
 #}
 
-
-loadRefs <- function(filename='refs.txt', fasta.file='refs.fasta')
+loadRefs <- function(filename=concat(config.dir,'refs.fasta'))
 {
-	data <- loadDataframe(filename, stringsAsFactors=FALSE)
-	rownames(data) <- data$id
-	sequences <- read.fasta(file = fasta.file, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
-	for (id in rownames(data))
+	data <- data.frame()
+	sequences <- read.fasta(file = filename, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
+	for (id in names(sequences))
 	{
 		data[id,'sequence'] <- sequences[[id]][1]
-	}	
+	}
 	return(data)
 }
 
-loadRegions <- function(filename='regions.txt')
+loadRegions <- function(filename=concat(config.dir,'regions.txt'))
 {
 	data <- loadDataframe(filename, stringsAsFactors=FALSE)
 	rownames(data) <- data$region
 	return(data)
 }
 
-loadVariants <- function(filename='variants.txt')
+loadVariants <- function(filename=concat(config.dir,'variants.txt'))
 {
 	data <- loadDataframe(filename, stringsAsFactors=FALSE)
 	return(data)
@@ -81,56 +94,6 @@ preprocess <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWU
 		appendFile('', file=file)
 	}
 }
-
-#preprocess2 <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
-#		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
-#{
-#	samples <- loadSamples()
-#	createFile(file=file)
-#	appendFile('cd ',dir, file=file)
-#	appendFile('mkdir ',temp.dir, file=file)
-#	appendFile('mkdir ',fastq.dir, file=file)
-#	appendFile('rm -r ',temp.dir,'/*', file=file)
-#	appendFile('rm ',fastq.dir,'/*', file=file)
-#	
-#	for (sample in unique(samples$sample))
-#	{
-#		dir.to <- concat(temp.dir,'/',sample)
-#		appendFile('mkdir ',dir.to, file=file)	
-#	}
-#	appendFile('', file=file)
-#	
-#	for (identifier in rownames(samples)
-#	{
-#		row <- samples[identifier,]
-#		sample <- row$sample
-#		dir.to <- concat(temp.dir,'/',sample)
-#		project <- row$project
-#		barcode <- row$barcode
-#		lane <- row$lane		
-#		dir.from <- concat(path,'/Project_',project,'/Sample_',project,'/')
-#		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
-#		
-#		appendFile('cp ',dir.from,filename,' ',dir.to, file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (sample in unique(samples$sample))
-#	{
-#		dir.from <- concat(temp.dir,'/',sample)
-#		appendFile('gunzip ',dir.from,'/*', file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (sample in unique(samples$sample))
-#	{
-#		dir.from <- concat(temp.dir,'/',sample)
-#		appendFile('cat ',dir.from,'/* > ',fastq.dir,'/',sample,'.fastq', file=file)
-#		
-#	}
-#	appendFile('', file=file)
-#	#appendFile('rm -r ',temp.dir,'/*', file=file)
-#}
 
 # copy all files from the same sample (patient + date) to the same folder
 preprocess2 <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
@@ -226,24 +189,6 @@ makeVariantsForRef <- function(refid,refs,variants)
 	return(varseqs)
 }
 #makeVariantsForRef('KT9',refs,variants)
-
-#writeVariantsForRef <- function(refid, varseqs, ref.dir) #='out/')
-#{
-#	for (index in 1:nrow(varseqs))
-#	{
-#		name <- getVarRefName(refid,index)
-#		#if (index==1)
-#		#	name <- refid
-#		#else name <- paste(refid,'var',(index-1), sep='')
-#		varseq <- paste(varseqs[index,], collapse='')
-#		filename <- concat(ref.dir,'/',name,'.fasta')
-#		print(concat('writing variant file ',filename))
-#		cat('>',name,'\n',varseq,'\n', sep='', file=filename)
-#	}
-#}
-#refs <- loadRefs()
-#variants <- loadVariants()
-#makeVariantsForRef('NS3aa156',refs,variants)
 
 writeVariantsForRef <- function(refid, varseqs, ref.dir) #='out/')
 {
@@ -342,89 +287,9 @@ removeAmbiguousCodons <- function(codons)
 
 ###########################################################################
 
-#getCodonCodeTable <- function()
-#{
-#	codes <- data.frame()
-#	codes['TTT','aa'] <- 'F'
-#	codes['TTC','aa'] <- 'F'
-#	codes['TTA','aa'] <- 'L'
-#	codes['TTG','aa'] <- 'L'
-#	codes['CTT','aa'] <- 'L'
-#	codes['CTC','aa'] <- 'L'
-#	codes['CTA','aa'] <- 'L'
-#	codes['CTG','aa'] <- 'L'
-#	codes['ATT','aa'] <- 'I'
-#	codes['ATC','aa'] <- 'I'
-#	codes['ATA','aa'] <- 'I'
-#	codes['ATG','aa'] <- 'M'
-#	codes['GTT','aa'] <- 'V'
-#	codes['GTC','aa'] <- 'V'
-#	codes['GTA','aa'] <- 'V'
-#	codes['GTG','aa'] <- 'V'
-#	codes['TCT','aa'] <- 'S'
-#	codes['TCC','aa'] <- 'S'
-#	codes['TCA','aa'] <- 'S'
-#	codes['TCG','aa'] <- 'S'
-#	codes['CCT','aa'] <- 'P'
-#	codes['CCC','aa'] <- 'P'
-#	codes['CCA','aa'] <- 'P'
-#	codes['CCG','aa'] <- 'P'
-#	codes['ACT','aa'] <- 'T'
-#	codes['ACC','aa'] <- 'T'
-#	codes['ACA','aa'] <- 'T'
-#	codes['ACG','aa'] <- 'T'
-#	codes['GCT','aa'] <- 'A'
-#	codes['GCC','aa'] <- 'A'
-#	codes['GCA','aa'] <- 'A'
-#	codes['GCG','aa'] <- 'A'
-#	codes['TAT','aa'] <- 'Y'
-#	codes['TAC','aa'] <- 'Y'
-#	codes['TAA','aa'] <- 'X'
-#	codes['TAG','aa'] <- 'X'
-#	codes['CAT','aa'] <- 'H'
-#	codes['CAC','aa'] <- 'H'
-#	codes['CAA','aa'] <- 'Q'
-#	codes['CAG','aa'] <- 'Q'
-#	codes['AAT','aa'] <- 'N'
-#	codes['AAC','aa'] <- 'N'
-#	codes['AAA','aa'] <- 'K'
-#	codes['AAG','aa'] <- 'K'
-#	codes['GAT','aa'] <- 'D'
-#	codes['GAC','aa'] <- 'D'
-#	codes['GAA','aa'] <- 'E'
-#	codes['GAG','aa'] <- 'E'
-#	codes['TGT','aa'] <- 'C'
-#	codes['TGC','aa'] <- 'C'
-#	codes['TGA','aa'] <- 'X'
-#	codes['TGG','aa'] <- 'W'
-#	codes['CGT','aa'] <- 'R'
-#	codes['CGC','aa'] <- 'R'
-#	codes['CGA','aa'] <- 'R'
-#	codes['CGG','aa'] <- 'R'
-#	codes['AGT','aa'] <- 'S'
-#	codes['AGC','aa'] <- 'S'
-#	codes['AGA','aa'] <- 'R'
-#	codes['AGG','aa'] <- 'R'
-#	codes['GGT','aa'] <- 'G'
-#	codes['GGC','aa'] <- 'G'
-#	codes['GGA','aa'] <- 'G'
-#	codes['GGG','aa'] <- 'G'
-#	return(codes)
-#}
-#codes <- getCodonCodeTable()
-#
-#translateCodon <- function(codon)
-#{
-#	aa <- codes[codon,'aa']
-#	if (is.na(aa))
-#		aa <- 'X'
-#	return(aa)
-#}
-##translateCodon('GGG')
-
 translateCodon <- function(codon)
 {
-	return(translate(s2c(codon)))
+	return(c2s(translate(s2c(codon))))
 }
 #translateCodon('GGG')
 
@@ -475,7 +340,34 @@ plotReadDistributions <- function(filename="histograms.pdf")
 }
 
 ####################################################################
-
+#
+#getCodonPositionsForRegion <- function(region)
+#{
+#	offset <- 0
+#	parent <- regions[region,'parent']
+#	if (!is.na(parent))
+#		offset <- regions[parent,'start']
+#	start <- regions[region,'start'] - offset
+#	end <- regions[region,'end'] - offset
+#	#print(concat(start,':',end))
+#	#print(extractSequence(refs['KT9','sequence'], start, end))
+#	start <- start - start %% 3
+#	end <- end - end %% 3 #end <- (end+3) - (end+3) %% 3
+#	#print(concat(start,':',end))
+#	#start <- offset + start
+#	#end <- offset + end
+#	#return(seq(start,end,3))
+#	positions <- data.frame()
+#	codon <- start/3
+#	for (position in seq(start,end,3))
+#	{
+#		positions <- rbind(positions, data.frame(codon=codon, ntnum=offset + position, relpos=position))
+#		codon <- codon + 1
+#	}
+#	#rownames(positions) <- positions$ntnum
+#	return(positions)
+#}
+##getCodonPositionsForRegion('NS3aa36')
 
 getCodonPositionsForRegion <- function(region)
 {
@@ -485,28 +377,33 @@ getCodonPositionsForRegion <- function(region)
 		offset <- regions[parent,'start']
 	start <- regions[region,'start'] - offset
 	end <- regions[region,'end'] - offset
-	print(concat(start,':',end))
-	#print(extractSequence(refs['KT9','sequence'], start, end))
-	start <- start - start %% 3
-	end <- end - end %% 3 #end <- (end+3) - (end+3) %% 3
-	print(concat(start,':',end))
-	#start <- offset + start
-	#end <- offset + end
-	#return(seq(start,end,3))
+	#print(concat(start,':',end))
+	sequence <- extractSequence(refs['KT9','sequence'], regions[region,'start'], regions[region,'end'])
+	#print(sequence)
+	#print(translateCodon(sequence))
 	positions <- data.frame()
-	codon <- start/3
+	codon <- start/3 + 1
+	if (start %% 3 !=0)
+		stop(concat('start number is not a multiple of 3: ',start,' in region ',region))
 	for (position in seq(start,end,3))
 	{
-		positions <- rbind(positions, data.frame(codon=codon, ntnum=offset + position, relpos=position))
+		refcodon <- extractSequence(refs['KT9','sequence'], offset+position, offset+position+2)
+		refaa <- translateCodon(refcodon)
+		positions <- rbind(positions, data.frame(codon=codon, ntnum=offset+position, relpos=position, refcodon=refcodon, refaa=refaa))
 		codon <- codon + 1
-	}
-	#rownames(positions) <- positions$ntnum
+	}	
 	return(positions)
 }
-#getCodonPositionsForRegion('NS3aa36')
+#head(getCodonPositionsForRegion('NS3aa156'))
+#head(getCodonPositionsForRegion('NS3aa36'))
+#head(getCodonPositionsForRegion('NS5Aaa31'))
+#head(getCodonPositionsForRegion('NS5Aaa93'))
+
 
 extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 {
+	#hack!!!
+	ntnum <- ntnum - 1
 	nt1 <- data[which(data$position==ntnum),'nt']
 	nt2 <- data[which(data$position==ntnum+1),'nt']
 	nt3 <- data[which(data$position==ntnum+2),'nt']
@@ -515,6 +412,167 @@ extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 		codons <- removeAmbiguousCodons(codons)
 	return(codons)
 }
-#extractCodonData(data,3714)
+#extractCodonData(data,3495)
 
+################################################################################
+
+
+appendSampleParams <- function(counts, params)
+{
+	counts$patient <- as.character(params@patient)
+	counts$sample <- as.character(params@sample)
+	counts$region <- as.character(params@region)
+	return(counts)
+}
+
+createNtCountTable <- function(data, params)
+{
+	region <- params@region
+	start <- regions[region,'start']
+	end <- regions[region,'end']	
+	data <- subset(data, position >= start & position <= end)
+	
+	data$nt <- factor(data$nt, levels=c('A','C','G','T','N'))
+	table <- xtabs(~position + nt, data)
+	
+	for (nt in c('A','C','G','T','N'))
+	{
+		table[,nt] <- ifelse(table[,nt] > params@nt.cutoff, table[,nt], 0)
+	}
+	position <- as.numeric(rownames(table))
+	total <- apply(table, 1, sum)
+	
+	top1 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[1]]})
+	top2 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[2]]})
+	top3 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[3]]})
+	top4 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[4]]})
+	top5 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[5]]})
+	
+	table <- cbind(table,position)
+	table <- cbind(table,top1)
+	table <- cbind(table,top2)
+	table <- cbind(table,top3)
+	table <- cbind(table,top4)
+	table <- cbind(table,top5)
+	table <- cbind(table,total)
+	table <- data.frame(table)
+	
+	positions <- getCodonPositionsForRegion(region)
+	table$codon <- sapply(table$position, function(ntnum){
+				return(positions[which(positions$ntnum <= ntnum & positions$ntnum+2 >= ntnum),'codon'])
+			})
+	table <- appendSampleParams(table, params)
+	return(table)
+}
+#table.nt <- createNtCountTable(data, 'NS3aa36')
+
+createCodonCountTable <- function(data, params)
+{
+	counts <- data.frame()
+	positions <- getCodonPositionsForRegion(params@region)
+	for (ntnum in positions$ntnum)
+	{
+		codons <- extractCodonData(data,ntnum,params@drop.ambig)
+		aanum <- positions[which(positions$ntnum==ntnum),'codon']
+		#print(paste('aanum=',aanum,'ntnum=',ntnum,'numcodons=',length(codons)))
+		freqs <- sort(xtabs(as.data.frame(codons)), decreasing=TRUE)
+		total <- sum(freqs)
+		
+		rank <- 1
+		for (codon in names(freqs))
+		{
+			count <- freqs[codon]
+			freq <- count/total
+			row <- data.frame(ntnum=ntnum, aanum=aanum, codon=codon, rank=rank, count=count, freq=freq) #sample=sample, 
+			counts <- rbind(counts,row)
+			rank <- rank +1
+		}
+	}
+	counts$codon <- as.character(counts$codon)
+	counts$aa <- sapply(counts$codon,translateCodon)
+	counts$ntnum <- factor(counts$ntnum)
+	counts$aanum <- factor(counts$aanum)
+	counts <- appendSampleParams(counts, params)
+	return(counts)
+}
+#data <- loadDataframe('variants/218-7_03-01.KT9.txt')
+#params <- new('sampleparams',patient='218-7', sample='218-7_03-01', region='NS3aa36')
+#table.codons <- createCodonCountTable(data,params)
+#head(table.codons, n=20)
+
+createAminoAcidCountTable <- function(data, params)
+{
+	counts <- data.frame()
+	positions <- getCodonPositionsForRegion(params@region)
+	for (ntnum in positions$ntnum)
+	{		
+		codons <- extractCodonData(data,ntnum,params@drop.ambig)
+		aanum <- positions[which(positions$ntnum==ntnum),'codon']
+		aa <- sapply(codons,translateCodon)
+		freqs <- sort(xtabs(as.data.frame(aa)), decreasing=TRUE)
+		total <- sum(freqs)		
+		for (codon in names(freqs))
+		{
+			count <- freqs[codon]
+			#print(attributes(count))
+			freq <- count/total
+			row <- data.frame(ntnum=ntnum, aanum=aanum, codon=codon, count=count, freq=freq)
+			counts <- rbind(counts,row)
+		}
+	}
+	counts$ntnum <- factor(counts$ntnum)
+	counts$aanum <- factor(counts$aanum)
+	counts <- appendSampleParams(counts, params)
+	return(counts)
+}
+#data <- loadDataframe('variants/218-7_03-01.KT9.txt')
+#params <- new('sampleparams',patient='218-7', sample='218-7_03-01', region='NS3aa36')
+#table.aa <- createAminoAcidCountTable(data,params)
+
+
+count_codons_for_region <- function(data, params, variantdata)
+{
+	print(concat('count_codons_for_region: ',as.character(params@region)))
+	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(data, params))
+	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(data, params))
+	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(data, params))	
+	return(variantdata)
+}
+
+count_codons_for_sample <- function(params, variantdata)
+{
+	sample <- as.character(params@sample)
+	print(concat('count_codons_for_sample: ',sample))
+	ref <- samples[sample,'ref'] # look up the ref for the sample
+	filename <- concat(variants.dir,sample,'.',ref,'.txt'); print(filename) # load the corresponding data file
+	data <- loadDataframe(filename)
+	# each sample has several runs targeting different regions
+	for (region in runs[runs[,'sample']==sample,'region'])
+	{
+		params@region <- region
+		variantdata <- count_codons_for_region(data, params, variantdata)
+	}
+	return(variantdata)
+}
+#tables <- count_codons_for_sample('218-7_03-01')
+
+count_codons_for_patient <- function(params)
+{
+	if (is.character(params))
+		params <- new('sampleparams', patient=params)
+	print(concat('count_codons_for_patient: ',as.character(params@patient)))
+	#table.nt <- data.frame()
+	variantdata <- new('variantdata')
+	for (sample in samples[which(samples$patient == params@patient),'sample'])
+	{
+		params@sample <- sample
+		try({variantdata <- count_codons_for_sample(params, variantdata)}, silent=FALSE)
+	}
+	out.dir <- params@out.dir
+	writeTable(variantdata@nt, concat(out.dir,'nt.',params@patient,'.txt'), row.names=FALSE)
+	writeTable(variantdata@codons, concat(out.dir,'codons.',params@patient,'.txt'), row.names=FALSE)
+	writeTable(variantdata@aa, concat(out.dir,'aa.',params@patient,'.txt'), row.names=FALSE)
+	return(variantdata)
+}
+#variantdata <- count_codons_for_patient('218-7')
 
