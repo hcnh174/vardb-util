@@ -33,11 +33,14 @@ setCurDir <- function(dir)
 	setwd(paste(Sys.getenv("ANALYSIS_HOME"),'/',dir,'/',sep=''))
 }
 
-loadDataframe <- function(filename, stringsAsFactors=default.stringsAsFactors())
+loadDataFrame <- function(filename, stringsAsFactors=default.stringsAsFactors())
 {
 	dataframe <- read.table(filename, header=TRUE, encoding='UTF-8', sep = '\t', comment.char='', stringsAsFactors=stringsAsFactors)
 	return(dataframe)
 }
+
+#temporarily alias the old version
+loadDataframe <- loadDataFrame
 
 #plotDistribution <- function(values, ylab='values')
 #{	

@@ -5,7 +5,7 @@ library(seqinr)
 setClass("variantdata", representation(nt="data.frame", codons="data.frame", aa="data.frame"))
 
 setClass("sampleparams",
-		representation(patient='character', sample='character', region='character', drop.ambig='logical', nt.cutoff='numeric', out.dir='character'),
+		representation(subject='character', sample='character', region='character', drop.ambig='logical', nt.cutoff='numeric', out.dir='character'),
 		prototype(drop.ambig=TRUE, nt.cutoff=0, out.dir='out/'))
 
 
@@ -14,29 +14,17 @@ variants.dir <- 'variants/'
 
 loadRuns <- function(filename=concat(config.dir,'runs.txt'))
 {
-	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+	data <- loadDataFrame(filename, stringsAsFactors=FALSE)
 	rownames(data) <- data$run
 	return(data)
 }
 
 loadSamples <- function(filename=concat(config.dir,'samples.txt'))
 {
-	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+	data <- loadDataFrame(filename, stringsAsFactors=FALSE)
 	rownames(data) <- data$sample
 	return(data)
 }
-
-#loadRefs <- function(filename=concat(config.dir,'refs.txt'), fasta.file=concat(config.dir,'refs.fasta'))
-#{
-#	data <- loadDataframe(filename, stringsAsFactors=FALSE)
-#	rownames(data) <- data$id
-#	sequences <- read.fasta(file = fasta.file, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
-#	for (id in rownames(data))
-#	{
-#		data[id,'sequence'] <- sequences[[id]][1]
-#	}	
-#	return(data)
-#}
 
 loadRefs <- function(filename=concat(config.dir,'refs.fasta'))
 {
@@ -51,14 +39,26 @@ loadRefs <- function(filename=concat(config.dir,'refs.fasta'))
 
 loadRegions <- function(filename=concat(config.dir,'regions.txt'))
 {
-	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+	data <- loadDataFrame(filename, stringsAsFactors=FALSE)
 	rownames(data) <- data$region
 	return(data)
 }
 
 loadVariants <- function(filename=concat(config.dir,'variants.txt'))
 {
-	data <- loadDataframe(filename, stringsAsFactors=FALSE)
+	data <- loadDataFrame(filename, stringsAsFactors=FALSE)
+	return(data)
+}
+
+loadTiters <- function(filename=concat(config.dir,'titers.txt'))
+{
+	data <- loadDataFrame(filename)
+	return(data)
+}
+
+loadTreatments <- function(filename=concat(config.dir,'treatments.txt'))
+{
+	data <- loadDataFrame(filename)
 	return(data)
 }
 
@@ -95,7 +95,7 @@ preprocess <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWU
 	}
 }
 
-# copy all files from the same sample (patient + date) to the same folder
+# copy all files from the same sample (subject + date) to the same folder
 preprocess2 <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
 		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
 {
@@ -257,7 +257,7 @@ loadVariantData <- function(sample, ref, merged=FALSE)#, nums)
 		filename <- concat('variants/',sample,'.',ref,'.merged.txt')
 	else filename <- concat('variants/',sample,'.',ref,'.txt')
 	#print(paste('Loading file',filename))
-	data <- loadDataframe(filename)
+	data <- loadDataFrame(filename)
 	#print(paste('Loaded',filename))
 #	
 #	positions <- c()
@@ -311,7 +311,7 @@ plotReadDistributions <- function(filename="histograms.pdf")
 		try({
 			ref <- samples[smpl,'ref']
 			filename <- concat('variants/',smpl,'.',ref,'.txt')
-			data <- loadDataframe(filename)
+			data <- loadDataFrame(filename)
 			table <- createNtCountTable(data, cutoff=0)
 			runs.subset <- subset(runs, sample==smpl)
 			#par(mfrow=c(1,nrow(runs.subset)))
@@ -419,7 +419,7 @@ extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 
 appendSampleParams <- function(counts, params)
 {
-	counts$patient <- as.character(params@patient)
+	counts$subject <- as.character(params@subject)
 	counts$sample <- as.character(params@sample)
 	counts$region <- as.character(params@region)
 	return(counts)
@@ -495,8 +495,8 @@ createCodonCountTable <- function(data, params)
 	counts <- appendSampleParams(counts, params)
 	return(counts)
 }
-#data <- loadDataframe('variants/218-7_03-01.KT9.txt')
-#params <- new('sampleparams',patient='218-7', sample='218-7_03-01', region='NS3aa36')
+#data <- loadDataFrame('variants/218-7_03-01.KT9.txt')
+#params <- new('sampleparams',subject='218-7', sample='218-7_03-01', region='NS3aa36')
 #table.codons <- createCodonCountTable(data,params)
 #head(table.codons, n=20)
 
@@ -511,12 +511,12 @@ createAminoAcidCountTable <- function(data, params)
 		aa <- sapply(codons,translateCodon)
 		freqs <- sort(xtabs(as.data.frame(aa)), decreasing=TRUE)
 		total <- sum(freqs)		
-		for (codon in names(freqs))
+		for (aa in names(freqs))
 		{
-			count <- freqs[codon]
+			count <- freqs[aa]
 			#print(attributes(count))
 			freq <- count/total
-			row <- data.frame(ntnum=ntnum, aanum=aanum, codon=codon, count=count, freq=freq)
+			row <- data.frame(ntnum=ntnum, aanum=aanum, aa=aa, count=count, freq=freq)
 			counts <- rbind(counts,row)
 		}
 	}
@@ -525,8 +525,8 @@ createAminoAcidCountTable <- function(data, params)
 	counts <- appendSampleParams(counts, params)
 	return(counts)
 }
-#data <- loadDataframe('variants/218-7_03-01.KT9.txt')
-#params <- new('sampleparams',patient='218-7', sample='218-7_03-01', region='NS3aa36')
+#data <- loadDataFrame('variants/218-7_03-01.KT9.txt')
+#params <- new('sampleparams',subject='218-7', sample='218-7_03-01', region='NS3aa36')
 #table.aa <- createAminoAcidCountTable(data,params)
 
 
@@ -545,7 +545,7 @@ count_codons_for_sample <- function(params, variantdata)
 	print(concat('count_codons_for_sample: ',sample))
 	ref <- samples[sample,'ref'] # look up the ref for the sample
 	filename <- concat(variants.dir,sample,'.',ref,'.txt'); print(filename) # load the corresponding data file
-	data <- loadDataframe(filename)
+	data <- loadDataFrame(filename)
 	# each sample has several runs targeting different regions
 	for (region in runs[runs[,'sample']==sample,'region'])
 	{
@@ -556,23 +556,43 @@ count_codons_for_sample <- function(params, variantdata)
 }
 #tables <- count_codons_for_sample('218-7_03-01')
 
-count_codons_for_patient <- function(params)
+count_codons_for_subject <- function(params)
 {
 	if (is.character(params))
-		params <- new('sampleparams', patient=params)
-	print(concat('count_codons_for_patient: ',as.character(params@patient)))
+		params <- new('sampleparams', subject=params)
+	print(concat('count_codons_for_subject: ',as.character(params@subject)))
 	#table.nt <- data.frame()
 	variantdata <- new('variantdata')
-	for (sample in samples[which(samples$patient == params@patient),'sample'])
+	for (sample in samples[which(samples$subject == params@subject),'sample'])
 	{
 		params@sample <- sample
 		try({variantdata <- count_codons_for_sample(params, variantdata)}, silent=FALSE)
 	}
 	out.dir <- params@out.dir
-	writeTable(variantdata@nt, concat(out.dir,'nt.',params@patient,'.txt'), row.names=FALSE)
-	writeTable(variantdata@codons, concat(out.dir,'codons.',params@patient,'.txt'), row.names=FALSE)
-	writeTable(variantdata@aa, concat(out.dir,'aa.',params@patient,'.txt'), row.names=FALSE)
+	writeTable(variantdata@nt, concat(out.dir,'nt.',params@subject,'.txt'), row.names=FALSE)
+	writeTable(variantdata@codons, concat(out.dir,'codons.',params@subject,'.txt'), row.names=FALSE)
+	writeTable(variantdata@aa, concat(out.dir,'aa.',params@subject,'.txt'), row.names=FALSE)
 	return(variantdata)
 }
-#variantdata <- count_codons_for_patient('218-7')
+#variantdata <- count_codons_for_subject('218-7')
+
+count_codons <- function(params=NULL)
+{
+	print('count_codons')
+	if (is.null(params))
+		params <- new('sampleparams')	
+	for (subject in unique(samples$subject))
+	{
+		params@subject <- subject
+		count_codons_for_subject(params)
+	}
+}
+#count_codons()
+
+# estimates the number of reads based on the size of the file, assuming a ratio of 7757 for uncompressed fastq
+estimateReadCount <- function(mb)
+{
+	return(round(mb*7757))
+}
+#estimateReadCount(112.5)
 
