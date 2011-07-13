@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC
+	"-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+
+</head>
+
+<body>
+
+<form name="form1">
+<b>Replace empty cells in phenotype file for plink</b>
+Missing
+<select name="missing">
+	<option>NA</option>
+	<option>999999999</option>
+</select>
+<input type="button" onclick="run(this.form)" value="Run"/>
+<input type="button" onclick="clearForm(this.form)" value="Clear"/>
+<br/>
+<textarea name="input" cols="" style="width: 100%;" wrap="virtual" rows="20"></textarea>
+<hr/>Plink-friendly<br/>
+<textarea name="output" cols="" style="width: 100%;" wrap="virtual" rows="20"></textarea>
+</form>
+
+<script language="JavaScript">
+
+function fixLine(line,missing)
+{
+	var index=line.indexOf('\t\t');
+	if (index==-1)
+	{
+		line=line.replace('\t\n','\t'+missing+'\n');
+		return line;
+	}
+	line=line.replace('\t\t','\t'+missing+'\t');
+	return fixLine(line,missing);
+}
+
+function fixEmptyCells(input,missing)
+{
+	var lines=input.split('\n');
+	var buffer=[];
+	for (var i=0;i<lines.length;i++)
+	{
+		var line=lines[i];
+		if (line.trim()==='')
+			{continue;}
+		line+='\n';
+		line=fixLine(line,missing);
+		//line=line.replace('\t\t','\t'+missing+'\t');
+		//line=line.replace('\t\n','\t'+missing+'\n');
+		buffer.push(line);
+	}
+	return buffer.join('');
+}
+
+function run(form)
+{	
+	var missing=form.elements.missing.value;
+	var input=form.elements.input.value;
+	form.elements.output.value=fixEmptyCells(input,missing);
+}
+
+function clearForm(form)
+{
+	form.elements.input.value='';
+	form.elements.output.value='';
+}
+
+</script>
+</body>
+
+</html>

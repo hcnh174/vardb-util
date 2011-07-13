@@ -1,0 +1,279 @@
+<html>
+
+<script language="JavaScript">
+
+function run(form)
+{
+	var input=form.elements["input"].value;
+	var makegetters=form.elements["getters"].checked;
+	var makesetters=form.elements["setters"].checked;
+	var interface=form.elements["interface"].checked;
+	var mongo=form.elements["mongo"].checked;
+	var mongomapper=form.elements["mongomapper"].checked;
+	if (mongo)
+	{
+		var output=generateMongoAccessors(input,makegetters,makesetters,interface);
+		form.elements["output"].value=output;
+		return;
+	}
+	if (mongomapper)
+	{
+		var output=generateMongoMapperKeys(input);
+		form.elements["output"].value=output;
+		return;
+	}
+	var output=generateCode(input,makegetters,makesetters,interface);
+	form.elements["output"].value=output;
+}
+
+function generateCode(input,makegetters,makesetters,interface)
+{	
+	var arr=input.split("\n");
+	var declarations=new Array();
+	var setters=new Array();
+	var getters=new Array();
+	
+	for (var i=0;i<arr.length;i++)
+	{
+		var line=arr[i];
+		//line=line.trim();
+		if (line.indexOf("//")!=-1)
+		{
+			line=line.substring(0,line.indexOf("//"));
+			//line=line.trim();
+			//continue;
+		}
+		var usethis=true;
+		if (/\bm_/.test(line))
+			{usethis=false;}
+		line=replace(line,"\t","");
+		line=replace(line,"final ","");
+		line=replace(line,"protected ","");
+		line=replace(line,"private ","");
+		line=replace(line,"public ","");
+		line=replace(line,/\bm_/,"");
+		line=replace(line,";","");
+		line=removeInitializer(line);
+		
+		if (line=="")
+			continue;
+		var a=line.split(" ");
+		if (a.length!=2)
+			continue;
+		var type=a[0];
+		var name=a[1];
+		declarations[declarations.length]=createDeclaration(type,name,usethis);
+		getters[getters.length]=createGetter(type,name,interface,usethis);
+		setters[setters.length]=createSetter(type,name,interface,usethis);
+	}
+
+	var output="";	
+	for(var i=0;i<setters.length;i++)
+	{
+		if (makegetters)
+		{
+			output+=getters[i];
+			output+="\n";
+		}
+		if (makesetters)
+		{
+			output+=setters[i];
+			output+="\n";
+		}
+		output+="\n";
+	}
+	return output;
+}
+
+function createDeclaration(type,name,usethis)
+{
+	var prefix=usethis ? '' : 'm_';
+	return '\tprotected '+type+' '+prefix+name+';';
+}
+
+function createSetter(type,name,isInterface,usethis)
+{
+	var modifier=(isInterface) ? '' : 'public ';
+	var prefix=usethis ? 'this.' : 'm_';
+	//var arr=name.split(' ');
+	var str='\t'+modifier+'void set'+getJavaBeanName(name)+'(final '+type+' '+name+')';
+	if (isInterface)
+		str+=';';
+	else str+='{'+prefix+name+'='+name+';}';
+	return str;
+}
+
+function createGetter(type,name,isInterface,usethis)
+{
+	var modifier=(isInterface) ? '' : 'public ';
+	var prefix=usethis ? 'this.' : 'm_';
+	//var form=document.forms['form1'];
+	var str='\t'+modifier+type+' get'+getJavaBeanName(name)+'()';
+	if (isInterface)
+		str+=';';
+	else str+='{return '+prefix+name+';}';
+	return str;
+}
+
+function getJavaBeanName(name)
+{
+	var str=(name.substring(0,1)).toUpperCase();
+	str+=name.substring(1);
+	return str;
+}
+
+function replace(str,targetstr,replacestr)
+{
+	var arr=str.split(targetstr);
+	return arr.join(replacestr);	
+}
+
+function removeInitializer(str)
+{
+	var index=str.indexOf("=");
+	if (index==-1)
+		return str;
+	return str.substring(0,index);	
+}
+
+
+function generateMongoAccessors(input,makegetters,makesetters)
+{	
+	var arr=input.split("\n");
+	var setters=new Array();
+	var getters=new Array();
+	
+	for (var i=0;i<arr.length;i++)
+	{
+		var line=arr[i];
+		if (line.indexOf("//")!=-1)
+			{line=line.substring(0,line.indexOf("//"));}
+		var usethis=true;
+		if (/\bm_/.test(line))
+			{usethis=false;}
+		line=replace(line,"\t","");
+		line=replace(line,"final ","");
+		line=replace(line,"protected ","");
+		line=replace(line,"private ","");
+		line=replace(line,"public ","");
+		line=replace(line,/\bm_/,"");
+		line=replace(line,";","");
+		line=removeInitializer(line);
+		
+		if (line=="")
+			continue;
+		var a=line.split(" ");
+		if (a.length!=2)
+			continue;
+		var type=a[0];
+		var name=a[1];
+
+		getters[getters.length]=createMongoGetter(type,name);
+		setters[setters.length]=createMongoSetter(type,name);
+	}
+
+	var output='';	
+	for(var i=0;i<setters.length;i++)
+	{
+		if (makegetters)
+			{output+=getters[i]+'\n';}
+		if (makesetters)
+			{output+=setters[i]+'\n';}
+		output+='\n';
+	}
+	return output;
+}
+
+function createMongoSetter(type,name)
+{
+	var str='\tpublic void set'+getJavaBeanName(name)+'(final '+type+' '+name+')';
+	str+='{setAttribute("'+name+'",'+name+');}';
+	return str;
+}
+
+function createMongoGetter(type,name,isInterface,usethis)
+{
+	var str='\tpublic '+type+' get'+getJavaBeanName(name)+'()';
+	str+='{return ('+type+')getAttribute("'+name+'");}';
+	return str;
+}
+
+////////////////////////////////////////////////////////////
+
+function generateMongoMapperKeys(input)
+{	
+	var arr=input.split("\n");
+	var keys=[];
+	
+	for (var i=0;i<arr.length;i++)
+	{
+		var line=arr[i];
+		if (line.indexOf("//")!=-1)
+			{line=line.substring(0,line.indexOf("//"));}
+		var usethis=true;
+		if (/\bm_/.test(line))
+			{usethis=false;}
+		line=replace(line,"\t","");
+		line=replace(line,"final ","");
+		line=replace(line,"protected ","");
+		line=replace(line,"private ","");
+		line=replace(line,"public ","");
+		line=replace(line,/\bm_/,"");
+		line=replace(line,";","");
+		line=removeInitializer(line);
+		
+		if (line=="")
+			continue;
+		var a=line.split(" ");
+		if (a.length!=2)
+			continue;
+		var type=a[0];
+		var name=a[1];
+		
+		keys.push(createMongoMapperKey(type,name));
+	}
+
+	var output='';	
+	for(var i=0;i<keys.length;i++)
+	{
+		output+=keys[i]+'\n';
+	}
+	return output;
+}
+
+function createMongoMapperKey(type,name)
+{
+	return '\tkey :'+name+', '+type;
+}
+
+////////////////////////////////////////////////////////////
+
+function clearForm(form)
+{
+	form.elements.input.value='';
+	form.elements.output.value='';
+}
+
+</script>
+
+<body>
+<h3>JavaBean field builder</h3>
+
+<form name="form1">
+<input type="button" onclick="run(this.form)" value="Run">
+<input type="button" onclick="clearForm(this.form)" value="Clear">
+Getters <input type="checkbox" name="getters" value="true" checked="checked">
+Setters <input type="checkbox" name="setters" value="true" checked="checked">
+Interface <input type="checkbox" name="interface" value="true">
+Mongo <input type="checkbox" name="mongo" value="true">
+MongoMapper <input type="checkbox" name="mongomapper" value="true">
+<br>
+<textarea name="input" cols="" style="width: 100%;" wrap="virtual" rows="10" wrap="physical">
+</textarea>
+<hr>
+<textarea name="output" cols="" style="width: 100%;" wrap="virtual" rows="10" wrap="physical"></textarea>
+</form>
+
+</body>
+
+</html>
