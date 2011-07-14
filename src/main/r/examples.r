@@ -163,3 +163,5 @@ showClass("pixmap")
 showMethods("show")
 getMethod("show", "pixmap")
 
+df[grep("trna", df$common_name, ignore.case=T),]
+

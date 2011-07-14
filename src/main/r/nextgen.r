@@ -8,7 +8,6 @@ setClass("sampleparams",
 		representation(subject='character', sample='character', region='character', drop.ambig='logical', nt.cutoff='numeric', out.dir='character'),
 		prototype(drop.ambig=TRUE, nt.cutoff=0, out.dir='out/'))
 
-
 config.dir <- 'config/'
 variants.dir <- 'variants/'
 
@@ -340,34 +339,6 @@ plotReadDistributions <- function(filename="histograms.pdf")
 }
 
 ####################################################################
-#
-#getCodonPositionsForRegion <- function(region)
-#{
-#	offset <- 0
-#	parent <- regions[region,'parent']
-#	if (!is.na(parent))
-#		offset <- regions[parent,'start']
-#	start <- regions[region,'start'] - offset
-#	end <- regions[region,'end'] - offset
-#	#print(concat(start,':',end))
-#	#print(extractSequence(refs['KT9','sequence'], start, end))
-#	start <- start - start %% 3
-#	end <- end - end %% 3 #end <- (end+3) - (end+3) %% 3
-#	#print(concat(start,':',end))
-#	#start <- offset + start
-#	#end <- offset + end
-#	#return(seq(start,end,3))
-#	positions <- data.frame()
-#	codon <- start/3
-#	for (position in seq(start,end,3))
-#	{
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=offset + position, relpos=position))
-#		codon <- codon + 1
-#	}
-#	#rownames(positions) <- positions$ntnum
-#	return(positions)
-#}
-##getCodonPositionsForRegion('NS3aa36')
 
 getCodonPositionsForRegion <- function(region)
 {
@@ -416,16 +387,18 @@ extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 
 ################################################################################
 
-
 appendSampleParams <- function(counts, params)
 {
 	counts$subject <- as.character(params@subject)
 	counts$sample <- as.character(params@sample)
 	counts$region <- as.character(params@region)
+	cols <- names(counts)
+	cols <- c('subject','sample','region',cols[1:(length(cols)-3)])
+	counts <- counts[,cols]
 	return(counts)
 }
 
-createNtCountTable <- function(data, params)
+createNtCountTableAlt <- function(data, params)
 {
 	region <- params@region
 	start <- regions[region,'start']
@@ -464,7 +437,46 @@ createNtCountTable <- function(data, params)
 	table <- appendSampleParams(table, params)
 	return(table)
 }
-#table.nt <- createNtCountTable(data, 'NS3aa36')
+#table.nt <- createNtCountTableAlt(data, 'NS3aa36')
+
+createNtCountTable <- function(data, params)
+{
+	region <- params@region
+	start <- regions[region,'start']
+	end <- regions[region,'end']	
+	data <- subset(data, position >= start & position <= end)
+	
+	counts <- data.frame()
+	positions <- getCodonPositionsForRegion(params@region)
+	for (ntnum in positions$ntnum)
+	{
+		aanum <- positions[which(positions$ntnum==ntnum),'codon']
+		for (offset in 0:2)
+		{
+			ntnum2 <- ntnum + offset			
+			nt <- data[which(data$position==ntnum2),'nt']
+			if (params@drop.ambig)
+				nt <- removeAmbiguousCodons(nt)
+			freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
+			total <- sum(freqs)
+			
+			rank <- 1
+			for (base in names(freqs))
+			{
+				count <- freqs[base]
+				freq <- count/total
+				row <- data.frame(ntnum=ntnum, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
+				counts <- rbind(counts,row)
+				rank <- rank +1
+			}
+		}
+	}
+	counts$nt <- as.character(counts$nt)
+	counts$ntnum <- factor(counts$ntnum)
+	counts$aanum <- factor(counts$aanum)
+	counts <- appendSampleParams(counts, params)
+	return(counts)
+}
 
 createCodonCountTable <- function(data, params)
 {
@@ -561,7 +573,6 @@ count_codons_for_subject <- function(params)
 	if (is.character(params))
 		params <- new('sampleparams', subject=params)
 	print(concat('count_codons_for_subject: ',as.character(params@subject)))
-	#table.nt <- data.frame()
 	variantdata <- new('variantdata')
 	for (sample in samples[which(samples$subject == params@subject),'sample'])
 	{
