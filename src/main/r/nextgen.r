@@ -397,47 +397,47 @@ appendSampleParams <- function(counts, params)
 	counts <- counts[,cols]
 	return(counts)
 }
-
-createNtCountTableAlt <- function(data, params)
-{
-	region <- params@region
-	start <- regions[region,'start']
-	end <- regions[region,'end']	
-	data <- subset(data, position >= start & position <= end)
-	
-	data$nt <- factor(data$nt, levels=c('A','C','G','T','N'))
-	table <- xtabs(~position + nt, data)
-	
-	for (nt in c('A','C','G','T','N'))
-	{
-		table[,nt] <- ifelse(table[,nt] > params@nt.cutoff, table[,nt], 0)
-	}
-	position <- as.numeric(rownames(table))
-	total <- apply(table, 1, sum)
-	
-	top1 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[1]]})
-	top2 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[2]]})
-	top3 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[3]]})
-	top4 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[4]]})
-	top5 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[5]]})
-	
-	table <- cbind(table,position)
-	table <- cbind(table,top1)
-	table <- cbind(table,top2)
-	table <- cbind(table,top3)
-	table <- cbind(table,top4)
-	table <- cbind(table,top5)
-	table <- cbind(table,total)
-	table <- data.frame(table)
-	
-	positions <- getCodonPositionsForRegion(region)
-	table$codon <- sapply(table$position, function(ntnum){
-				return(positions[which(positions$ntnum <= ntnum & positions$ntnum+2 >= ntnum),'codon'])
-			})
-	table <- appendSampleParams(table, params)
-	return(table)
-}
-#table.nt <- createNtCountTableAlt(data, 'NS3aa36')
+#
+#createNtCountTableAlt <- function(data, params)
+#{
+#	region <- params@region
+#	start <- regions[region,'start']
+#	end <- regions[region,'end']	
+#	data <- subset(data, position >= start & position <= end)
+#	
+#	data$nt <- factor(data$nt, levels=c('A','C','G','T','N'))
+#	table <- xtabs(~position + nt, data)
+#	
+#	for (nt in c('A','C','G','T','N'))
+#	{
+#		table[,nt] <- ifelse(table[,nt] > params@nt.cutoff, table[,nt], 0)
+#	}
+#	position <- as.numeric(rownames(table))
+#	total <- apply(table, 1, sum)
+#	
+#	top1 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[1]]})
+#	top2 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[2]]})
+#	top3 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[3]]})
+#	top4 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[4]]})
+#	top5 <- apply(table, 1, function(values){sort(values, decreasing=TRUE)[[5]]})
+#	
+#	table <- cbind(table,position)
+#	table <- cbind(table,top1)
+#	table <- cbind(table,top2)
+#	table <- cbind(table,top3)
+#	table <- cbind(table,top4)
+#	table <- cbind(table,top5)
+#	table <- cbind(table,total)
+#	table <- data.frame(table)
+#	
+#	positions <- getCodonPositionsForRegion(region)
+#	table$codon <- sapply(table$position, function(ntnum){
+#				return(positions[which(positions$ntnum <= ntnum & positions$ntnum+2 >= ntnum),'codon'])
+#			})
+#	table <- appendSampleParams(table, params)
+#	return(table)
+#}
+##table.nt <- createNtCountTableAlt(data, 'NS3aa36')
 
 createNtCountTable <- function(data, params)
 {
@@ -450,26 +450,29 @@ createNtCountTable <- function(data, params)
 	positions <- getCodonPositionsForRegion(params@region)
 	for (ntnum in positions$ntnum)
 	{
-		aanum <- positions[which(positions$ntnum==ntnum),'codon']
-		for (offset in 0:2)
-		{
-			ntnum2 <- ntnum + offset			
-			nt <- data[which(data$position==ntnum2),'nt']
-			if (params@drop.ambig)
-				nt <- removeAmbiguousCodons(nt)
-			freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
-			total <- sum(freqs)
-			
-			rank <- 1
-			for (base in names(freqs))
+		try({
+			aanum <- positions[which(positions$ntnum==ntnum),'codon']
+			for (offset in 0:2)
 			{
-				count <- freqs[base]
-				freq <- count/total
-				row <- data.frame(ntnum=ntnum, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
-				counts <- rbind(counts,row)
-				rank <- rank +1
+				ntnum2 <- ntnum + offset
+				nt <- data[which(data$position==ntnum2),'nt']
+				#print(head(nt))
+				#if (params@drop.ambig)
+				#	nt <- removeAmbiguousCodons(nt)
+				#print(concat('nt vector length: ',length(nt)))
+				freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
+				total <- sum(freqs)				
+				rank <- 1
+				for (base in names(freqs))
+				{
+					count <- freqs[base]
+					freq <- count/total
+					row <- data.frame(ntnum=ntnum, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
+					counts <- rbind(counts,row)
+					rank <- rank +1
+				}
 			}
-		}
+		}, silent=FALSE)
 	}
 	counts$nt <- as.character(counts$nt)
 	counts$ntnum <- factor(counts$ntnum)
@@ -558,6 +561,7 @@ count_codons_for_sample <- function(params, variantdata)
 	ref <- samples[sample,'ref'] # look up the ref for the sample
 	filename <- concat(variants.dir,sample,'.',ref,'.txt'); print(filename) # load the corresponding data file
 	data <- loadDataFrame(filename)
+	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
 	# each sample has several runs targeting different regions
 	for (region in runs[runs[,'sample']==sample,'region'])
 	{
@@ -580,9 +584,9 @@ count_codons_for_subject <- function(params)
 		try({variantdata <- count_codons_for_sample(params, variantdata)}, silent=FALSE)
 	}
 	out.dir <- params@out.dir
-	writeTable(variantdata@nt, concat(out.dir,'nt.',params@subject,'.txt'), row.names=FALSE)
-	writeTable(variantdata@codons, concat(out.dir,'codons.',params@subject,'.txt'), row.names=FALSE)
-	writeTable(variantdata@aa, concat(out.dir,'aa.',params@subject,'.txt'), row.names=FALSE)
+	writeTable(variantdata@nt, concat(out.dir,params@subject,'.nt.txt'), row.names=FALSE)
+	writeTable(variantdata@codons, concat(out.dir,params@subject,'.codons.txt'), row.names=FALSE)
+	writeTable(variantdata@aa, concat(out.dir,params@subject,'.aa.txt'), row.names=FALSE)
 	return(variantdata)
 }
 #variantdata <- count_codons_for_subject('218-7')
