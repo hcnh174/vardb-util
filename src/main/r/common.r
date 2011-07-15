@@ -17,6 +17,7 @@ library(R.oo)
 #library(HH)
 #library(rrcov)
 
+lattice.options(default.args = list(as.table = TRUE))
 options(contrasts=c("contr.sum","contr.poly"))
 
 loadUtilFiles <- function(filenames)
@@ -629,3 +630,20 @@ appendFile <- function(file, ...)
 	print(concat(...))
 	cat(...,'\n', sep='', file=file, append=TRUE)
 }
+
+#http://r.789695.n4.nabble.com/Lattice-histogram-with-vertical-lines-td876969.html
+addLine<- function(a=NULL, b=NULL, v = NULL, h = NULL, ..., once=F)
+{
+	tcL <- trellis.currentLayout()
+	k<-0
+	for(i in 1:nrow(tcL))
+		for(j in 1:ncol(tcL))
+			if (tcL[i,j] > 0) {
+				k<-k+1
+				trellis.focus("panel", j, i, highlight = FALSE)
+				if (once) panel.abline(a=a[k], b=b[k], v=v[k], h=h[k], ...) else
+					panel.abline(a=a, b=b, v=v, h=h, ...)
+				trellis.unfocus()
+			}
+}
+

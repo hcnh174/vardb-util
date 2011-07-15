@@ -165,3 +165,38 @@ getMethod("show", "pixmap")
 
 df[grep("trna", df$common_name, ignore.case=T),]
 
+
+##########################################
+
+# from R.bloggers 7/15/2011
+library(affydata)
+data(Dilution)
+Dilution
+phenoData(Dilution)
+pData(Dilution)
+
+# first plot
+boxplot(Dilution,col=c(2,2,3,3))
+##pick only a few genes to reduce calculation time
+gn <- sample(geneNames(Dilution),100)
+pms <- pm(Dilution[,3:4], gn)
+mva.pairs(pms)
+
+#normalization
+normalized.Dilution &lt;- Biobase::combine(normalize(Dilution[, 1:2]),
+		normalize(Dilution[, 3:4]))
+normalize.methods(Dilution)
+
+#second plot
+boxplot(normalized.Dilution, col=c(2,2,3,3), main="Normalized Arrays")
+pms <- pm(normalized.Dilution[, 3:4],gn)
+mva.pairs(pms)
+
+#######################################################################
+
+if (!require('RJSONIO')) install.packages('RJSONIO', repos = 'http://cran.r-project.org')
+if (!require('png')) install.packages('png', repos = 'http://cran.r-project.org')
+if (!require('ReadImages')) install.packages('ReadImages', repos = 'http://cran.r-project.org')
+install.packages("RXKCD", repos="http://R-Forge.R-project.org")
+
+

@@ -5,9 +5,18 @@ library(seqinr)
 setClass("variantdata", representation(nt="data.frame", codons="data.frame", aa="data.frame"))
 
 setClass("sampleparams",
-		representation(subject='character', sample='character', region='character', drop.ambig='logical', nt.cutoff='numeric', out.dir='character'),
-		prototype(drop.ambig=TRUE, nt.cutoff=0, out.dir='out/'))
+		representation(subject='character',
+				sample='character',
+				week='numeric',
+				region='character',
+				drop.ambig='logical',
+				nt.cutoff='numeric',
+				out.dir='character'),
+		prototype(drop.ambig=TRUE,
+				nt.cutoff=0,
+				out.dir='out/'))
 
+counts.dir <- 'counts/' 
 config.dir <- 'config/'
 variants.dir <- 'variants/'
 
@@ -144,7 +153,6 @@ preprocess2 <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HW
 	appendFile('', file=file)
 	#appendFile('rm -r ',temp.dir,'/*', file=file)
 }
-
 
 #########################################################################3
 
@@ -391,9 +399,10 @@ appendSampleParams <- function(counts, params)
 {
 	counts$subject <- as.character(params@subject)
 	counts$sample <- as.character(params@sample)
+	counts$week <- as.character(params@week)
 	counts$region <- as.character(params@region)
 	cols <- names(counts)
-	cols <- c('subject','sample','region',cols[1:(length(cols)-3)])
+	cols <- c('subject','sample','week','region',cols[1:(length(cols)-4)])
 	counts <- counts[,cols]
 	return(counts)
 }
@@ -469,7 +478,7 @@ createNtCountTable <- function(data, params)
 					freq <- count/total
 					row <- data.frame(ntnum=ntnum, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
 					counts <- rbind(counts,row)
-					rank <- rank +1
+					rank <- rank+1
 				}
 			}
 		}, silent=FALSE)
@@ -525,14 +534,16 @@ createAminoAcidCountTable <- function(data, params)
 		aanum <- positions[which(positions$ntnum==ntnum),'codon']
 		aa <- sapply(codons,translateCodon)
 		freqs <- sort(xtabs(as.data.frame(aa)), decreasing=TRUE)
-		total <- sum(freqs)		
+		total <- sum(freqs)
+		rank <- 1
 		for (aa in names(freqs))
 		{
 			count <- freqs[aa]
 			#print(attributes(count))
 			freq <- count/total
-			row <- data.frame(ntnum=ntnum, aanum=aanum, aa=aa, count=count, freq=freq)
+			row <- data.frame(ntnum=ntnum, aanum=aanum, aa=aa, rank=rank, count=count, freq=freq)
 			counts <- rbind(counts,row)
+			rank <- rank +1
 		}
 	}
 	counts$ntnum <- factor(counts$ntnum)
@@ -581,9 +592,11 @@ count_codons_for_subject <- function(params)
 	for (sample in samples[which(samples$subject == params@subject),'sample'])
 	{
 		params@sample <- sample
+		params@week <- samples[sample,'week']
 		try({variantdata <- count_codons_for_sample(params, variantdata)}, silent=FALSE)
 	}
 	out.dir <- params@out.dir
+	#out.dir <- counts.dir
 	writeTable(variantdata@nt, concat(out.dir,params@subject,'.nt.txt'), row.names=FALSE)
 	writeTable(variantdata@codons, concat(out.dir,params@subject,'.codons.txt'), row.names=FALSE)
 	writeTable(variantdata@aa, concat(out.dir,params@subject,'.aa.txt'), row.names=FALSE)
