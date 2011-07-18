@@ -13,6 +13,8 @@ install.packages('gvlma')
 install.packages('coin')
 install.packages('gsubfn')
 install.packages('seqinr')
+install.packages('googleVis')
+install.packages('ROCR')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
