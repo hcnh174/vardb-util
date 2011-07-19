@@ -61,148 +61,6 @@ loadRefs <- function(filename)
 	return(data)
 }
 
-#config <- new('nextgenconfig')
-
-#counts.dir <- 'counts/' 
-#config.dir <- 'config/'
-#variants.dir <- 'variants/'
-#
-#loadRuns <- function(filename=concat(config.dir,'runs.txt'))
-#{
-#	data <- loadDataFrame(filename, idcol='run', stringsAsFactors=FALSE)
-#	rownames(data) <- data$run
-#	return(data)
-#}
-#
-#loadRefs <- function(filename=concat(config.dir,'refs.fasta'))
-#{
-#	data <- data.frame()
-#	sequences <- read.fasta(file = filename, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
-#	for (id in names(sequences))
-#	{
-#		data[id,'sequence'] <- sequences[[id]][1]
-#	}
-#	return(data)
-#}
-#
-#loadSamples <- function(filename=concat(config.dir,'samples.txt'))
-#{
-#	data <- loadDataFrame(filename, idcol='sample', stringsAsFactors=FALSE)
-#	rownames(data) <- data$sample
-#	return(data)
-#}
-#
-#
-#
-#loadRegions <- function(filename=concat(config.dir,'regions.txt'))
-#{
-#	data <- loadDataFrame(filename, idcol='region', stringsAsFactors=FALSE)
-#	rownames(data) <- data$region
-#	return(data)
-#}
-#
-#loadVariants <- function(filename=concat(config.dir,'variants.txt'))
-#{
-#	data <- loadDataFrame(filename, stringsAsFactors=FALSE)
-#	return(data)
-#}
-#
-#loadTiters <- function(filename=concat(config.dir,'titers.txt'))
-#{
-#	data <- loadDataFrame(filename)
-#	return(data)
-#}
-#
-#loadTreatments <- function(filename=concat(config.dir,'treatments.txt'))
-#{
-#	data <- loadDataFrame(filename)
-#	return(data)
-#}
-
-#############################################################################
-#
-#preprocess <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
-#		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
-#{
-#	samples <- loadSamples()
-#	cat('', file=file)
-#	appendFile('cd ',dir, file=file)
-#	appendFile('mkdir ',temp.dir, file=file)
-#	appendFile('mkdir ',fastq.dir, file=file)
-#	appendFile('rm -r ',temp.dir,'/*', file=file)
-#	appendFile('rm ',fastq.dir,'/*', file=file)
-#	#cat('mkdir ',fastq.dir,'\n', sep='', file=file, append=TRUE)
-#	for (identifier in samples$identifier)
-#	{
-#		row <- samples[identifier,]
-#		dir.to <- concat(dir,temp.dir,'/',identifier)
-#		project <- row$project
-#		barcode <- row$barcode
-#		lane <- row$lane
-#		dir.from <- concat(dir,path,'/Project_',project,'/Sample_',project,'/')
-#		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
-#		
-#		appendFile('mkdir ',dir.to, file=file)
-#		appendFile('cd ',dir.from, file=file)
-#		appendFile('cp ',filename,' ',dir.to, file=file)
-#		appendFile('gunzip ',dir.to,'/*', file=file)
-#		appendFile('cat ',dir.to,'/* > ',dir,fastq.dir,'/',identifier,'.fq', file=file)
-#		appendFile('cd ',dir, file=file)
-#		appendFile('', file=file)
-#	}
-#}
-
-# copy all files from the same sample (subject + date) to the same folder
-#preprocess2 <- function(dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
-#		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
-#{
-#	runs <- loadRuns()
-#	createFile(file=file)
-#	appendFile('cd ',dir, file=file)
-#	appendFile('mkdir ',temp.dir, file=file)
-#	appendFile('mkdir ',fastq.dir, file=file)
-#	appendFile('rm -r ',temp.dir,'/*', file=file)
-#	appendFile('rm ',fastq.dir,'/*', file=file)
-#	
-#	for (sample in unique(runs$sample))
-#	{
-#		dir.to <- concat(temp.dir,'/',sample)
-#		appendFile('mkdir ',dir.to, file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (run in rownames(runs))
-#	{
-#		row <- runs[run,]
-#		sample <- row$sample
-#		dir.to <- concat(temp.dir,'/',sample)
-#		project <- row$project
-#		barcode <- row$barcode
-#		lane <- row$lane		
-#		dir.from <- concat(path,'/Project_',project,'/Sample_',project,'/')
-#		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
-#		
-#		appendFile('cp ',dir.from,filename,' ',dir.to, file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (sample in unique(runs$sample))
-#	{
-#		dir.from <- concat(temp.dir,'/',sample)
-#		appendFile('gunzip ',dir.from,'/*', file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (sample in unique(runs$sample))
-#	{
-#		dir.from <- concat(temp.dir,'/',sample)
-#		appendFile('cat ',dir.from,'/* > ',fastq.dir,'/',sample,'.fastq', file=file)
-#		
-#	}
-#	appendFile('', file=file)
-#	#appendFile('rm -r ',temp.dir,'/*', file=file)
-#}
-
 # copy all files from the same sample (subject + date) to the same folder
 preprocess <- function(config, dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
 		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
@@ -307,44 +165,6 @@ makeVariantsForRef <- function(config,refid)
 #makeVariantsForRef(config,'NS3aa156')
 #makeVariantsForRef(config,'KT9')
 
-#
-## makes variant reference sequences using all possible combinations of specified variants codons
-#makeVariantsForRef <- function(config,refid)
-#{
-#	print(concat('makeVariantsForRef.refid=',refid))
-#	refs <- config@refs
-#	variants <- config@variants
-#	# extract reference sequence
-#	sequence <- tolower(refs[refid,'sequence'])
-#	#aastart <- as.numeric(refs[refid,'aastart'])
-#	# divide into codons
-#	codons <- strapply(sequence, "...")[[1]]
-#	sets <- list()
-#	for (no in 1:length(codons))
-#	{
-#		aa <- no + aastart - 1
-#		sets[[paste('aa',aa,sep='')]] <- codons[no]
-#	}
-#	#print(sets)	
-#	
-#	# get variants for the current reference sequence
-#	ref.variants <- subset(variants,ref==refid)
-#	#set the codon position as the rowname
-#	rownames(ref.variants) <- ref.variants$codon
-#	for (codon in rownames(ref.variants))
-#	{	
-#		aa <- paste('aa',codon,sep='')
-#		sets[[aa]] <- appendUniqueValues(sets[[aa]], tolower(ref.variants[codon,'variants']))
-#	}
-#	# expand the grid to try every combination
-#	varseqs <- expand.grid(sets)
-#	# convert the grid to strings instead of factors so can be concatenated
-#	varseqs <- data.frame(lapply(varseqs, as.character), stringsAsFactors=FALSE)
-#	return(varseqs)
-#}
-##makeVariantsForRef('KT9',refs,variants)
-
-
 writeVariantsForRef <- function(config, refid, varseqs)
 {
 	ref.dir <- config@ref.dir
@@ -357,27 +177,6 @@ writeVariantsForRef <- function(config, refid, varseqs)
 		write.fasta(s2c(varseq), name, file.out=filename)
 	}
 }
-
-## determine varref names by counting how many variants are present for a particular sample
-#getVarRefNames <- function(config, ref)
-#{
-#	#refs <- loadRefs()
-#	#variants <- loadVariants()
-#	#refs <- config@refs
-#	#variants <- variants
-#	#varseqs <- makeVariantsForRef(ref,refs,variants)
-#	varseqs <- makeVariantsForRef(config,ref)
-#	print(concat('getVarRefNames.ref=',ref))
-#	if (nrow(varseqs)==0)
-#		return(ref)
-#	refnames <- c()
-#	for (index in 1:nrow(varseqs))
-#	{
-#		refnames <- c(refnames,getVarRefName(ref,index))
-#	}
-#	return(refnames)
-#}
-
 
 # determine varref names by counting how many variants are present for a particular sample
 getVarRefNames <- function(config, ref)
@@ -545,36 +344,6 @@ plotReadDistributions <- function(filename="histograms.pdf")
 }
 
 ####################################################################
-#
-#getCodonPositionsForRegion <- function(region)
-#{
-#	offset <- 0
-#	parent <- regions[region,'parent']
-#	if (!is.na(parent))
-#		offset <- regions[parent,'start']
-#	start <- regions[region,'start'] - offset
-#	end <- regions[region,'end'] - offset
-#	#print(concat(start,':',end))
-#	sequence <- extractSequence(refs['KT9','sequence'], regions[region,'start'], regions[region,'end'])
-#	#print(sequence)
-#	#print(translateCodon(sequence))
-#	positions <- data.frame()
-#	codon <- start/3 + 1
-#	if (start %% 3 !=0)
-#		stop(concat('start number is not a multiple of 3: ',start,' in region ',region))
-#	for (position in seq(start,end,3))
-#	{
-#		refcodon <- extractSequence(refs['KT9','sequence'], offset+position, offset+position+2)
-#		refaa <- translateCodon(refcodon)
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=offset+position, relpos=position, refcodon=refcodon, refaa=refaa))
-#		codon <- codon + 1
-#	}	
-#	return(positions)
-#}
-##head(getCodonPositionsForRegion('NS3aa156'))
-#head(getCodonPositionsForRegion('NS3aa36'))
-#head(getCodonPositionsForRegion('NS5Aaa31'))
-#head(getCodonPositionsForRegion('NS5Aaa93'))
 
 getCodonPositionsForRegion <- function(config, region)
 {
