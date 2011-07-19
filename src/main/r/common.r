@@ -1,18 +1,15 @@
-#install.packages('mice')
-
-#library(Design)
 library(car)
 library(MASS)
 library(lattice)
+library(R.oo)
+
 #library(rcom)
 #library(agce)
 #library(leaps)
 #library(corrgram)
 #library(vcd)
-library(R.oo)
 #library(reshape)
 #library(doBy)
-
 #library(gplot)
 #library(HH)
 #library(rrcov)
@@ -34,28 +31,16 @@ setCurDir <- function(dir)
 	setwd(paste(Sys.getenv("ANALYSIS_HOME"),'/',dir,'/',sep=''))
 }
 
-loadDataFrame <- function(filename, stringsAsFactors=default.stringsAsFactors())
+loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.stringsAsFactors())
 {
 	dataframe <- read.table(filename, header=TRUE, encoding='UTF-8', sep = '\t', comment.char='', stringsAsFactors=stringsAsFactors)
+	if (!is.null(idcol))
+		rownames(dataframe) <- dataframe[[idcol]]
 	return(dataframe)
 }
 
 #temporarily alias the old version
 loadDataframe <- loadDataFrame
-
-#plotDistribution <- function(values, ylab='values')
-#{	
-#	values <- values[!is.na(values)];
-#	print(outlier.test(lm(values ~ 1)))
-#	oldpar <- par(mfrow=c(1,2))
-#	qqnorm(values, ylab=ylab)
-#	qqline(values)
-#	hist(values)
-#	par(oldpar)
-#	#if (min(values>0))
-##		print(powerTransform(values))
-#	print(sort(values))
-#}
 
 # check normality
 plotDistribution <- function(values, ylab='values')
