@@ -585,9 +585,17 @@ estimateReadCount <- function(mb)
 	return(round(mb*7757))
 }
 #estimateReadCount(112.5)
+#reportAminoAcidChange(config,'PXB0218-0007','NS3aa156',156)
 
-reportAminoAcidChange <- function(config, subject, region, aanum, log=TRUE, updown=5)
+
+
+
+reportAminoAcidChange <- function(config, subject, region, log=TRUE, updown=5)
 {
+	aanum <- config@regions[region,'focus']
+	if (!is.integer(aanum))
+		stop(concat('cannot find focus aanum for region: ',region,' (',aanum,')'))
+	aanum <- as.integer(aanum)	
 	start <- aanum - updown
 	end <- aanum + updown
 	filename <- concat(config@counts.dir,subject,'.aa.txt')
@@ -596,24 +604,43 @@ reportAminoAcidChange <- function(config, subject, region, aanum, log=TRUE, updo
 	data.subset <- subset(data, region==rgn & aanum >= start & aanum <= end)
 	data.subset$replicate <- factor(data.subset$replicate)
 	data.subset$aanum <- factor(data.subset$aanum)
+	print(data.subset[which(data.subset$aanum==aanum),splitFields('replicate,rank,aa,count,freq')])
 	#print(head(data.subset))
 	numcol <- length(unique(data.subset$rank))
-	print(numcol)
 	col <- gray(numcol:0 / numcol)
-	print(col)
 	if (log)
 		frmla <- as.formula(log10(count) ~ aanum | replicate)
 	else frmla <- as.formula(count ~ aanum | replicate)	
 	chrt <- barchart(frmla, data.subset, group=rank,
-			horizontal=FALSE, stack=TRUE, main=subject, xlab='aa number',
+			horizontal=FALSE, stack=TRUE, main=subject, xlab='Amino acid number', sub=region,
 			col=col, strip=FALSE, strip.left=TRUE, #strip.text = list(cex = 0.75),
 			#auto.key = list(space = "right"),
 			layout = c(1,length(unique(data.subset$replicate))))
 	print(chrt)
 	addLine(v=aanum - start + 1 - 0.5, col='red', lty=2)
 	addLine(v=aanum - start + 1 + 0.5, col='red', lty=2)
+	return(data.subset)
 }
-#reportAminoAcidChange(config,'PXB0218-0007','NS3aa156',156)
+#reportAminoAcidChange(config,'PXB0218-0007','NS3aa156')
 
 
+reportAminoAcidChanges <- function(config, subject=NULL, ...)
+{
+	if (is.null(subject))
+		subjects <- unique(config@samples$subject)
+	else subects <- c(subject)
+	for (subject in subjects)
+	{
+		filename <- concat(config@out.dir,subject,'.pdf')
+		pdf(filename)
+		samples <- config@samples[which(config@samples$subject==subject),'sample']
+		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
+		for (region in regions)
+		{
+			reportAminoAcidChange(config, subject, region, ...)
+		}
+		dev.off()
+	}
+}
+#reportAminoAcidChanges(config, 'PXB0218-0007', log=FALSE)
 
