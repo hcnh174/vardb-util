@@ -22,6 +22,9 @@ biocLite("statmod")
 biocLite("RmiR")
 biocLite("hgu133plus2.db")
 
+install.packages('R2wd')
+installstatconnDCOM()
+
 #install.packages('agce')
 #install.packages('leaps')
 #install.packages('corrgram')

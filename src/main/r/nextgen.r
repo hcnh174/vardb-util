@@ -2,6 +2,7 @@ library(gsubfn)
 library(seqinr)
 library(methods)
 library(reshape)
+library(R2wd)
 
 setClass("variantdata", representation(nt="data.frame", codons="data.frame", aa="data.frame"))
 
@@ -730,85 +731,168 @@ makeAminoAcidBarcharts <- function(config, subject=NULL, ...)
 {
 	if (is.null(subject))
 		subjects <- unique(config@samples$subject)
-	else subjects <- c(subject)
+	else subjects <- splitFields(subject)
+	if (length(subjects)==1)
+		filename <- concat(config@out.dir,concat('barcharts.',subjects[1],'.aa.pdf'))
+	else filename <- concat(config@out.dir,'barcharts.aa.pdf')
+	pdf(filename)
 	for (subject in subjects)
 	{
-		filename <- concat(config@out.dir,subject,'.aa2.pdf')
-		pdf(filename)
+		#filename <- concat(config@out.dir,subject,'.aa2.pdf')
+		#pdf(filename)
 		samples <- config@samples[which(config@samples$subject==subject),'sample']
 		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
 		for (region in regions)
 		{
 			makeAminoAcidBarchart(config, subject, region, ...)
 		}
-		dev.off()
+		#dev.off()
 	}
+	dev.off()
 }
 #makeAminoAcidBarcharts(config, 'PXB0218-0007')
+#makeAminoAcidBarcharts(config)
 
 makeCodonBarcharts <- function(config, subject=NULL, ...)
 {
 	if (is.null(subject))
 		subjects <- unique(config@samples$subject)
-	else subjects <- c(subject)
+	else subjects <- splitFields(subject)
+	if (length(subjects)==1)
+		filename <- concat(config@out.dir,concat('barcharts.',subjects[1],'.codons.pdf'))
+	else filename <- concat(config@out.dir,'barcharts.codons.pdf')
+	pdf(filename)
 	for (subject in subjects)
 	{
-		filename <- concat(config@out.dir,subject,'.codons2.pdf')
-		pdf(filename)
+		#filename <- concat(config@out.dir,subject,'.codons2.pdf')
+		#pdf(filename)
 		samples <- config@samples[which(config@samples$subject==subject),'sample']
 		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
 		for (region in regions)
 		{
 			makeCodonBarchart(config, subject, region, ...)
 		}
-		dev.off()
+		#dev.off()
 	}
+	dev.off()
 }
 #makeCodonBarcharts(config, 'PXB0218-0007')
+#makeCodonBarcharts(config)
 
 #############################################################3
 
-
-
-makeAminoAcidTables <- function(config, subject=NULL, ...)
+makeCodonTable <- function(config, subject, region, cutoff=2)
 {
-	if (is.null(subject))
-		subjects <- unique(config@samples$subject)
-	else subjects <- c(subject)
-	for (subject in subjects)
-	{
-		filename <- concat(config@out.dir,subject,'.aa.txt')
-		samples <- config@samples[which(config@samples$subject==subject),'sample']
-		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
-		for (region in regions)
-		{
-			tbl <- makeAminoAcidTable(config, subject, region, ...)
-			print(concat('subject: ',subject))
-			print(concat('region: ',region))
-			print(tbl)
-		}
-	}
+	aanum <- as.integer(config@regions[region,'focus'])
+	data.subset <- getCodonCountSubset(config,subject,region,'codons',aanum,cutoff=cutoff)
+	counts <- cast(data.subset, codon ~ replicate, value='count', fun.aggregate=function(x) return(x[1])); counts
+	counts <- counts[order(counts[,2], decreasing=TRUE),]
+	return(counts)
 }
-#makeAminoAcidTables(config, 'PXB0218-0007')
+#makeCodonTable(config,'PXB0218-0007','NS3aa156')
+
+makeAminoAcidTable <- function(config, subject, region, cutoff=2)
+{
+	aanum <- as.integer(config@regions[region,'focus'])
+	data.subset <- getCodonCountSubset(config,subject,region,'aa',aanum, cutoff=cutoff)
+	counts <- cast(data.subset, aa ~ replicate, value='count', fun.aggregate=function(x) return(x[1])); counts
+	counts <- counts[order(counts[,2], decreasing=TRUE),]
+	return(counts)
+}
+#makeAminoAcidTable(config,'PXB0218-0007','NS3aa156')
 
 
 makeCodonTables <- function(config, subject=NULL, ...)
 {
 	if (is.null(subject))
 		subjects <- unique(config@samples$subject)
-	else subjects <- c(subject)
+	else subjects <- splitFields(subject)
+	tables <- list()
 	for (subject in subjects)
 	{
 		filename <- concat(config@out.dir,subject,'.aa.txt')
 		samples <- config@samples[which(config@samples$subject==subject),'sample']
 		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
+		tables[[subject]] <- list()
 		for (region in regions)
 		{
 			tbl <- makeCodonTable(config, subject, region, ...)
-			print(concat('subject: ',subject))
-			print(concat('region: ',region))
-			print(tbl)
+			tables[[subject]][[region]] <- tbl
 		}
 	}
+	return(tables)
 }
-#makeCodonTables(config, 'PXB0218-0007')
+#tables <- makeCodonTables(config, 'PXB0218-0007')
+
+makeAminoAcidTables <- function(config, subject=NULL, ...)
+{
+	if (is.null(subject))
+		subjects <- unique(config@samples$subject)
+	else subjects <- splitFields(subject)
+	tables <- list()
+	for (subject in subjects)
+	{
+		filename <- concat(config@out.dir,subject,'.aa.txt')
+		samples <- config@samples[which(config@samples$subject==subject),'sample']
+		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
+		tables[[subject]] <- list()
+		for (region in regions)
+		{
+			tbl <- makeAminoAcidTable(config, subject, region, ...)
+			tables[[subject]][[region]] <- tbl
+			#print(concat('subject: ',subject))
+			#print(concat('region: ',region))
+			#print(tbl)
+		}
+	}
+	return(tables)
+}
+#tables <- makeAminoAcidTables(config, 'PXB0218-0007')
+
+appendVariantTablesToWord <- function(tables)
+{
+	for (subject in names(tables))
+	{
+		wdHeading(level=2,concat('Subject: ',subject))
+		for (region in names(tables[[subject]]))
+		{
+			wdHeading(level=2,concat('Region: ',region))
+			tbl <- format(tables[[subject]][[region]])
+			wdTable(tbl)
+		}
+		wdPageBreak()
+	}
+}
+
+#http://www.r-bloggers.com/exporting-r-output-to-ms-word-with-r2wd-an-example-session/
+wdBody.anything <- function(output)
+{
+	# This function takes the output of an object and prints it line by line into the word document
+	# Notice that in many cases you will need to change the text font into courier new roman...
+	a <- capture.output(output)
+	for(i in seq_along(a))
+	{
+		wdBody(format(a[i]))
+	}
+}
+
+
+outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc')
+{
+	filename <- concat(getwd(),'/',config@out.dir,filename)
+	
+	codon.tables <- makeCodonTables(config,subjects)
+	aa.tables <- makeAminoAcidTables(config,subjects)
+	
+	wdGet(visible=FALSE)
+	wdNewDoc(filename)
+	wdSection('Codon tables', newpage=FALSE)
+	appendVariantTablesToWord(codon.tables)
+	wdSection('Amino acid tables', newpage=TRUE)
+	appendVariantTablesToWord(aa.tables)
+	wdSave(filename)
+	wdQuit()
+}
+#outputVariantTablesToWord()
+
+
