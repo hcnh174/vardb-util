@@ -15,6 +15,7 @@ install.packages('gsubfn')
 install.packages('seqinr')
 install.packages('googleVis')
 install.packages('ROCR')
+install.packages('latticeExtra')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
@@ -23,6 +24,7 @@ biocLite("RmiR")
 biocLite("hgu133plus2.db")
 
 install.packages('R2wd')
+library(R2wd)
 installstatconnDCOM()
 
 #install.packages('agce')
