@@ -33,12 +33,11 @@ plotIndividualTrendDataBySnp <- function(data,responsetype,snps=NULL,numweeks=2)
 {
 	if (is.null(snps))
 		snps=getSnpIds(data)
-	oldpar <- par(ask=T)
+	oldpar <- par(ask=T); on.exit(par(oldpar))
 	for (snp in snps)
 	{
 		plotIndividualTrendData(data,responsetype,snp,numweeks)
 	}
-	par(oldpar)
 }
 
 plotIndividualTrendLines <- function(data024,iids,color,numweeks)

@@ -49,27 +49,27 @@ plotDistribution <- function(values, ylab='values')
 	print(sort(values))
 	log.values <- log(values)
 	print(outlierTest(lm(values ~ 1)))
-	oldpar <- par(mfrow=c(1,3))
+	oldpar <- par(mfrow=c(1,3)); on.exit(par(oldpar))	
 	qqnorm(values, ylab=ylab)
 	try(qqline(values),silent=T)
 	hist(values)
 	qqnorm(log.values, ylab=ylab)
 	try(qqline(log.values),silent=T)
-	par(mfrow=c(1,1))
+	#par(mfrow=c(1,1))
 	if (min(values>0))
 		print(powerTransform(values))
 }
 
 plotDistributions <- function(dataframe, fields)
 {
-	oldpar <- par(ask=T)
+	oldpar <- par(ask=T); on.exit(par(oldpar))
 	for (field in splitFields(fields))
 	{
 		print('******************************')
 		print(field)
 		plotDistribution(dataframe[,field], field)
 	}
-	par(oldpar)
+	#par(oldpar)
 }
 
 # automate regression tests
@@ -310,7 +310,7 @@ findBestCutpoint <- function(data, response, field, show.plot=F, show.table=F)
 findFieldsWithBestCutpoint <- function(data,response,fields,show.plot=F)
 {
 	if (show.plot)
-		par(ask=T)
+		{oldpar <- par(ask=T); on.exit(par(oldpar))}
 	pvalues <- data.frame(field=fields, row.names=fields)
 	for (field in fields)
 	{
@@ -322,7 +322,7 @@ findFieldsWithBestCutpoint <- function(data,response,fields,show.plot=F)
 		#print(paste(field,bestcutpoint))
 	}
 	print(pvalues[order(pvalues$pvalue),])
-	par(ask=F)
+	#par(ask=F)
 }
 #findFieldsWithBestCutpoint(data,'nvr',isgupfields)
 

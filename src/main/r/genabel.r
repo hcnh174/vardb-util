@@ -36,10 +36,10 @@ analyzeSnps <- function(model, data, data.summary, gtmode='additive', top=10, tr
 	print(snptable)
 	if (show.plot)
 	{
-		par(mfrow=c(1,2))
+		oldpar <- par(mfrow=c(1,2)); on.exit(par(oldpar))
 		createManhattanPlot(data.qt)
 		createQQPlot(data.qt)
-		par(mfrow=c(1,1))
+		#par(mfrow=c(1,1))
 	}
 	return(list(qt=data.qt, topsnps=topsnps, snptable=snptable))
 }
@@ -166,13 +166,13 @@ makeLinkageMap <- function(data, snp, numbases=1000, snp.names=snp)
 
 makeSnpBoxplots <- function(data, response, snp, predictors='')
 {
-	par(ask=T)
+	oldpar <- par(ask=T); on.exit(par(oldpar))
 	data@phdata <- addSnpsToPhdata(data,snps)
 	for (snp in splitFields(snps))
 	{
 		makeSnpBoxplot(data,response,snp,predictors)
 	}
-	par(ask=F)
+	#par(ask=F)
 }
 
 makeSnpBoxplot <- function(data, response, snp, predictors='')
@@ -193,10 +193,10 @@ displayMaf <- function(data)
 	sumgt <- summary(data@gtdata)
 	afr <- sumgt[,"Q.2"]
 	maf <- pmin(afr,(1-afr))
-	oldpar <- par(mfcol=c(2,1))
+	oldpar <- par(mfcol=c(2,1)); on.exit(par(oldpar))
 	hist(afr)
 	hist(maf)
-	par(oldpar)
+	#par(oldpar)
 	
 	print(catable(afr,c(0.01, 0.05, 0.1, 0.2, 0.5, 0.8, 0.9, 0.95, 0.99)))
 	print(catable(maf,c(0,0.01, 0.05, 0.1, 0.2), cum=T))

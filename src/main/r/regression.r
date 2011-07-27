@@ -213,7 +213,7 @@ plotHatValues <- function(data,fit)
 regressionDiagnostics <- function(fit)
 {
 	print(summary(fit))
-	oldpar <- par(mfrow=c(2,2), ask=T)
+	oldpar <- par(mfrow=c(2,2), ask=T); on.exit(par(oldpar))
 	plot(fit)
 	par(mfrow=c(1,1))
 	qqPlot(fit, simulate=TRUE)
@@ -231,7 +231,7 @@ regressionDiagnostics <- function(fit)
 	print(sqrt(vif(fit)) > 2) #problem?
 	#test outliers
 	print(outlierTest(fit))
-	par(oldpar)
+	#par(oldpar)
 }
 
 makeScatterplotMatrix <- function(data,fields,groups='')

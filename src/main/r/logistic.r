@@ -78,115 +78,6 @@ findSignificantUnivariateLogisticFields <- function(uniresults, cutoff=0.05, ver
 	if (verbose) print(paste("significant univariate effects: ",sigfields))
 	return(sigfields)
 }
-#findSignificantUnivariateLogisticFields(uniresults)
-#
-#findBestFields <- function(data,response,sigfields,verbose=TRUE)
-#{
-#	#data.sigfields <<- na.omit(data[,c(response,sigfields)])
-#	#fit <- glm(makeFormula(response,sigfields), data=data.sigfields, na.action=na.fail, family=binomial())
-#	fit <- glm(makeFormula(response,sigfields), data, na.action=na.fail, family=binomial())
-#	step <- stepAIC(fit, direction='both')
-#	bestfields <- attr(step$terms,'term.labels')
-#	if (verbose)
-#	{
-#		print("Model using only significant fields")
-#		print(step)		
-#		print(bestfields)
-#	}
-#	if (length(bestfields)==0)
-#		throw('No fields retained in final model - using all fields')
-#	return(bestfields)
-#}
-#
-#multivariateLogisticTests <- function(data,response,bestfields,penalized=FALSE,verbose=TRUE)
-#{
-#	bestfit <- lrm(makeFormula(response,bestfields), data=data, x=T, y=T)
-#	adjbestfit <-bestfit
-#	if (penalized)
-#		adjbestfit <- penalizedLogisticRegression(data, response, bestfields)
-#	
-#	if (verbose) print("Model using only aic fields")
-#	if (verbose) print(bestfields)
-#	if (verbose) print(summary(adjbestfit))
-#	if (verbose) print(anova(adjbestfit))
-#	
-#	makeLogisticDiagnosticPlots(adjbestfit)
-#	
-#	#try with glm to get diagnostics
-#	glmfit <- glm(makeFormula(response,bestfields), data=data, family=binomial())
-#	print('***********************************')
-#	print('GLM analysis')
-#	print('***********************************')
-#	print(summary(glmfit))
-#	print(anova(glmfit))
-#	print(paste('Overdispersion:',testOverdispersion(glmfit)))
-#	print('***********************************')
-#	plot(glmfit)
-#	return(list(fit=adjbestfit, bestfit=bestfit, adjbestfit=adjbestfit, glmfit=glmfit, bestfields=bestfields))
-#}
-##
-
-
-#multivariateLogisticTests <- function(data,response,sigfields,penalized=FALSE,verbose=TRUE, vif.cutoff=NULL)
-#{
-#	data.sigfields <<- na.omit(data[,c(response,sigfields)])
-#	fit <- glm(makeFormula(response,sigfields), data=data.sigfields, na.action=na.fail, family=binomial())
-#	step <- stepAIC(fit, direction='both')
-#	bestfields <- attr(step$terms,'term.labels')
-#	if (verbose)
-#	{
-#		print("Model using only significant fields")
-#		print(step)		
-#		print(bestfields)
-#	}
-#	
-#	if (length(bestfields)==0)
-#		throw('No fields retained in final model')
-#	
-#	bestfit <- lrm(makeFormula(response,bestfields), data=data, x=T, y=T)
-#	if (!is.null(vif.cutoff))
-#	{
-#		bestfields <- c()
-#		fit.vif <- vif(bestfit)
-#		for (field in names(fit.vif))
-#		{
-#			print(paste(field,'=',fit.vif[field]))
-#			if (fit.vif[field] < vif.cutoff)
-#				bestfields <- c(bestfields,field)
-#		}
-#		print(bestfields)
-#		bestfit <- lrm(makeFormula(response,bestfields), data=data, x=T, y=T)
-#	}
-#
-#	adjbestfit <-bestfit
-#	if (penalized)
-#		try(adjbestfit <- penalizedLogisticRegression(data, response, bestfields),silent=F)
-#	
-#	if (verbose)
-#	{
-#		print("Model using only aic fields")
-#		print(bestfields)
-#		print(summary(adjbestfit))
-#		print(anova(adjbestfit))
-#		makeLogisticDiagnosticPlots(adjbestfit,data)
-#	}	
-#
-#	#try with glm to get diagnostics
-#	glmfit <- glm(makeFormula(response,bestfields), data=data, family=binomial())
-#	if (verbose)
-#	{
-#		print('***********************************')
-#		print('GLM analysis')
-#		print('***********************************')
-#		print(summary(glmfit))
-#		print(anova(glmfit))
-#		print(paste('Overdispersion:',testOverdispersion(glmfit)))
-#		print('***********************************')
-#		plot(glmfit)
-#	}
-#	return(list(fit=adjbestfit, bestfit=bestfit, adjbestfit=adjbestfit, glmfit=glmfit, bestfields=bestfields))
-#}
-
 
 findBestFields <- function(data,response,sigfields,verbose=TRUE)
 {
@@ -363,7 +254,7 @@ makeLogisticDiagnosticPlots <- function(fit, data)
 	#fit
 	print(resid(fit, 'gof'))
 	
-	par(ask=T)	
+	oldpar <- par(ask=T); on.exit(par(oldpar))	
 	try({resid(fit, 'partial', pl=TRUE)}) #pl=TRUE pl='loess'
 	
 	plot(summary(fit), log=T)
@@ -373,7 +264,7 @@ makeLogisticDiagnosticPlots <- function(fit, data)
 	
 	#plot(calibrate(fit))
 	
-	par(ask=F)
+	#par(ask=F)
 }
 
 penalizedLogisticRegression <- function(data, response, bestfields, penlty=NULL)
