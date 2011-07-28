@@ -78,6 +78,7 @@ findSignificantUnivariateLogisticFields <- function(uniresults, cutoff=0.05, ver
 	if (verbose) print(paste("significant univariate effects: ",sigfields))
 	return(sigfields)
 }
+#sigfields <- findSignificantUnivariateLogisticFields(uniresults)
 
 findBestFields <- function(data,response,sigfields,verbose=TRUE)
 {
@@ -477,10 +478,11 @@ getPerformanceMeasure <- function(pred,name)
 	return(value)
 }
 
-plotROC <- function(data, response, fields, ...)
+plotROC <- function(data, response, fields, fit=NULL, ...)
 {
 	fields <- splitFields(fields)
-	fit <- glmLogisticRegression(data,response,fields)
+	if (is.null(fit))	
+		fit <- glmLogisticRegression(data,response,fields)
 	fit.sum <- summary(fit)
 	coeff <-fit.sum$coefficients[,1]
 	
@@ -511,18 +513,22 @@ plotROC <- function(data, response, fields, ...)
 simpleUnivariateLogisticTest <- function(data, response, field, alpha=0.05)
 {
 	cls <- class(data[[field]])
-	#print(paste(field,cls))
+	print(paste(field,cls))
 	n <- length(na.omit(data[,field]))
 	
 	#print(paste('univariate test for',response,field))
 	
 	fit <- glm(makeFormula(response,field), family=binomial, data=data)
+	print(fit)
 	fit.sum <- summary(fit)
 	coeff <- fit.sum$coefficients[,1]
 	or <- exp(coeff[[field]])
-	conf.int <- confint(fit, level=1-alpha)
-	ci.lower <- format(exp(conf.int[2,1]), digits=3)
-	ci.upper <- format(exp(conf.int[2,2]), digits=3)
+	ci.lower <- NA; ci.upper <- NA
+	try({
+		conf.int <- confint(fit, level=1-alpha)
+		ci.lower <- format(exp(conf.int[2,1]), digits=3)
+		ci.upper <- format(exp(conf.int[2,2]), digits=3)
+	}, silent=FALSE)
 	
 	if (is.numeric(data[[field]]))
 	{
@@ -536,43 +542,53 @@ simpleUnivariateLogisticTest <- function(data, response, field, alpha=0.05)
 	}
 	else throw('no handler for data type',cls)
 }
-#simpleUnivariateLogisticTest(data, 'svr', 'male1')
+#simpleUnivariateLogisticTest(data, 'svr', 'rbc')
 
 simpleUnivariateLogisticTests <- function(data, response, fields)
 {
 	fits <- list()
 	for (field in fields)
 	{
-		try({
-					fit <- simpleUnivariateLogisticTest(data, response, field)
-					fits[[field]] <- fit
-				}, silent=F)
+		#print(field)
+		#try({
+			fit <- simpleUnivariateLogisticTest(data, response, field)
+			fits[[field]] <- fit
+			print(fit)
+		#}, silent=FALSE)
 	}
 	return(fits)
 }
-#uniresults <- simpleUnivariateLogisticTests(data.naive,'svr',fields.svr)
+#uniresults <- simpleUnivariateLogisticTests(data.all,'svr',fields.svr)
 
-glmLogisticRegression <- function(data, response, fields, filename=NULL, alpha=0.05)
+glmLogisticRegression <- function(data, response, fields, usefields=NULL, filename=NULL, alpha=0.05)
 {
-	uniresults <- simpleUnivariateLogisticTests(data, response, fields)
+	uniresults <- simpleUnivariateLogisticTests(data, response, fields)	
 	
 	table <- data.frame(variable=fields, row.names=fields, stringsAsFactors=FALSE)
 	for (field in fields)
 	{
 		print(field)
 		try({
-					uniresult <- uniresults[[field]]		
-					table[field,'N1'] <- uniresult$n
-					table[field,'OR1'] <- format(uniresult$or, digits=3)
-					table[field,'CI1'] <- paste('(',uniresult$ci.lower,'-',uniresult$ci.upper,')', sep='') 
-					table[field,'P1'] <- format(uniresult$p.value, digits=4)
-					table[field,'sig1'] <- createSignificantMarker(uniresult$p.value)
-				}, silent=FALSE)
+			uniresult <- uniresults[[field]]		
+			table[field,'N1'] <- uniresult$n
+			table[field,'OR1'] <- format(uniresult$or, digits=3)
+			table[field,'CI1'] <- paste('(',uniresult$ci.lower,'-',uniresult$ci.upper,')', sep='') 
+			table[field,'P1'] <- format(uniresult$p.value, digits=4)
+			table[field,'sig1'] <- createSignificantMarker(uniresult$p.value)
+		}, silent=FALSE)
 	}
 	
-	fit <- glm(makeFormula(response,fields), data=data, family=binomial)
+	if (is.null(usefields))
+	{
+		sigfields <- findSignificantUnivariateLogisticFields(uniresults)
+		usefields <- findBestFields(data, response, sigfields)
+	}
+	
+	fit <- glm(makeFormula(response,usefields), data=data, family=binomial)
 	fit.sum <- summary(fit)
-	#fit.aov <- anova(fit)
+	
+	#print(fit)
+	#print(fit.sum)
 	
 	coeff <- fit.sum$coefficients[,1]
 	ors <- exp(coeff)
@@ -581,24 +597,28 @@ glmLogisticRegression <- function(data, response, fields, filename=NULL, alpha=0
 	ci.uppers <- exp(conf.int[,2])	
 	n <- length(fit$fitted.values)
 	
-	for (field in fields)
+	#print(ors)
+	
+	for (field in usefields)
 	{
-		try({
-					or <- ors[[field]]
-					ci.lower <- format(ci.lowers[[field]], digits=3)
-					ci.upper <- format(ci.uppers[[field]], digits=3)
-					p.value <- fit.sum$coefficients[field,'Pr(>|z|)']
-					est <- fit.sum$coefficients[field,'Estimate']
-					
-					#print(paste('odds ratio for field',field,'=',or))
-					
-					table[field,'N2'] <- n
-					table[field,'Est2'] <- format(est, digits=4)
-					table[field,'OR2'] <- format(or, digits=3)
-					table[field,'CI2'] <- paste('(',ci.lower,'-',ci.upper,')', sep='') 
-					table[field,'P2'] <- format(p.value, digits=4)
-					table[field,'sig2'] <- createSignificantMarker(p.value)
-				},silent=F)
+		#try({
+			print(field)
+			or <- ors[[field]]
+			print(or)
+			ci.lower <- format(ci.lowers[[field]], digits=3)
+			ci.upper <- format(ci.uppers[[field]], digits=3)
+			p.value <- fit.sum$coefficients[field,'Pr(>|z|)']
+			est <- fit.sum$coefficients[field,'Estimate']
+			
+			#print(paste('odds ratio for field',field,'=',or))
+			
+			table[field,'N2'] <- n
+			table[field,'Est2'] <- format(est, digits=4)
+			table[field,'OR2'] <- format(or, digits=3)
+			table[field,'CI2'] <- paste('(',ci.lower,'-',ci.upper,')', sep='') 
+			table[field,'P2'] <- format(p.value, digits=4)
+			table[field,'sig2'] <- createSignificantMarker(p.value)
+		#},silent=FALSE)
 	}
 	table <- fixVariableNames(table)
 	table <- replaceNAs(table)
@@ -615,4 +635,5 @@ glmLogisticRegression <- function(data, response, fields, filename=NULL, alpha=0
 	}
 	return(fit)
 }
+#fit.svr <- glmLogisticRegression(data,'svr',fields.svr)
 
