@@ -19,6 +19,7 @@ install.packages('latticeExtra')
 install.packages('xtable')
 install.packages('cacheSweave')
 install.packages('R.utils')
+#install.packages('stringr')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
