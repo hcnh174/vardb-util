@@ -2,6 +2,7 @@ library(car)
 library(MASS)
 library(lattice)
 library(R.oo)
+library(R.utils)
 
 #library(rcom)
 #library(agce)
@@ -631,4 +632,53 @@ addLine<- function(a=NULL, b=NULL, v = NULL, h = NULL, ..., once=F)
 				trellis.unfocus()
 			}
 }
+
+# copied directly from limma removeExt function
+stripExtension <- function (filenames) 
+{
+	filenames <- as.character(filenames)
+	n <- length(filenames)
+	if (length(grep("\\.", filenames)) < n) 
+		return(filenames)
+	ext <- sub("(.*)\\.(.*)$", "\\2", filenames)
+	if (all(ext[1] == ext)) 
+		return(sub("(.*)\\.(.*)$", "\\1", filenames))
+	else return(filenames)
+}
+#stripExtension('tables.Rnw')
+
+sweaveToPdf <- function(filename)
+{
+	stem <- stripExtension(filename)
+	auxfile <- concat(stem,'.aux')
+	logfile <- concat(stem,'.log')
+	texfile <- concat(stem,'.tex')
+	pdffile <- concat(stem,'.pdf')
+	
+	#if (isOpen(pdffile))
+	#	throw(concat('Pdf file is already open: ',pdffile))
+	
+	if (isFile(auxfile))
+		system(concat('rm ',logfile))
+	if (isFile(auxfile))
+		system(concat('rm ',auxfile))
+	if (isFile(texfile))
+		system(concat('rm ',texfile))
+	if (isFile(pdffile))
+		system(concat('rm ',pdffile))
+	
+	#Sweave("tables.Rnw", driver=cacheSweaveDriver());
+	Sweave(filename)
+	if (!isFile(texfile))
+		throw(concat('Tex file not created for Sweave file: ',filename))
+	system(concat('pdflatex -quiet ',texfile))
+	if (!isFile(pdffile))
+		throw(concat('Pdf file not created for tex file: ',texfile))
+	system(concat('rm ',auxfile))
+	system(concat('rm ',logfile))
+	system(concat('rm ',texfile))
+	system(concat('open ',pdffile))
+}
+#sweaveToPdf('tables.Rnw')
+
 

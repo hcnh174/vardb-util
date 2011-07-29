@@ -847,7 +847,6 @@ wdBody.anything <- function(output)
 	}
 }
 
-
 outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc',...)
 {
 	filename <- concat(getwd(),'/',config@out.dir,filename)
@@ -869,4 +868,16 @@ outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc',...)
 }
 #outputVariantTablesToWord()
 
-
+appendVariantTablesToLatex <- function(tables)
+{
+	for (subject in names(tables))
+	{
+		for (region in names(tables[[subject]]))
+		{
+			tbl <- tables[[subject]][[region]]
+			xtbl <- xtable(tbl)#, caption=concat('Subject: ',subject,', Region: ',region))
+			print(concat('Subject: ',as.character(subject[1]),', Region: ',as.character(region[1])))
+			print(xtbl, include.rownames=FALSE, caption.placement='top', latex.environments='flushleft')
+		}
+	}
+}

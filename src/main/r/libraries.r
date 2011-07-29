@@ -16,6 +16,9 @@ install.packages('seqinr')
 install.packages('googleVis')
 install.packages('ROCR')
 install.packages('latticeExtra')
+install.packages('xtable')
+install.packages('cacheSweave')
+install.packages('R.utils')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
@@ -39,7 +42,7 @@ installstatconnDCOM()
 #install.packages('gplot')
 #install.packages('HH')
 #install.packages('rrcov')
-#install.packages('xtable')
+
 #install.packages('ca')
 
 
