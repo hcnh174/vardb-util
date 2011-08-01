@@ -432,7 +432,7 @@ createNtCountTable <- function(config, data, params)
 				{
 					count <- freqs[base]
 					freq <- count/total
-					row <- data.frame(ntnum=ntnum, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
+					row <- data.frame(ntnum=ntnum2, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
 					counts <- rbind(counts,row)
 					rank <- rank+1
 				}
@@ -881,3 +881,171 @@ appendVariantTablesToLatex <- function(tables)
 		}
 	}
 }
+
+
+#
+#estimateSequencingErrorForRegion <- function(config, subject, region, replicate, start=NULL, end=NULL)
+#{
+#	if (is.null(start))
+#		start <- as.integer(config@regions[region,'start'])
+#	if (is.null(end))
+#		end <- as.integer(config@regions[region,'end'])
+#	aanum <- as.integer(config@regions[region,'focus'])
+#	
+#	filename <- concat(config@counts.dir,subject,'.nt.txt')
+#	data <- loadDataFrame(filename)
+#	data.subset <- data[which(data$ntnum>=start &data$ntnum<=end & data$replicate==replicate),]
+#	counts <- cast(data.subset, ntnum ~ rank, value='count', fun.aggregate=function(x) return(x[1]))#; counts
+#	counts <- replaceNAs(counts, replacestr=0)
+#	counts$variants <- apply(counts[,3:6], 1, sum)
+#	counts$total <- apply(counts[,2:6], 1, sum)	
+#	counts$freq <- counts$variants/counts$total
+#	print(summary(counts$freq))
+#	
+#	focusnts <- unique(data.subset[which(data.subset$aanum==aanum),'ntnum'])	
+#	print(xyplot(freq ~ ntnum, counts, type='l', ylim=c(0,0.1)))
+#	addLine(v=min(focusnts), col='yellow')#, lty=2)
+#	addLine(v=max(focusnts), col='yellow')#, lty=2)
+#	return(counts)
+#}
+#counts <- estimateSequencingError(config,'KT9','NS3aa156','plasmid')
+#counts <- estimateSequencingError(config,'KT9','NS3aa156','random')
+#counts <- estimateSequencingError(config,'KT9','NS3aa156','specific')
+#
+#
+#counts <- estimateSequencingError(config,'KT9','NS3aa36','plasmid')
+#
+#estimateSequencingError <- function(config, subject, replicate, ranges=NULL)#, start=NULL, end=NULL)
+#{
+#	filename <- concat(config@counts.dir,subject,'.nt.txt')
+#	#print(filename)
+#	data <- loadDataFrame(filename)
+#	data.subset <- data[which(data$replicate==replicate),]
+#	if (!is.null(ranges))
+#	{
+#		ntnums <- parseRanges(ranges)
+#		data.subset <- data.subset[which(data.subset$ntnum %in% ntnums),]
+#	}
+#	counts <- cast(data.subset, ntnum ~ rank, value='count', fun.aggregate=function(x) return(x[1]))#; counts
+#	counts <- replaceNAs(counts, replacestr=0)
+#	
+#	counts$variants <- apply(counts[,3:ncol(counts)], 1, sum)
+#	counts$total <- apply(counts[,2:ncol(counts)], 1, sum)	
+#	counts$freq <- counts$variants/counts$total
+#	
+#	sample <- concat(subject,'.',replicate)
+#	freq.summary <- summary(counts$freq)
+#	
+#	main <- concat('Variant frequency by position for ',sample)
+#	if (!is.null(ranges))
+#		main <- concat(main,' (',ranges,')')
+#	print(xyplot(freq ~ ntnum, counts, type='l', ylim=c(0,0.1), main=main, 
+#					ylab='Variant frequency', xlab='NT position', sub=concat('Median: ',freq.summary[3])))
+#	addLine(h=freq.summary[3], col='lightgrey')
+#	addLine(h=freq.summary[2], col='lightgrey', lty=2)
+#	addLine(h=freq.summary[5], col='lightgrey', lty=2)
+#	
+#	for (region in config@runs[which(config@runs$sample==sample),'region'])
+#	{
+#		start <- as.integer(config@regions[region,'start'])
+#		end <- as.integer(config@regions[region,'end'])
+#		addLine(v=start, col='lightgrey')
+#		addLine(v=end, col='lightgrey')
+#		aanum <- as.integer(config@regions[region,'focus'])
+#		focusnts <- unique(data.subset[which(data.subset$aanum==aanum),'ntnum'])
+#		addLine(v=min(focusnts), col='yellow')
+#		addLine(v=max(focusnts), col='yellow')
+#	}
+#	#print(freq.summary)
+#	return(counts)
+#}
+##counts <- estimateSequencingError(config,'KT9','plasmid')#,'3495-3736,3861-4097,6321-6506,6510-6792')
+
+
+getVariantCounts <- function(config, subject, replicate, ranges=NULL)
+{
+	#print(concat(subject,'.',replicate))
+	filename <- concat(config@counts.dir,subject,'.nt.txt')
+	#print(filename)
+	data <- loadDataFrame(filename)
+	data.subset <- data[which(data$replicate==replicate),]
+	if (!is.null(ranges))
+	{
+		ntnums <- parseRanges(ranges)
+		data.subset <- data.subset[which(data.subset$ntnum %in% ntnums),]
+	}
+	if (nrow(data.subset)==0)
+		throw(concat('cannot find data any rows for sample ',subject,'.',replicate))
+	counts <- cast(data.subset, ntnum ~ rank, value='count', fun.aggregate=function(x) return(x[1]))#; counts
+	counts <- replaceNAs(counts, replacestr=0)
+	if (ncol(counts)<4)
+	{
+		print(counts)
+		throw(concat('not enough cols for sample ',subject,'.',replicate,': ',ncol(counts)))
+	}
+	counts$variants <- apply(counts[,3:ncol(counts)], 1, sum)
+	counts$total <- apply(counts[,2:ncol(counts)], 1, sum)
+	counts$freq <- counts$variants/counts$total
+	return(counts)
+}
+#counts <- getVariantCounts(config,'PXB0218-0007','wk15','6300-6800')
+#counts <- getVariantCounts(config,'PXB0218-0007','wk14','3490-4100'); head(counts)
+
+estimateSequencingError <- function(config, subject, ranges=NULL)#, refsample='KT9', refreplicate='plasmid')
+{
+	replicates <- config@samples[which(config@samples$subject==subject),'replicate']
+	
+	replicate <- replicates[1]
+	counts <- getVariantCounts(config,subject,replicate,ranges)
+	
+	sample <- concat(subject,'.',replicate)
+	freq.summary <- summary(counts$freq)
+	
+	colors <- c('blue','red','green','orange','brown')
+	main <- concat('Variant frequency by position for ',subject)
+	if (!is.null(ranges))
+		main <- concat(main,' (',ranges,')')
+	print(xyplot(freq ~ ntnum, counts, type='l', ylim=c(0,0.1), main=main, col=colors[1],
+					ylab='Variant frequency', xlab='NT position', sub=concat('Median: ',freq.summary[3])))
+	#add lines to show the median error rate
+	addLine(h=freq.summary[3], col='lightgrey')
+	addLine(h=freq.summary[2], col='lightgrey', lty=2)
+	addLine(h=freq.summary[5], col='lightgrey', lty=2)
+	
+	for (region in config@runs[which(config@runs$sample==sample),'region'])
+	{
+		start <- as.integer(config@regions[region,'start'])
+		end <- as.integer(config@regions[region,'end'])
+		# add gray lines around the focus regions
+		addLine(v=start, col='lightgrey')
+		addLine(v=end, col='lightgrey')
+		aanum <- as.integer(config@regions[region,'focus'])
+		focusnts <- unique(data.subset[which(data.subset$aanum==aanum),'ntnum'])
+		#print(focusnts)
+		if (length(focusnts)>0)
+		{
+			# add yellow lines to show the focus positions 
+			addLine(v=min(focusnts, na.rm=TRUE), col='yellow', lty=2)
+			addLine(v=max(focusnts, na.rm=TRUE), col='yellow', lty=2)
+		}
+	}
+	
+	trellis.focus("panel",1,1,highlight = FALSE)
+	for (i in 2:length(replicates))
+	{
+		try({
+					replicate <- replicates[i]
+					counts2 <- getVariantCounts(config,subject,replicate,ranges)
+					panel.lines(x=counts2$ntnum, y=counts2$freq, col=colors[i])
+				}, silent=FALSE)
+	}
+	if (subject!='KT9')
+	{
+		counts2 <- getVariantCounts(config,'KT9','plasmid',ranges)
+		panel.lines(x=counts2$ntnum, y=counts2$freq, col='lightgrey')
+	}
+	trellis.unfocus()
+	
+	return(counts)
+}
+#counts <- estimateSequencingError(config,'PXB0218-0007','3490-4100')#'6300-6800'
