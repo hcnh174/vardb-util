@@ -876,8 +876,7 @@ appendVariantTablesToLatex <- function(tables)
 		{
 			tbl <- tables[[subject]][[region]]
 			caption <- concat('Subject: ',as.character(subject[1]),', Region: ',as.character(region[1]))
-			xtbl <- xtable(tbl, caption=caption)#, caption=concat('Subject: ',subject,', Region: ',region))
-			#print(concat('Subject: ',as.character(subject[1]),', Region: ',as.character(region[1])))
+			xtbl <- xtable(tbl, caption=caption)
 			print(xtbl, include.rownames=FALSE, caption.placement='top')#, latex.environments='flushleft')
 		}
 	}

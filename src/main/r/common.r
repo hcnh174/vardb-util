@@ -1,6 +1,7 @@
 library(car)
 library(MASS)
 library(lattice)
+library(xtable)
 library(R.oo)
 library(R.utils)
 
@@ -530,7 +531,7 @@ appendFile <- function(file, ...)
 
 stripPath <- function(filenames)
 {
-	return(sub("(.*)[/\\](.*)$", "\\2", filename))
+	return(sub("(.*)[/\\](.*)$", "\\2", filenames))
 }
 #stripPath('C:/workspace/vardb-util/src/main/r/tables.rnw')
 #stripPath('C:\\workspace\\vardb-util\\src\\main\\r\\tables.rnw')
@@ -538,7 +539,7 @@ stripPath <- function(filenames)
 sweaveToPdf <- function(filename)
 {
 	stem <- stripPath(filename)
-	stem <- stripExtension(filename)
+	stem <- stripExtension(stem)
 	auxfile <- concat(stem,'.aux')
 	logfile <- concat(stem,'.log')
 	texfile <- concat(stem,'.tex')

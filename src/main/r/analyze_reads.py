@@ -115,9 +115,10 @@ def call_variants(sample,ref):
 	str = str+" -I bam/"+stem+".bam"
 	str = str+" -B:mask,VCF ref/"+ref+".mask.vcf"
 	str = str+" -o "+vcffile
-	str = str+" -stand_call_conf 30.0" #50.0
+	str = str+" -stand_call_conf 10.0"	#30.0" #50.0
 	str = str+" -stand_emit_conf 10.0"
-	str = str+" -dcov 50"
+	str = str+" -L ref/"+ref+".interval_list"
+	#str = str+" -dcov 50"
 	run_command(str)
 
 def filter_variants(sample,ref):
