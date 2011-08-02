@@ -1,0 +1,38 @@
+\documentclass[a4paper,fleqn]{article}
+\title{Deep sequencing codon frequency tables}
+\begin{document}
+\maketitle
+
+%<<eval=TRUE,echo=FALSE,term=FALSE>>=
+%	source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'common.r',sep=''))
+%	#library(cacheSweave)
+%	library(xtable)
+%	loadUtilFiles('nextgen')
+%	setCurDir('nextgen2')
+%	config <- new('nextgenconfig')
+%	config@counts.dir <- 'n:/counts/'
+%	#config@counts.dir <- 'c:/Documents and Settings/nhayes/My Documents/My Dropbox/counts/'
+%	cutoff <- 2
+%	codon.tables <- makeVariantTables(config,'codons',cutoff=cutoff)
+%	aa.tables <- makeVariantTables(config,'aa',cutoff=cutoff)
+%@
+
+<<eval=TRUE,echo=FALSE,term=FALSE>>=
+cutoff <- 2
+codon.tables <- makeVariantTables(config,'codons',cutoff=cutoff)
+aa.tables <- makeVariantTables(config,'aa',cutoff=cutoff)
+@
+
+Codon counts
+
+<<results=tex,fig=FALSE,echo=FALSE>>=
+appendVariantTablesToLatex(codon.tables)
+@
+\clearpage
+
+Amino acid counts
+<<results=tex,fig=FALSE,echo=FALSE>>=
+appendVariantTablesToLatex(aa.tables)
+@
+
+\end{document}

@@ -528,8 +528,16 @@ appendFile <- function(file, ...)
 	cat(...,'\n', sep='', file=file, append=TRUE)
 }
 
+stripPath <- function(filenames)
+{
+	return(sub("(.*)[/\\](.*)$", "\\2", filename))
+}
+#stripPath('C:/workspace/vardb-util/src/main/r/tables.rnw')
+#stripPath('C:\\workspace\\vardb-util\\src\\main\\r\\tables.rnw')
+
 sweaveToPdf <- function(filename)
 {
+	stem <- stripPath(filename)
 	stem <- stripExtension(filename)
 	auxfile <- concat(stem,'.aux')
 	logfile <- concat(stem,'.log')

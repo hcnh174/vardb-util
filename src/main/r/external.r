@@ -1,5 +1,3 @@
-
-
 # copied directly from limma removeExt function
 stripExtension <- function (filenames) 
 {
