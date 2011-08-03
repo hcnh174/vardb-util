@@ -65,7 +65,7 @@ def recalibrate(sample,ref):
 	stem = sample+"."+ref+".rg.dedup.realigned" #assume duplicates marked and realigned 
 	reffile = "ref/"+ref+".fasta"
 	bamfile = "tmp/"+stem+".bam"
-	maskfile = "ref/"+ref+".mask.vcf"
+	maskfile = "config/"+ref+".mask.vcf"
 	recalfile = "tmp/"+stem+".recal.csv"
 	outfile = "tmp/"+stem+".recal.bam"
 	
@@ -79,6 +79,9 @@ def recalibrate(sample,ref):
 	str = str+" -cov QualityScoreCovariate"
 	str = str+" -cov CycleCovariate"
 	str = str+" -cov DinucCovariate"
+	str = str+" -cov HomopolymerCovariate"
+	str = str+" -cov MappingQualityCovariate"
+	str = str+" -cov MinimumNQSCovariate"
 	str = str+" -recalFile "+recalfile
 	run_command(str)
 	
@@ -113,11 +116,11 @@ def call_variants(sample,ref):
 	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper"
 	str = str+" -R "+reffile
 	str = str+" -I bam/"+stem+".bam"
-	str = str+" -B:mask,VCF ref/"+ref+".mask.vcf"
+	str = str+" -B:mask,VCF config/"+ref+".mask.vcf"
 	str = str+" -o "+vcffile
 	str = str+" -stand_call_conf 10.0"	#30.0" #50.0
 	str = str+" -stand_emit_conf 10.0"
-	str = str+" -L ref/"+ref+".interval_list"
+	str = str+" -L config/"+ref+".interval_list"
 	#str = str+" -dcov 50"
 	run_command(str)
 
@@ -162,8 +165,38 @@ def analyze_reads(sample, ref):
 sample = sys.argv[1]
 ref = sys.argv[2]
 
-analyze_reads(sample,ref)
+#analyze_reads(sample,ref)
 #export_pileup(sample,ref)
 #call_variants(sample,ref)
 #filter_variants(sample,ref)
+
+#call_variants(sample,ref)
+#filter_variants(sample,ref)
+
+def call_variants_combined(subject,replicates,ref):
+
+	reffile = "ref/"+ref+".fasta"
+	vcffile = "vcf/"+subject+".vcf"
+	
+	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper"
+	str = str+" -R "+reffile
+	for replicate in replicates:
+		str = str+" -I bam/"+subject+"."+replicate+"."+ref+".bam"
+	#str = str+" -B:mask,VCF config/"+ref+".mask.vcf"
+	#str = str+" -stand_call_conf 10.0"	#30.0" #50.0
+	#str = str+" -stand_emit_conf 10.0"
+	str = str+" -L config/"+ref+".interval_list"
+	#str = str+" -dcov 50"
+	str = str+" -o "+vcffile
+	#str = str+" --output_mode EMIT_ALL_SITES"
+	run_command(str)
+
+call_variants_combined('KT9',['plasmid','random','specific'],'KT9')
+call_variants_combined('PXB0218-0007',['wk10','wk11','wk12','wk13','wk15'],'KT9')
+call_variants_combined('PXB0219-0011',['wk08','wk09','wk10','wk11','wk12'],'KT9')
+call_variants_combined('PXB0219-0018',['wk08','wk09','wk10','wk12','wk14','wk15'],'KT9')
+call_variants_combined('PXB0220-0002',['wk08','wk09','wk10','wk11','wk12','wk13'],'KT9')
+
+
+
 
