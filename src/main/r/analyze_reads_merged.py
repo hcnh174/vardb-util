@@ -34,19 +34,21 @@ def add_read_groups(sample,ref):
 def mark_duplicates(sample,ref):
 	stem = sample+"."+ref+".rg"
 	metricsfile = "qc/"+stem+".dedup.metrics"
+	outfile =  "tmp/"+stem+".dedup.bam"
 
 	str = "java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar"
 	str = str+" INPUT=tmp/"+stem+".bam"
-	str = str+" OUTPUT=tmp/"+stem+".dedup.bam"
+	str = str+" OUTPUT="+outfile
 	str = str+" METRICS_FILE="+metricsfile
 	run_command(str)
-	run_command("samtools index tmp/"+stem+".dedup.bam")
+	run_command("samtools index "+outfile)
 
-def realign_indels(sample,ref):
-	stem = sample+"."+ref+".rg.dedup" #assume duplicates already marked
+def realign_indels(stem,ref):
+	
 	reffile = "ref/"+ref+".fasta"
 	bamfile = "tmp/"+stem+".bam"
 	intervalfile = "tmp/"+stem+".intervals"
+	outfile = "tmp/"+stem+".realigned.bam"
 
 	str = "java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T RealignerTargetCreator"
 	str = str+" -R "+reffile
@@ -58,11 +60,10 @@ def realign_indels(sample,ref):
 	str = str+" -R "+reffile
 	str = str+" -I "+bamfile
 	str = str+" -targetIntervals "+intervalfile
-	str = str+" -o tmp/"+stem+".realigned.bam"
+	str = str+" -o "+outfile
 	run_command(str)
 
-def recalibrate(sample,ref): 
-	stem = sample+"."+ref+".rg.dedup.realigned" #assume duplicates marked and realigned 
+def recalibrate(stem,ref):  
 	reffile = "ref/"+ref+".fasta"
 	bamfile = "tmp/"+stem+".bam"
 	maskfile = "config/"+ref+".mask.vcf"
@@ -88,7 +89,7 @@ def recalibrate(sample,ref):
 	str = "java -Xmx2g -jar $GTAK_HOME/AnalyzeCovariates.jar"
 	str = str+" -resources $GTAK_HOME/resources"
 	str = str+" -recalFile "+recalfile
-	str = str+" -outputDir ./qc/"+sample+"."+ref
+	str = str+" -outputDir ./qc/"+stem
 	run_command(str) 
 
  	str = "java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T TableRecalibration"
@@ -99,33 +100,33 @@ def recalibrate(sample,ref):
 	str = str+" -o "+outfile	
 	run_command(str)
 
-def output_bam(sample,ref,suffix):
-	infile = "tmp/"+sample+"."+ref+"."+suffix+".bam"
-	outfile = "bam/"+sample+"."+ref+".bam"
+def output_bam(stem,suffix):
+	infile = "tmp/"+stem+"."+suffix+".bam"
+	outfile = "bam/"+stem+".bam"
 	run_command("cp "+infile+" "+outfile)
 	run_command("samtools index "+outfile)
 
 def cleanup(sample,ref):
 	run_command("rm tmp/"+sample+"."+ref+".*")
 
-def call_variants(sample,ref):
-	stem = sample+"."+ref
+def call_variants(stem,ref):
+
 	reffile = "ref/"+ref+".fasta"
-	vcffile = "vcf/"+stem+".vcf"
+	outfile = "vcf/"+stem+".vcf"
 	
 	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper"
 	str = str+" -R "+reffile
 	str = str+" -I bam/"+stem+".bam"
-	str = str+" -B:mask,VCF config/"+ref+".mask.vcf"
-	str = str+" -o "+vcffile
-	str = str+" -stand_call_conf 10.0"	#30.0" #50.0
-	str = str+" -stand_emit_conf 10.0"
+	#str = str+" -B:mask,VCF config/"+ref+".mask.vcf"
+	#str = str+" -stand_call_conf 10.0"	#30.0" #50.0
+	#str = str+" -stand_emit_conf 10.0"
 	str = str+" -L config/"+ref+".interval_list"
 	#str = str+" -dcov 50"
+	str = str+" -o "+outfile
+	#str = str+" --output_mode EMIT_ALL_SITES"
 	run_command(str)
 
-def filter_variants(sample,ref):
-	stem = sample+"."+ref
+def filter_variants(stem, ref):
 	reffile = "ref/"+ref+".fasta"
 	vcffile = "vcf/"+stem+".vcf"
 
@@ -146,53 +147,81 @@ def filter_variants(sample,ref):
 	str = str+" --filterName GATKStandard"
 	run_command(str)
 
-def export_pileup(sample,ref):
-	run_command("python $VARDB_RUTIL_HOME/export_pileup.py "+sample+" "+ref)
+def variants_to_table(stem, ref):
+	reffile = "ref/"+ref+".fasta"
+	vcffile = "vcf/"+stem+".vcf"
+	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T VariantsToTable"
+	str = str+" -R "+reffile
+	str = str+" -B:variant,VCF "+vcffile
+	str = str+" -F CHROM -F POS -F REF -F ALT -F QUAL -F FILTER"	
+	str = str+" -o vcf/"+stem+".table"
+	run_command(str)
 
-def analyze_reads(sample, ref):
+###################################################3
+
+def analyze_reads_for_sample(sample, ref):
 	run_bwa(sample,ref)
 	sam2bam(sample,ref)
 	add_read_groups(sample,ref)
 	mark_duplicates(sample,ref)
-	realign_indels(sample,ref)
-	recalibrate(sample,ref)
-	output_bam(sample,ref,"rg.dedup.realigned.recal")
-	call_variants(sample,ref)
-	filter_variants(sample,ref)
-	export_pileup(sample,ref)
-	cleanup(sample,ref)
 
-sample = sys.argv[1]
-ref = sys.argv[2]
-
-analyze_reads(sample,ref)
-#export_pileup(sample,ref)
-#call_variants(sample,ref)
-#filter_variants(sample,ref)
-
-#call_variants(sample,ref)
-#filter_variants(sample,ref)
-
-def call_variants_combined(subject,replicates,ref):
-
-	reffile = "ref/"+ref+".fasta"
-	vcffile = "vcf/"+subject+".vcf"
-	
-	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper"
-	str = str+" -R "+reffile
+def analyze_reads_for_subject(subject,replicates,ref):
 	for replicate in replicates:
-		str = str+" -I bam/"+subject+"."+replicate+"."+ref+".bam"
-	#str = str+" -B:mask,VCF config/"+ref+".mask.vcf"
-	#str = str+" -stand_call_conf 10.0"	#30.0" #50.0
-	#str = str+" -stand_emit_conf 10.0"
-	str = str+" -L config/"+ref+".interval_list"
-	#str = str+" -dcov 50"
-	str = str+" -o "+vcffile
-	#str = str+" --output_mode EMIT_ALL_SITES"
-	run_command(str)
+		analyze_reads_for_sample(subject+"."+replicate, ref)
 
-#call_variants_combined('KT9',['plasmid','random','specific'],'KT9')
-#call_variants_combined('PXB0218-0007',['wk10','wk11','wk12','wk13','wk15'],'KT9')
-#call_variants_combined('PXB0219-0011',['wk08','wk09','wk10','wk11','wk12'],'KT9')
-#call_variants_combined('PXB0219-0018',['wk08','wk09','wk10','wk12','wk14','wk15'],'KT9')
-#call_variants_combined('PXB0220-0002',['wk08','wk09','wk10','wk11','wk12','wk13'],'KT9')
+def analyze_reads_for_all_samples():
+	analyze_reads_for_subject('KT9',['plasmid','random','specific'],'KT9')
+	analyze_reads_for_subject('PXB0218-0007',['wk10','wk11','wk12','wk13','wk15'],'KT9')
+	analyze_reads_for_subject('PXB0219-0011',['wk08','wk09','wk10','wk11','wk12'],'KT9')
+	analyze_reads_for_subject('PXB0219-0018',['wk08','wk09','wk10','wk12','wk14','wk15'],'KT9')
+	analyze_reads_for_subject('PXB0220-0002',['wk08','wk09','wk10','wk11','wk12','wk13'],'KT9')
+
+def merge_bams():
+	ref = 'KT9'
+	prefix = " INPUT=tmp/"
+	suffix = '.'+ref+'.rg.dedup.bam'
+	outfile = "tmp/merged.bam"
+
+	str = "java -Xmx2g -jar $PICARD_HOME/MergeSamFiles.jar"
+	for replicate in ['plasmid','random','specific']:
+		str = str+prefix+"KT9."+replicate+suffix
+		
+	for replicate in ['wk10','wk11','wk12','wk13','wk15']:
+		str = str+prefix+"PXB0218-0007."+replicate+suffix
+		
+	for replicate in ['wk08','wk09','wk10','wk11','wk12']:
+		str = str+prefix+"PXB0219-0011."+replicate+suffix
+		
+	for replicate in ['wk08','wk09','wk10','wk12','wk14','wk15']:
+		str = str+prefix+"PXB0219-0018."+replicate+suffix
+		
+	for replicate in ['wk08','wk09','wk10','wk11','wk12','wk13']:
+		str = str+prefix+"PXB0220-0002."+replicate+suffix
+	
+	str = str+" OUTPUT="+outfile
+	run_command(str)
+	run_command("samtools index "+outfile)
+	
+	
+def analyze_reads_merged(ref):
+	#analyze_reads_for_all_samples()
+	#merge_bams()
+	#realign_indels('merged',ref)
+	#recalibrate('merged.realigned',ref)
+	#output_bam('merged','realigned.recal')
+	#call_variants('merged',ref)
+
+	#filter_variants('merged',ref)
+	variants_to_table('merged',ref)
+	variants_to_table('merged.filtered',ref)
+	#export_pileup(sample,ref)
+	#cleanup(sample,ref)
+
+analyze_reads_merged('KT9')
+
+#NS3aa156	3885-3887
+#NS3aa36	3525-3527
+#NS5Aaa31	6348-6351
+#NS5Aaa93	6534-6537
+
+

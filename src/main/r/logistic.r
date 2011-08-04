@@ -339,116 +339,6 @@ findOptimalPenalty <- function(data, response, fields, verbose=F)
 
 
 
-plot.summary.rms2 <- function (x, at, log = FALSE, q = c(0.7, 0.8, 0.9, 0.95, 0.99), 
-		xlim, nbar, cex = 1, nint = 10, cex.c = 0.5, cex.t = 1, clip = c(-1e+30, 
-				1e+30), main, fieldnames=NULL, ...) 
-{
-	scale <- attr(x, "scale")
-	adjust <- attr(x, "adjust")
-	Type <- x[, "Type"]
-	x <- x[Type == 1, , drop = FALSE]
-	lab <- dimnames(x)[[1]]
-	if (!is.null(fieldnames))
-		lab=fieldnames
-	effect <- x[, "Effect"]
-	se <- x[, "S.E."]
-	if (!log && any(Type == 2)) {
-		fun <- exp
-		tlab <- scale[2]
-	}
-	else {
-		fun <- function(x) x
-		if (log) {
-			if (length(scale) == 2) 
-				tlab <- scale[2]
-			else tlab <- paste("exp(", scale[1], ")", sep = "")
-		}
-		else tlab <- scale[1]
-	}
-	if (!length(scale)) 
-		tlab <- ""
-	if (!missing(main)) 
-		tlab <- main
-	augment <- if (log | any(Type == 2)) 
-				c(0.1, 0.5, 0.75, 1)
-			else 0
-	n <- length(effect)
-	out <- qnorm((max(q) + 1)/2)
-	if (missing(xlim) && !missing(at)) 
-		xlim <- range(if (log) logb(at) else at)
-	else if (missing(xlim)) {
-		xlim <- fun(range(c(effect - out * se, effect + out * 
-										se)))
-		xlim[1] <- max(xlim[1], clip[1])
-		xlim[2] <- min(xlim[2], clip[2])
-	}
-	else augment <- c(augment, if (log) exp(xlim) else xlim)
-	fmt <- function(k) {
-		m <- length(k)
-		f <- character(m)
-		for (i in 1:m) f[i] <- format(k[i])
-		f
-	}
-	lb <- ifelse(is.na(x[, "Diff."]), lab, lab)
-	#lb <- ifelse(is.na(x[, "Diff."]), lab, paste(lab, " - ", 
-	#    fmt(x[, "High"]), ":", fmt(x[, "Low"]), sep = ""))
-	plot.new()
-	par(new = TRUE)
-	mxlb <- 0.1 + max(strwidth(lb, units = "inches", cex = cex))
-	tmai <- par("mai")
-	on.exit(par(mai = tmai))
-	par(mai = c(tmai[1], mxlb, 1.5 * tmai[3], tmai[4]))
-	outer.widths <- fun(effect + out * se) - fun(effect - out * 
-					se)
-	if (missing(nbar)) 
-		nbar <- n
-	npage <- ceiling(n/nbar)
-	is <- 1
-	for (p in 1:npage) {
-		ie <- min(is + nbar - 1, n)
-		plot(1:nbar, rep(0, nbar), xlim = xlim, ylim = c(1, nbar), 
-				type = "n", axes = FALSE, xlab = "", ylab = "")
-		if (cex.t > 0) 
-			title(tlab, cex = cex.t)
-		lines(fun(c(0, 0)), c(nbar - (ie - is), nbar), lty = 2)
-		if (log) {
-			pxlim <- pretty(exp(xlim), n = nint)
-			pxlim <- sort(unique(c(pxlim, augment)))
-			pxlim <- pxlim[pxlim >= exp(xlim[1])]
-			if (!missing(at)) 
-				pxlim <- at
-			axis(3, logb(pxlim), lab = format(pxlim))
-		}
-		else {
-			pxlim <- pretty(xlim, n = nint)
-			pxlim <- sort(unique(c(pxlim, augment)))
-			pxlim <- pxlim[pxlim >= xlim[1]]
-			if (!missing(at)) 
-				pxlim <- at
-			axis(3, pxlim)
-		}
-		imax <- (is:ie)[outer.widths[is:ie] == max(outer.widths[is:ie])][1]
-		for (i in is:ie) {
-			confbar(nbar - (i - is + 1) + 1, effect[i], se[i], 
-					q = q, type = "h", fun = fun, cex = cex.c, labels = i == 
-							imax, clip = clip, ...)
-			mtext(lb[i], 2, 0, at = nbar - (i - is + 1) + 1, 
-					cex = cex, adj = 1, las = 1)
-		}
-		if (adjust != "") {
-			adjto <- paste("Adjusted to:", adjust, sep = "")
-			xx <- par("usr")[2]
-			if (nbar > ie) 
-				text(xx, nbar - (ie - is + 1), adjto, adj = 1, 
-						cex = cex)
-			else title(sub = adjto, adj = 1, cex = cex)
-		}
-		is <- ie + 1
-	}
-	invisible()
-}
-#plot.summary.rms2
-
 ########################################################33
 
 predictY <- function(data, coeff, fields, hold=c())
@@ -456,9 +346,10 @@ predictY <- function(data, coeff, fields, hold=c())
 	y <- coeff[1]
 	for (field in fields)
 	{
+		#coeff.field <- ifelse(is.factor(data[[field]]), concat(field,'1'), field)
 		if (containsElement(hold,field))
 		{
-			print(paste('Skipping field',field))
+			print(paste('Skipping field',field))			
 			y <- y + coeff[field]
 		}
 		else y <- y + coeff[field]*data[[field]]
@@ -466,7 +357,7 @@ predictY <- function(data, coeff, fields, hold=c())
 	y <- 1/(1+exp(-1*y))
 	return(y)
 }
-#y2 <- predictY2(data.naive,coeff,fields.svr)
+#y2 <- predictY(data,coeff,fields.svr)
 #subsetNA(data.frame(y=y2, svr=data.naive$svr))
 
 
@@ -478,17 +369,35 @@ getPerformanceMeasure <- function(pred,name)
 	return(value)
 }
 
+unfactor <- function(data)
+{
+	for (field in names(data))
+	{
+		if (is.factor(data[[field]]))
+			data[[field]] <- as.integer(data[[field]])-1
+	}
+	return(data)
+}
+#unfactor(data)
+
 plotROC <- function(data, response, fields, fit=NULL, ...)
 {
+	data <- unfactor(data)
 	fields <- splitFields(fields)
-	if (is.null(fit))	
+	if (is.null(fit))
 		fit <- glmLogisticRegression(data,response,fields)
 	fit.sum <- summary(fit)
 	coeff <-fit.sum$coefficients[,1]
-	
+	#return(coeff)
+	print(fit)
+	#print(fit.sum)
+	#print(coeff)	
+
 	data.rocr <- data.frame(predictions=predictY(data,coeff,fields), labels=data[[response]])
+	print(head(data.rocr))
 	data.rocr <- subsetNA(data.rocr)
-	#print(head(data.rocr))
+	#data.rocr <- unfactor(data.rocr)
+	print(head(data.rocr))
 	pred <- prediction(data.rocr$predictions, data.rocr$labels)
 	#perf <- performance(pred,"auc")
 	#auc <- perf@y.values[[1]]
@@ -505,7 +414,7 @@ plotROC <- function(data, response, fields, fit=NULL, ...)
 	return(auc)
 	#return(data.rocr)
 }
-#plotROC(data,'svr','age,bmi,X1B,logviralload,logGPT,rs8099917,rs1127354,rbv,pegifn', title='SVR - all patients')
+#coeff <- plotROC(data,'svr',fields.svr, fit.svr, main='Figure 2B. ROC curve for SVR')
 
 #########################################################################
 
@@ -522,21 +431,25 @@ simpleUnivariateLogisticTest <- function(data, response, field, alpha=0.05)
 	print(fit)
 	fit.sum <- summary(fit)
 	coeff <- fit.sum$coefficients[,1]
-	or <- exp(coeff[[field]])
-	ci.lower <- NA; ci.upper <- NA
-	try({
+	print(coeff)
+
+	if (is.numeric(data[[field]]))
+	{
+		or <- exp(coeff[[field]])
 		conf.int <- confint(fit, level=1-alpha)
 		ci.lower <- format(exp(conf.int[2,1]), digits=3)
 		ci.upper <- format(exp(conf.int[2,2]), digits=3)
-	}, silent=FALSE)
-	
-	if (is.numeric(data[[field]]))
-	{
 		fit <- wilcox.test(as.formula(paste(field," ~ ",response)), data)
 		return(list(fit=fit, p.value=fit$p.value, n=n, or=or, ci.lower=ci.lower, ci.upper=ci.upper))
 	}
 	else if (is.factor(data[[field]]))
 	{
+		if (length(levels(data[[field]])) != 2)
+			throw("Coefficients assume only two factor levels")			
+		or <- exp(coeff[[concat(field,'1')]]) # hack! assumes only two levels
+		conf.int <- confint(fit, level=1-alpha)
+		ci.lower <- format(exp(conf.int[2,1]), digits=3)
+		ci.upper <- format(exp(conf.int[2,2]), digits=3)
 		fit <- fisher.test(xtabs(as.formula(paste('~', response, '+', field)), data=data))
 		return(list(fit=fit, p.value=fit$p.value, n=n, or=or, ci.lower=ci.lower, ci.upper=ci.upper))
 	}
@@ -549,12 +462,12 @@ simpleUnivariateLogisticTests <- function(data, response, fields)
 	fits <- list()
 	for (field in fields)
 	{
-		#print(field)
-		#try({
+		print(field)
+		try({
 			fit <- simpleUnivariateLogisticTest(data, response, field)
 			fits[[field]] <- fit
 			print(fit)
-		#}, silent=FALSE)
+		}, silent=FALSE)
 	}
 	return(fits)
 }
@@ -597,18 +510,19 @@ glmLogisticRegression <- function(data, response, fields, usefields=NULL, filena
 	ci.uppers <- exp(conf.int[,2])	
 	n <- length(fit$fitted.values)
 	
-	#print(ors)
+	print(ors)
 	
 	for (field in usefields)
 	{
 		#try({
 			print(field)
-			or <- ors[[field]]
+			orfield <- ifelse(is.factor(data[[field]]), concat(field,'1'), field)
+			or <- ors[[orfield]]
 			print(or)
-			ci.lower <- format(ci.lowers[[field]], digits=3)
-			ci.upper <- format(ci.uppers[[field]], digits=3)
-			p.value <- fit.sum$coefficients[field,'Pr(>|z|)']
-			est <- fit.sum$coefficients[field,'Estimate']
+			ci.lower <- format(ci.lowers[[orfield]], digits=3)
+			ci.upper <- format(ci.uppers[[orfield]], digits=3)
+			p.value <- fit.sum$coefficients[orfield,'Pr(>|z|)']
+			est <- fit.sum$coefficients[orfield,'Estimate']
 			
 			#print(paste('odds ratio for field',field,'=',or))
 			
