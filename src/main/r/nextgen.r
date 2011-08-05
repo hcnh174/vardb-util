@@ -30,7 +30,9 @@ setClass("nextgenconfig",
 			regions='data.frame',
 			variants='data.frame',
 			treatments='data.frame',
-			titers='data.frame'),
+			titers='data.frame',
+			subjects='vector',
+			samplenames='vector'),
 	prototype(
 			counts.dir='counts/',
 			config.dir='config/',
@@ -48,8 +50,41 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	.Object@variants <- loadDataFrame(concat(.Object@config.dir,'variants.txt'))
 	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'titers.txt'))
 	.Object@treatments <- loadDataFrame(concat(.Object@config.dir,'treatments.txt'))
+	.Object@subjects <- unique(.Object@samples[,'subject'])
+	.Object@samplenames <- unique(.Object@runs$sample)
 	.Object
 })
+
+#if (!isGeneric("getSampleForSubject"))
+#{
+#	if (is.function("getSampleForSubject"))
+#		fun <- getSampleForSubject
+#	else fun <- function(object){standardGeneric("getSampleForSubject")}
+#	setGeneric("getSampleForSubject", fun)
+#}
+#
+#
+#setMethod("getSampleForSubject", signature("nextgenconfig", "character"), function(object, subject)
+#{
+#	return(object@samples[which(object@samples$subject == subject),'sample'])
+#})
+
+
+getSampleForSubject <- function(config, subject)
+{
+	samples <- config@samples[which(config@samples$subject==subject),c('sample','ref')]
+	samples <- unique(paste(samples$sample,samples$ref,sep='.'))
+	return(samples)
+}
+#getSampleForSubject(config,'PXB0220-0002')
+
+getReplicatesForSubject <- function(config, subject)
+{
+	replicates <- config@samples[which(config@samples$subject==subject),c('replicate')]	
+	return(replicates)
+}
+#getReplicatesForSubject(config,'PXB0220-0002')
+
 
 loadRefs <- function(filename)
 {
@@ -564,11 +599,12 @@ count_codons_for_subject <- function(config, params)
 
 count_codons <- function(config, params=NULL)
 {
-	samples <- config@samples
+	#samples <- config@samples
 	print('count_codons')
 	if (is.null(params))
 		params <- new('sampleparams')	
-	for (subject in unique(samples$subject))
+	#for (subject in unique(samples$subject))
+	for (subject in config@subjects)
 	{
 		params@subject <- subject
 		count_codons_for_subject(config, params)
@@ -1049,3 +1085,12 @@ estimateSequencingError <- function(config, subject, ranges=NULL)#, refsample='K
 	return(counts)
 }
 #counts <- estimateSequencingError(config,'PXB0218-0007','3490-4100')#'6300-6800'
+
+plotTiter <- function(config, subject)
+{
+	titers <- config@titers[which(config@titers$subject==subject),]
+	titers <- titers[complete.cases(titers),]
+	plot(titer ~ week, titers, type='b', xlim=c(min(titers$week),max(titers$week)), 
+			main=concat('Viral titer: ',subject[1]), ylab='Titer (log10)', xlab='Weeks after inoculation')
+}
+#plotTiter(config,'PXB0220-0002')

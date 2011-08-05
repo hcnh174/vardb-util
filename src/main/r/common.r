@@ -450,6 +450,18 @@ removeElements <- function(x, y)
 }
 #removeElements('a,b,c,d,e,f,g','b,f')
 
+intersectValues <- function(values1, values2)
+{
+	values <- c()
+	for (value in splitFields(values1))
+	{
+		if (containsElement(values2,value))
+			values <- appendValues(values,value)
+	}
+	return(values)
+}
+#intersectValues('A,B,C','B,D')
+
 ######################################################3
 
 getCounts <- function(data, field, values, separator='|')

@@ -200,3 +200,5 @@ if (!require('ReadImages')) install.packages('ReadImages', repos = 'http://cran.
 install.packages("RXKCD", repos="http://R-Forge.R-project.org")
 
 
+suppressWarnings(as.integer(c(input.list, recursive=TRUE)))
+sprintf("%s and %s","value1", "value2")

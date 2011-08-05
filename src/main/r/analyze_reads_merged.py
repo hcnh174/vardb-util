@@ -112,11 +112,12 @@ def cleanup(sample,ref):
 def call_variants(stem,ref):
 
 	reffile = "ref/"+ref+".fasta"
+	bamfile = "bam/"+stem+".bam"
 	outfile = "vcf/"+stem+".vcf"
 	
 	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper"
 	str = str+" -R "+reffile
-	str = str+" -I bam/"+stem+".bam"
+	str = str+" -I "+bamfile
 	#str = str+" -B:mask,VCF config/"+ref+".mask.vcf"
 	#str = str+" -stand_call_conf 10.0"	#30.0" #50.0
 	#str = str+" -stand_emit_conf 10.0"
@@ -126,25 +127,52 @@ def call_variants(stem,ref):
 	#str = str+" --output_mode EMIT_ALL_SITES"
 	run_command(str)
 
+def annotate_variants(stem,ref):
+
+	reffile = "ref/"+ref+".fasta"
+	bamfile = "bam/"+stem+".bam"
+	infile = "vcf/"+stem+".vcf"
+	outfile = "vcf/"+stem+".annotated.vcf"
+	
+	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T VariantAnnotator"
+	str = str+" -l INFO"
+	str = str+" -R "+reffile
+	str = str+" -I "+bamfile
+	str = str+" -B:variant,VCF "+infile
+	str = str+" -o "+outfile
+	str = str+" --useAllAnnotations"	
+	run_command(str)
+
 def filter_variants(stem, ref):
 	reffile = "ref/"+ref+".fasta"
-	vcffile = "vcf/"+stem+".vcf"
+	infile = "vcf/"+stem+".annotated.vcf"
+	outfile = "vcf/"+stem+".annotated.filtered.vcf"
 
 	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T VariantFiltration"
 	str = str+" -R "+reffile
-	str = str+" -B:variant,VCF "+vcffile
-	str = str+" -o vcf/"+stem+".filtered.vcf"
-	str = str+" --filterExpression \"MQ0 >= 4 && ((MQ0 / (1.0 * DP)) > 0.1)\""
-	str = str+" --filterName \"HARD_TO_VALIDATE\""
-	str = str+" --filterExpression \"SB >= -1.0\""
-	str = str+" --filterName \"StrandBiasFilter\""
-	str = str+" --filterExpression \"QUAL < 10\""
-	str = str+" --filterName \"QualFilter\""
-	str = str+" --clusterWindowSize 10"
-	str = str+" --filterExpression \"MQ0 >= 4 && ((MQ0 / (1.0 * DP)) > 0.1)\""
-	str = str+" --filterName \"HARD_TO_VALIDATE\""
-	str = str+" --filterExpression \"QUAL < 30.0 || QD < 5.0 || HRun > 5 || SB > -0.10\""
+	str = str+" -B:variant,VCF "+infile
+	str = str+" -o "+outfile
+	#str = str+" --clusterWindowSize 10"
+	
+	#basic indel filtering
+	#str = str+" --filterExpression \"MQ0 >= 4 && ((MQ0 / (1.0 * DP)) > 0.1)\""  #expression to match 10% of reads with MAPQ0
+	#str = str+" --filterName \"HARD_TO_VALIDATE\""	
+	#str = str+" --filterExpression \"SB >= -1.0\""
+	#str = str+" --filterName \"StrandBiasFilter\""
+	#str = str+" --filterExpression \"QUAL < 10\""
+	#str = str+" --filterName \"QualFilter\""
+	
+	#snp filtering
+	#str = str+" --filterExpression \"MQ0 >= 4 && ((MQ0 / (1.0 * DP)) > 0.1)\""
+	#str = str+" --filterName \"HARD_TO_VALIDATE\""
+	#str = str+" --filterExpression \"QUAL < 30.0 || QD < 5.0 || HRun > 5 || SB > -0.10\""
+	#str = str+" --filterName GATKStandard"
+	
+	#hard filtering
+	str = str+" --filterExpression \"QUAL < 30.0 || QD < 5.0 || HRun > 5 || SB > -0.10\"" #For exomes with deep coverage per sample
+	#str = str+" --filterExpression \"DP > 100 || MQ0 > 40 || SB > -0.10\"" #whole genomes with deep coverage 
 	str = str+" --filterName GATKStandard"
+	
 	run_command(str)
 
 def variants_to_table(stem, ref):
@@ -153,7 +181,7 @@ def variants_to_table(stem, ref):
 	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T VariantsToTable"
 	str = str+" -R "+reffile
 	str = str+" -B:variant,VCF "+vcffile
-	str = str+" -F CHROM -F POS -F REF -F ALT -F QUAL -F FILTER"	
+	str = str+" -F CHROM -F POS -F REF -F ALT -F QUAL -F FILTER -F AF"	
 	str = str+" -o vcf/"+stem+".table"
 	run_command(str)
 
@@ -204,16 +232,18 @@ def merge_bams():
 	
 	
 def analyze_reads_merged(ref):
+	stem = 'merged'
 	#analyze_reads_for_all_samples()
 	#merge_bams()
-	#realign_indels('merged',ref)
-	#recalibrate('merged.realigned',ref)
-	#output_bam('merged','realigned.recal')
-	#call_variants('merged',ref)
-
-	#filter_variants('merged',ref)
-	variants_to_table('merged',ref)
-	variants_to_table('merged.filtered',ref)
+	#realign_indels(stem,ref)
+	#recalibrate(stem+'.realigned',ref)
+	#output_bam(stem,'realigned.recal')
+	
+	#call_variants(stem,ref)
+	#annotate_variants(stem,ref)
+	filter_variants(stem,ref)
+	#variants_to_table(stem,ref)
+	#variants_to_table(stem+'.filtered',ref)
 	#export_pileup(sample,ref)
 	#cleanup(sample,ref)
 
