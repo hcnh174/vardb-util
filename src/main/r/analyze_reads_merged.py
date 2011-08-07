@@ -13,6 +13,17 @@ def run_bwa(sample,ref):
 	run_command("bwa aln "+reffile+" "+fqfile+" > "+saifile)
 	run_command("bwa samse "+reffile+" "+saifile+" "+fqfile+" > "+samfile)
 
+def run_bowtie(sample,ref):
+	fqfile = "fastq/"+sample+".fastq"
+	samfile = "tmp/"+sample+"."+ref+".sam"
+	#command = "bowtie -v 3 -S "+ref+" trimmed/"+sample+"_Btrim.fq sam/"+sample+"."+ref+".sam"
+	#run_command("bowtie -v 2 -S "+ref+" fastq/"+sample+".fq sam/"+sample+"."+ref+".sam")
+	#run_command("bowtie -v 3 -S "+ref+" fastq/"+sample+".fq sam/"+sample+"."+ref+".sam")
+	#run_command("bowtie -S "+ref+" fastq/"+sample+".fq sam/"+sample+"."+ref+".sam")
+	#run_command("bowtie -S --seedmms 3 --tryhard --un unmapped/"+sample+"."+ref+".un.txt "+ref+" fastq/"+sample+".fastq sam/"+sample+"."+ref+".sam")
+	#run_command("bowtie -S --un unmapped/"+sample+"."+ref+".un.txt "+ref+" "+fqfile+" sam/"+sample+"."+ref+".sam")
+	run_command("bowtie -S --un unmapped/"+sample+"."+ref+".un.txt "+ref+" "+fqfile+" "+samfile)
+
 def sam2bam(sample,ref):
 	stem = sample+"."+ref
 	sam="tmp/"+stem+".sam"
@@ -40,6 +51,18 @@ def mark_duplicates(sample,ref):
 	str = str+" INPUT=tmp/"+stem+".bam"
 	str = str+" OUTPUT="+outfile
 	str = str+" METRICS_FILE="+metricsfile
+	run_command(str)
+	run_command("samtools index "+outfile)
+
+def remove_duplicates(stem,ref):
+	metricsfile = "qc/"+stem+".nodup.metrics"
+	outfile =  "bam/"+stem+".nodup.bam"
+
+	str = "java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar"
+	str = str+" INPUT=tmp/"+stem+".bam"
+	str = str+" OUTPUT="+outfile
+	str = str+" METRICS_FILE="+metricsfile
+	str = str+" REMOVE_DUPLICATES=true"
 	run_command(str)
 	run_command("samtools index "+outfile)
 
@@ -109,6 +132,23 @@ def output_bam(stem,suffix):
 def cleanup(sample,ref):
 	run_command("rm tmp/"+sample+"."+ref+".*")
 
+def call_sites(stem,ref):
+
+	reffile = "ref/"+ref+".fasta"
+	bamfile = "bam/"+stem+".bam"
+	outfile = "vcf/"+stem+".all.vcf"
+	
+	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper"
+	str = str+" -R "+reffile
+	str = str+" -I "+bamfile
+	#str = str+" -stand_call_conf 10.0"	#30.0" #50.0
+	#str = str+" -stand_emit_conf 10.0"
+	str = str+" -L config/"+ref+".interval_list"
+	#str = str+" -dcov 50"
+	str = str+" -o "+outfile
+	str = str+" --output_mode EMIT_ALL_SITES"
+	run_command(str)
+
 def call_variants(stem,ref):
 
 	reffile = "ref/"+ref+".fasta"
@@ -118,13 +158,11 @@ def call_variants(stem,ref):
 	str = "java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper"
 	str = str+" -R "+reffile
 	str = str+" -I "+bamfile
-	#str = str+" -B:mask,VCF config/"+ref+".mask.vcf"
 	#str = str+" -stand_call_conf 10.0"	#30.0" #50.0
 	#str = str+" -stand_emit_conf 10.0"
 	str = str+" -L config/"+ref+".interval_list"
 	#str = str+" -dcov 50"
 	str = str+" -o "+outfile
-	#str = str+" --output_mode EMIT_ALL_SITES"
 	run_command(str)
 
 def annotate_variants(stem,ref):
@@ -185,10 +223,16 @@ def variants_to_table(stem, ref):
 	str = str+" -o vcf/"+stem+".table"
 	run_command(str)
 
+def mpileup_vcf(stem,ref):
+	reffile = "ref/"+ref+".fasta"
+	run_command("samtools mpileup -u -f "+reffile+" bam/"+stem+".bam > tmp/"+stem+".bcf")
+	run_command("bcftools view tmp/"+stem+".bcf > vcf/"+stem+".mpileup.vcf")
+
 ###################################################3
 
 def analyze_reads_for_sample(sample, ref):
-	run_bwa(sample,ref)
+	#run_bwa(sample,ref)
+	run_bowtie(sample,ref)
 	sam2bam(sample,ref)
 	add_read_groups(sample,ref)
 	mark_duplicates(sample,ref)
@@ -238,10 +282,13 @@ def analyze_reads_merged(ref):
 	#realign_indels(stem,ref)
 	#recalibrate(stem+'.realigned',ref)
 	#output_bam(stem,'realigned.recal')
+	remove_duplicates(stem,ref)
 	
+	#call_sites(stem,ref)
 	#call_variants(stem,ref)
 	#annotate_variants(stem,ref)
-	filter_variants(stem,ref)
+	#filter_variants(stem,ref)
+	#mpileup_vcf(stem,ref)
 	#variants_to_table(stem,ref)
 	#variants_to_table(stem+'.filtered',ref)
 	#export_pileup(sample,ref)
