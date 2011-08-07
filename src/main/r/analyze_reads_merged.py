@@ -54,20 +54,7 @@ def mark_duplicates(sample,ref):
 	run_command(str)
 	run_command("samtools index "+outfile)
 
-def remove_duplicates(stem,ref):
-	metricsfile = "qc/"+stem+".nodup.metrics"
-	outfile =  "bam/"+stem+".nodup.bam"
-
-	str = "java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar"
-	str = str+" INPUT=tmp/"+stem+".bam"
-	str = str+" OUTPUT="+outfile
-	str = str+" METRICS_FILE="+metricsfile
-	str = str+" REMOVE_DUPLICATES=true"
-	run_command(str)
-	run_command("samtools index "+outfile)
-
-def realign_indels(stem,ref):
-	
+def realign_indels(stem,ref):	
 	reffile = "ref/"+ref+".fasta"
 	bamfile = "tmp/"+stem+".bam"
 	intervalfile = "tmp/"+stem+".intervals"
@@ -129,9 +116,23 @@ def output_bam(stem,suffix):
 	run_command("cp "+infile+" "+outfile)
 	run_command("samtools index "+outfile)
 
-def cleanup(sample,ref):
-	run_command("rm tmp/"+sample+"."+ref+".*")
+def remove_duplicates(stem,ref):
+	metricsfile = "qc/"+stem+".nodup.metrics"
+	outfile =  "bam/"+stem+".nodup.bam"
 
+	str = "java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar"
+	str = str+" INPUT=tmp/"+stem+".bam"
+	str = str+" OUTPUT="+outfile
+	str = str+" METRICS_FILE="+metricsfile
+	str = str+" REMOVE_DUPLICATES=true"
+	run_command(str)
+	run_command("samtools index "+outfile)
+
+def export_read_group(stem,sample):
+	infile = "bam/"+stem+".bam"
+	outfile = "bam/"+sample+".bam" 
+	run_command("samtools view -bh -o "+outfile+" -r "+sample+" "+infile)
+	
 def call_sites(stem,ref):
 
 	reffile = "ref/"+ref+".fasta"
@@ -228,6 +229,12 @@ def mpileup_vcf(stem,ref):
 	run_command("samtools mpileup -u -f "+reffile+" bam/"+stem+".bam > tmp/"+stem+".bcf")
 	run_command("bcftools view tmp/"+stem+".bcf > vcf/"+stem+".mpileup.vcf")
 
+def export_pileup(sample,ref):
+	run_command("python export_pileup.py "+sample+" "+ref)
+
+def cleanup(sample,ref):
+	run_command("rm tmp/"+sample+"."+ref+".*")
+
 ###################################################3
 
 def analyze_reads_for_sample(sample, ref):
@@ -273,7 +280,32 @@ def merge_bams():
 	str = str+" OUTPUT="+outfile
 	run_command(str)
 	run_command("samtools index "+outfile)
-	
+
+def export_read_groups(stem,ref):
+	for replicate in ['plasmid','random','specific']:
+		sample='KT9.'+replicate
+		export_read_group(stem,sample+'.'+ref)
+		export_pileup(sample,ref)
+		
+	for replicate in ['wk10','wk11','wk12','wk13','wk15']:
+		sample='PXB0218-0007.'+replicate
+		export_read_group(stem,sample+'.'+ref)
+		export_pileup(sample,ref)
+		
+	for replicate in ['wk08','wk09','wk10','wk11','wk12']:
+		sample='PXB0219-0011.'+replicate
+		export_read_group(stem,sample+'.'+ref)
+		export_pileup(sample,ref)
+		
+	for replicate in ['wk08','wk09','wk10','wk12','wk14','wk15']:
+		sample='PXB0219-0018.'+replicate
+		export_read_group(stem,sample+'.'+ref)
+		export_pileup(sample,ref)
+		
+	for replicate in ['wk08','wk09','wk10','wk11','wk12','wk13']:
+		sample='PXB0220-0002.'+replicate
+		export_read_group(stem,sample+'.'+ref)
+		export_pileup(sample,ref)
 	
 def analyze_reads_merged(ref):
 	stem = 'merged'
@@ -292,6 +324,8 @@ def analyze_reads_merged(ref):
 	#variants_to_table(stem,ref)
 	#variants_to_table(stem+'.filtered',ref)
 	#export_pileup(sample,ref)
+	export_read_groups(stem)
+
 	#cleanup(sample,ref)
 
 analyze_reads_merged('KT9')

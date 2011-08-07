@@ -37,7 +37,7 @@ setCurDir <- function(dir)
 
 loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.stringsAsFactors())
 {
-	dataframe <- read.table(filename, header=TRUE, encoding='UTF-8', sep = '\t', comment.char='', stringsAsFactors=stringsAsFactors)
+	dataframe <- read.table(filename, header=TRUE, encoding='UTF-8', sep = '\t', comment.char='#', stringsAsFactors=stringsAsFactors)
 	if (!is.null(idcol))
 		rownames(dataframe) <- dataframe[[idcol]]
 	return(dataframe)
@@ -78,13 +78,13 @@ plotDistributions <- function(dataframe, fields)
 
 # automate regression tests
 
-splitFields <- function(str)
+splitFields <- function(str, delimiter=',')
 {
 	if (length(str)==0)
 		return(c())
 	if (length(str)>1)
 		return(str)
-	strsplit(str,",")[[1]]
+	strsplit(str,delimiter)[[1]]
 }
 
 makeFormula <- function(responses,fields)

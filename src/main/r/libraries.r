@@ -20,6 +20,7 @@ install.packages('xtable')
 install.packages('cacheSweave')
 install.packages('R.utils')
 #install.packages('stringr')
+install.packages('DAAG')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")

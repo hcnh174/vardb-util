@@ -31,7 +31,7 @@ setClass("nextgenconfig",
 			variants='data.frame',
 			treatments='data.frame',
 			titers='data.frame',
-			subjects='vector',
+			subjects='data.frame',
 			samplenames='vector'),
 	prototype(
 			counts.dir='counts/',
@@ -44,13 +44,14 @@ setClass("nextgenconfig",
 setMethod("initialize", "nextgenconfig", function(.Object)
 {
 	.Object@refs <- loadRefs(concat(.Object@config.dir,'refs.fasta'))
+	.Object@subjects <- loadDataFrame(concat(.Object@config.dir,'subjects.txt'), idcol='subject')
 	.Object@runs <- loadDataFrame(concat(.Object@config.dir,'runs.txt'), idcol='run')
 	.Object@samples <- loadDataFrame(concat(.Object@config.dir,'samples.txt'), idcol='sample')
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'regions.txt'), idcol='region')
 	.Object@variants <- loadDataFrame(concat(.Object@config.dir,'variants.txt'))
 	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'titers.txt'))
 	.Object@treatments <- loadDataFrame(concat(.Object@config.dir,'treatments.txt'))
-	.Object@subjects <- unique(.Object@samples[,'subject'])
+	#.Object@subjects <- unique(.Object@samples[,'subject'])
 	.Object@samplenames <- unique(.Object@runs$sample)
 	.Object
 })
@@ -70,13 +71,13 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 #})
 
 
-getSampleForSubject <- function(config, subject)
+getSamplesForSubject <- function(config, subject)
 {
 	samples <- config@samples[which(config@samples$subject==subject),c('sample','ref')]
 	samples <- unique(paste(samples$sample,samples$ref,sep='.'))
 	return(samples)
 }
-#getSampleForSubject(config,'PXB0220-0002')
+#getSamplesForSubject(config,'PXB0220-0002')
 
 getReplicatesForSubject <- function(config, subject)
 {
