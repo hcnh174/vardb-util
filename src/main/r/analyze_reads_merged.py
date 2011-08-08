@@ -131,7 +131,9 @@ def remove_duplicates(stem,ref):
 def export_read_group(stem,sample):
 	infile = "bam/"+stem+".bam"
 	outfile = "bam/"+sample+".bam" 
-	run_command("samtools view -bh -o "+outfile+" -r "+sample+" "+infile)
+	print('sample='+sample)
+	run_command("samtools view -hu -o "+outfile+" -r \""+sample+"\" "+infile) #b
+	run_command("samtools index "+outfile)
 	
 def call_sites(stem,ref):
 
@@ -285,28 +287,28 @@ def export_read_groups(stem,ref):
 	for replicate in ['plasmid','random','specific']:
 		sample='KT9.'+replicate
 		export_read_group(stem,sample+'.'+ref)
-		export_pileup(sample,ref)
+		#export_pileup(sample,ref)
 		
 	for replicate in ['wk10','wk11','wk12','wk13','wk15']:
 		sample='PXB0218-0007.'+replicate
 		export_read_group(stem,sample+'.'+ref)
-		export_pileup(sample,ref)
+		#export_pileup(sample,ref)
 		
 	for replicate in ['wk08','wk09','wk10','wk11','wk12']:
 		sample='PXB0219-0011.'+replicate
 		export_read_group(stem,sample+'.'+ref)
-		export_pileup(sample,ref)
+		#export_pileup(sample,ref)
 		
 	for replicate in ['wk08','wk09','wk10','wk12','wk14','wk15']:
 		sample='PXB0219-0018.'+replicate
 		export_read_group(stem,sample+'.'+ref)
-		export_pileup(sample,ref)
+		#export_pileup(sample,ref)
 		
 	for replicate in ['wk08','wk09','wk10','wk11','wk12','wk13']:
 		sample='PXB0220-0002.'+replicate
 		export_read_group(stem,sample+'.'+ref)
-		export_pileup(sample,ref)
-	
+		#export_pileup(sample,ref)
+
 def analyze_reads_merged(ref):
 	stem = 'merged'
 	#analyze_reads_for_all_samples()
@@ -314,7 +316,7 @@ def analyze_reads_merged(ref):
 	#realign_indels(stem,ref)
 	#recalibrate(stem+'.realigned',ref)
 	#output_bam(stem,'realigned.recal')
-	remove_duplicates(stem,ref)
+	#remove_duplicates(stem,ref)
 	
 	#call_sites(stem,ref)
 	#call_variants(stem,ref)
@@ -324,7 +326,9 @@ def analyze_reads_merged(ref):
 	#variants_to_table(stem,ref)
 	#variants_to_table(stem+'.filtered',ref)
 	#export_pileup(sample,ref)
-	export_read_groups(stem)
+	#export_read_groups(stem,ref)
+
+	export_read_group(stem,'PXB0219-0011.wk08.KT9')
 
 	#cleanup(sample,ref)
 

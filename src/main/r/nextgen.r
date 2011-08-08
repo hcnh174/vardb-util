@@ -35,7 +35,7 @@ setClass("nextgenconfig",
 			samplenames='vector'),
 	prototype(
 			counts.dir='counts/',
-			config.dir='config/',
+			config.dir='config/',#config.dir='n:/config/', #hack!	
 			variants.dir='variants/',
 			out.dir='out/',
 			ref.dir='ref/',
