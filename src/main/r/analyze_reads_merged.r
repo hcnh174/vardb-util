@@ -55,6 +55,22 @@ preprocess <- function(config, path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639
 	#run_command('rm -r ',temp.dir,'/*')
 }
 
+qseq2fastq <- function(sample)
+{
+	run_command('perl qseq2fastq.pl -a qseq/',sample,'.qseq -v T')
+	run_command('mv ',sample,'.fastq fastq/',sample,'.fastq')
+}
+
+trim <- function(sample)
+{
+	run_command('cd trimmed; DynamicTrim.pl ../fastq/',sample,'.fastq')
+}
+
+solexa_qa <- function(sample)
+{
+	run_command('cd quality; SolexaQA.pl ../fastq/',sample,'.fastq')
+}
+
 run_bwa <- function(sample,ref)
 {
 	stem <- concat(sample,'.',ref)
@@ -180,13 +196,14 @@ analyze_covariates <- function(stem,ref,suffix)
 
 recalibrate <- function(stem,ref) 
 {
+	newstem <- concat(stem,'.recal')
 	reffile <- concat('ref/',ref,'.fasta')
 	bamfile <- concat('tmp/',stem,'.bam')
 	maskfile <- concat('config/',ref,'.mask.vcf')
-	recalfile <- concat('tmp/',stem,'.recal.csv')
-	outfile <- concat('tmp/',stem,'.recal.bam')
+	recalfile <- concat('tmp/',newstem,'.csv')
+	outfile <- concat('tmp/',newstem,'.bam')
 	
-	analyze_covariates(stem,ref,'before')
+	#analyze_covariates(stem,ref,'before')
 
 	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T TableRecalibration'
 	str <- concat(str,' -l INFO')
@@ -194,9 +211,10 @@ recalibrate <- function(stem,ref)
 	str <- concat(str,' -I ',bamfile)
 	str <- concat(str,' -recalFile ',recalfile)	
 	str <- concat(str,' -o ',outfile)
-	run_command(str)
-	
-	analyze_covariates(stem,ref,'after')
+	#run_command(str)
+
+	analyze_covariates(newstem,ref,'after')
+	return(newstem)
 }
 #recalibrate('merged','KT9')
 
@@ -367,18 +385,19 @@ analyze_reads_merged <- function(config)
 	#map_reads_for_all_samples(config)
 	#merge_bams(config)
 	#realign_indels(stem,ref)
-	#recalibrate(concat(stem,'.realigned'),ref)
+	recalibrate(concat(stem,'.realigned'),ref)
 	#output_bam(stem,'realigned.recal')
 	
 	#call_variants(stem,ref)
 	#filter_variants(stem,ref)
 	#export_read_groups(config,stem,ref)
 	#count_codons(config)
-	make_tables()
+	#make_tables()
 }
 
 #map_reads_for_sample('KT9.specific','KT9')
 
-analyze_reads_merged(config)
+#analyze_reads_merged(config)
+solexa_qa('KT9.plasmid')
 
 #Rscript ~/workspace/vardb-util/src/main/r/analyze_reads_merged.r
