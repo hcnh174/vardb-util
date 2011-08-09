@@ -35,7 +35,8 @@ setClass("nextgenconfig",
 			samplenames='vector'),
 	prototype(
 			counts.dir='counts/',
-			config.dir='config/',#config.dir='n:/config/', #hack!	
+			config.dir='config/',
+			#config.dir='n:/config/', #hack!	
 			variants.dir='variants/',
 			out.dir='out/',
 			ref.dir='ref/',
@@ -341,6 +342,20 @@ extractSequence <- function(sequence, start, end)
 }
 #extractSequence(refs['KT9','sequence'],3420,5312)
 
+extractRefSequence <- function(config, ref, start, end)
+{
+	return(extractSequence(config@refs[ref,'sequence'],start,end))
+}
+#extractRefSequence(config,'KT9',3420,5312)
+
+getReferenceCodon <- function(config, subject, region)
+{
+	ref <- min(config@samples[which(config@samples$subject==subject),'ref'])
+	coords <- as.numeric(strsplit(config@regions[region,'ntfocus'],'-')[[1]])
+	refcodon <- toupper(extractRefSequence(config,ref,coords[1],coords[2]))
+	return(refcodon)
+}
+#getReferenceCodon(config,'PXB0219-0011','NS3aa36')
 
 plotReadDistributions <- function(filename="histograms.pdf")
 {
@@ -640,9 +655,9 @@ getCodonCountSubset <- function(config, subject, region, filetype, start, end=st
 
 reportAminoAcidChange <- function(config, subject, region, log=FALSE, updown=5)
 {
-	aanum <- config@regions[region,'focus']
+	aanum <- config@regions[region,'aafocus']
 	if (!is.integer(aanum))
-		stop(concat('cannot find focus aanum for region: ',region,' (',aanum,')'))
+		stop(concat('cannot find aafocus aanum for region: ',region,' (',aanum,')'))
 	aanum <- as.integer(aanum)	
 	start <- aanum - updown
 	end <- aanum + updown
@@ -692,9 +707,9 @@ reportAminoAcidChanges <- function(config, subject=NULL, ...)
 
 reportCodonChange <- function(config, subject, region, log=FALSE, updown=5)
 {
-	aanum <- config@regions[region,'focus']
+	aanum <- config@regions[region,'aafocus']
 	if (!is.integer(aanum))
-		stop(concat('cannot find focus aanum for region: ',region,' (',aanum,')'))
+		stop(concat('cannot find aafocus aanum for region: ',region,' (',aanum,')'))
 	aanum <- as.integer(aanum)	
 	start <- aanum - updown
 	end <- aanum + updown
@@ -744,7 +759,7 @@ reportCodonChanges <- function(config, subject=NULL, ...)
 
 makeCodonBarchart <- function(config, subject, region)
 {
-	aanum <- as.integer(config@regions[region,'focus'])
+	aanum <- as.integer(config@regions[region,'aafocus'])
 	data.subset <- getCodonCountSubset(config,subject,region,'codons',aanum)
 	chrt <- barchart(count ~ replicate, data.subset, group=codon, horizontal=FALSE, stack=TRUE,
 			main=subject, sub=concat('codon ',aanum), xlab='Replicate', ylab='Count',
@@ -755,7 +770,7 @@ makeCodonBarchart <- function(config, subject, region)
 
 makeAminoAcidBarchart <- function(config, subject, region)
 {
-	aanum <- as.integer(config@regions[region,'focus'])
+	aanum <- as.integer(config@regions[region,'aafocus'])
 	data.subset <- getCodonCountSubset(config,subject,region,'aa',aanum)
 	chrt <- barchart(count ~ replicate, data.subset, group=aa, horizontal=FALSE, stack=TRUE,
 			main=subject, sub=concat('amino acid ',aanum), xlab='Replicate', ylab='Count',
@@ -818,20 +833,69 @@ makeCodonBarcharts <- function(config, subject=NULL, ...)
 
 #############################################################3
 
-makeVariantTable <- function(config, type, subject, region, cutoff=1)
+#makeVariantTable <- function(config, type, subject, region, cutoff=0)
+#{
+#	aanum <- as.integer(config@regions[region,'aafocus'])
+#	data.subset <- getCodonCountSubset(config,subject,region,type,aanum,cutoff=cutoff)
+#	if (type=='codons')
+#		frmla <- as.formula(codon ~ replicate)
+#	else frmla <- as.formula(aa ~ replicate)
+#	counts <- cast(data.subset, frmla, value='count', fun.aggregate=function(x) return(x[1])); counts
+#	counts <- counts[order(counts[,2], decreasing=TRUE),]
+#	row.names(counts) <- seq(nrow(counts))
+#	#row <- data.frame(codon="Total", t(colSums(counts[,-1], na.rm=TRUE)))
+#	#colnames(row) <- colnames(counts)
+#	#counts <- rbind(counts,row)	
+#	return(counts)
+#}
+##makeVariantTable(config,'codons','KT9','NS3aa156')
+##makeVariantTable(config,'aa','KT9','NS3aa156')
+
+makeVariantTable <- function(config, type, subject, region, cutoff=0)
 {
-	aanum <- as.integer(config@regions[region,'focus'])
+	aanum <- as.integer(config@regions[region,'aafocus'])
 	data.subset <- getCodonCountSubset(config,subject,region,type,aanum,cutoff=cutoff)
 	if (type=='codons')
 		frmla <- as.formula(codon ~ replicate)
 	else frmla <- as.formula(aa ~ replicate)
 	counts <- cast(data.subset, frmla, value='count', fun.aggregate=function(x) return(x[1])); counts
 	counts <- counts[order(counts[,2], decreasing=TRUE),]
-	row.names(counts) <- seq(nrow(counts)) 
+	row.names(counts) <- seq(nrow(counts))
+	#row <- data.frame(codon="Total", t(colSums(counts[,-1], na.rm=TRUE)))
+	#colnames(row) <- colnames(counts)
+	#counts <- rbind(counts,row)
+	
+	# add an asterisk to indicate the reference codon
+	refcodon <- getReferenceCodon(config,subject,region)
+	if (type=='codons')
+	{
+		if (length(which(counts$codon==refcodon))==1)
+			counts[which(counts$codon==refcodon),'codon'] <- concat(refcodon,'*')
+		else
+		{
+			row <- counts[1,]
+			row[,'codon'] <- concat(refcodon,'*')
+			row[,-1] <- NA
+			counts <- rbind(counts,row)
+		}			
+	}
+	if (type=='aa')
+	{
+		refaa <- translateCodon(refcodon)
+		if (length(which(counts$aa==refaa))==1)
+			counts[which(counts$aa==refaa),'aa'] <- concat(refaa,'*')
+		else
+		{
+			row <- counts[1,]
+			row[,'aa'] <- concat(refaa,'*')
+			row[,-1] <- NA
+			counts <- rbind(counts,row)
+		}	
+	}
 	return(counts)
 }
-#makeVariantTable(config,'codons','KT9','NS3aa156')
-#makeVariantTable(config,'aa','KT9','NS3aa156')
+#makeVariantTable(config,'codons','PXB0219-0011','NS3aa36')
+#makeVariantTable(config,'codons','PXB0219-0018','NS5Aaa31')
 
 makeVariantTables <- function(config, type, subject=NULL, ...)
 {
@@ -905,99 +969,22 @@ outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc',...)
 }
 #outputVariantTablesToWord()
 
-appendVariantTablesToLatex <- function(tables)
+appendVariantTablesToLatex <- function(config,tables)
 {
 	for (subject in names(tables))
 	{
+		#print(concat('Mutation: ',as.character(config@subjects[subject,'mutation'][[1]])))
 		for (region in names(tables[[subject]]))
 		{
 			tbl <- tables[[subject]][[region]]
 			caption <- concat('Subject: ',as.character(subject[1]),', Region: ',as.character(region[1]))
-			xtbl <- xtable(tbl, caption=caption)
-			print(xtbl, include.rownames=FALSE, caption.placement='top')#, latex.environments='flushleft')
+			caption <- concat(caption,'\\newline  Description: ',as.character(config@subjects[subject,'description']))
+			caption <- concat(caption,'\\newline')
+			xtbl <- xtable(tbl, caption=caption, digits=0)
+			print(xtbl, include.rownames=FALSE, caption.placement='top', latex.environments='flushleft')
 		}
 	}
 }
-
-
-#
-#estimateSequencingErrorForRegion <- function(config, subject, region, replicate, start=NULL, end=NULL)
-#{
-#	if (is.null(start))
-#		start <- as.integer(config@regions[region,'start'])
-#	if (is.null(end))
-#		end <- as.integer(config@regions[region,'end'])
-#	aanum <- as.integer(config@regions[region,'focus'])
-#	
-#	filename <- concat(config@counts.dir,subject,'.nt.txt')
-#	data <- loadDataFrame(filename)
-#	data.subset <- data[which(data$ntnum>=start &data$ntnum<=end & data$replicate==replicate),]
-#	counts <- cast(data.subset, ntnum ~ rank, value='count', fun.aggregate=function(x) return(x[1]))#; counts
-#	counts <- replaceNAs(counts, replacestr=0)
-#	counts$variants <- apply(counts[,3:6], 1, sum)
-#	counts$total <- apply(counts[,2:6], 1, sum)	
-#	counts$freq <- counts$variants/counts$total
-#	print(summary(counts$freq))
-#	
-#	focusnts <- unique(data.subset[which(data.subset$aanum==aanum),'ntnum'])	
-#	print(xyplot(freq ~ ntnum, counts, type='l', ylim=c(0,0.1)))
-#	addLine(v=min(focusnts), col='yellow')#, lty=2)
-#	addLine(v=max(focusnts), col='yellow')#, lty=2)
-#	return(counts)
-#}
-#counts <- estimateSequencingError(config,'KT9','NS3aa156','plasmid')
-#counts <- estimateSequencingError(config,'KT9','NS3aa156','random')
-#counts <- estimateSequencingError(config,'KT9','NS3aa156','specific')
-#
-#
-#counts <- estimateSequencingError(config,'KT9','NS3aa36','plasmid')
-#
-#estimateSequencingError <- function(config, subject, replicate, ranges=NULL)#, start=NULL, end=NULL)
-#{
-#	filename <- concat(config@counts.dir,subject,'.nt.txt')
-#	#print(filename)
-#	data <- loadDataFrame(filename)
-#	data.subset <- data[which(data$replicate==replicate),]
-#	if (!is.null(ranges))
-#	{
-#		ntnums <- parseRanges(ranges)
-#		data.subset <- data.subset[which(data.subset$ntnum %in% ntnums),]
-#	}
-#	counts <- cast(data.subset, ntnum ~ rank, value='count', fun.aggregate=function(x) return(x[1]))#; counts
-#	counts <- replaceNAs(counts, replacestr=0)
-#	
-#	counts$variants <- apply(counts[,3:ncol(counts)], 1, sum)
-#	counts$total <- apply(counts[,2:ncol(counts)], 1, sum)	
-#	counts$freq <- counts$variants/counts$total
-#	
-#	sample <- concat(subject,'.',replicate)
-#	freq.summary <- summary(counts$freq)
-#	
-#	main <- concat('Variant frequency by position for ',sample)
-#	if (!is.null(ranges))
-#		main <- concat(main,' (',ranges,')')
-#	print(xyplot(freq ~ ntnum, counts, type='l', ylim=c(0,0.1), main=main, 
-#					ylab='Variant frequency', xlab='NT position', sub=concat('Median: ',freq.summary[3])))
-#	addLine(h=freq.summary[3], col='lightgrey')
-#	addLine(h=freq.summary[2], col='lightgrey', lty=2)
-#	addLine(h=freq.summary[5], col='lightgrey', lty=2)
-#	
-#	for (region in config@runs[which(config@runs$sample==sample),'region'])
-#	{
-#		start <- as.integer(config@regions[region,'start'])
-#		end <- as.integer(config@regions[region,'end'])
-#		addLine(v=start, col='lightgrey')
-#		addLine(v=end, col='lightgrey')
-#		aanum <- as.integer(config@regions[region,'focus'])
-#		focusnts <- unique(data.subset[which(data.subset$aanum==aanum),'ntnum'])
-#		addLine(v=min(focusnts), col='yellow')
-#		addLine(v=max(focusnts), col='yellow')
-#	}
-#	#print(freq.summary)
-#	return(counts)
-#}
-##counts <- estimateSequencingError(config,'KT9','plasmid')#,'3495-3736,3861-4097,6321-6506,6510-6792')
-
 
 getVariantCounts <- function(config, subject, replicate, ranges=NULL)
 {
@@ -1053,15 +1040,15 @@ estimateSequencingError <- function(config, subject, ranges=NULL)#, refsample='K
 	{
 		start <- as.integer(config@regions[region,'start'])
 		end <- as.integer(config@regions[region,'end'])
-		# add gray lines around the focus regions
+		# add gray lines around the aafocus regions
 		addLine(v=start, col='lightgrey')
 		addLine(v=end, col='lightgrey')
-		aanum <- as.integer(config@regions[region,'focus'])
+		aanum <- as.integer(config@regions[region,'aafocus'])
 		focusnts <- unique(data.subset[which(data.subset$aanum==aanum),'ntnum'])
 		#print(focusnts)
 		if (length(focusnts)>0)
 		{
-			# add yellow lines to show the focus positions 
+			# add yellow lines to show the aafocus positions 
 			addLine(v=min(focusnts, na.rm=TRUE), col='yellow', lty=2)
 			addLine(v=max(focusnts, na.rm=TRUE), col='yellow', lty=2)
 		}
@@ -1091,7 +1078,43 @@ plotTiter <- function(config, subject)
 {
 	titers <- config@titers[which(config@titers$subject==subject),]
 	titers <- titers[complete.cases(titers),]
+	if (nrow(titers)==0)
+		return()
 	plot(titer ~ week, titers, type='b', xlim=c(min(titers$week),max(titers$week)), 
 			main=concat('Viral titer: ',subject[1]), ylab='Titer (log10)', xlab='Weeks after inoculation')
+	treatments <- config@treatments[which(config@treatments$subject==subject),]
+	mtext(paste(unique(treatments$drug), collapse=', '))
+	for (rowname in rownames(treatments))
+	{
+		week <- treatments[rowname,'week']
+		drug <- treatments[rowname,'drug']
+		amount <- treatments[rowname,'amount']
+		abline(v=week, col='red', lty=2)
+		#mtext(x=week, labels=drug)
+	}
+	
+	# plot the sampling dates as points
+	samples <- config@samples[which(config@samples$subject==subject),]
+	for (week in samples$value)
+	{
+		titer <- titers[which(titers$week==week),'titer']
+		points(y=titer, x=week, cex=2, pch=16)
+	}
 }
 #plotTiter(config,'PXB0220-0002')
+
+plotTiters <- function(config)
+{
+	subjects1 <- unique(config@titers$subject)
+	subjects2 <- unique(config@subjects$subject)
+	subjects <- intersectValues(subjects1, subjects2)
+	
+	oldpar <- par(mfrow=calcMfrowLayout(length(subjects),2))
+	#oldpar <- par(mfrow=c(2,3))
+	for (subject in subjects)
+	{
+		try(plotTiter(config,subject), silent=FALSE)
+	}
+	par(oldpar)
+}
+#plotTiters(config)

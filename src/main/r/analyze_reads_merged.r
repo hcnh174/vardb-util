@@ -161,13 +161,13 @@ analyze_covariates <- function(stem,ref,suffix)
 	str <- concat(str,' -I ',bamfile)
 	str <- concat(str,' -B:mask,VCF ',maskfile)
 	str <- concat(str,' --standard_covs')
-	str <- concat(str,' -cov ReadGroupCovariate')
-	str <- concat(str,' -cov QualityScoreCovariate')
-	str <- concat(str,' -cov CycleCovariate')
-	str <- concat(str,' -cov DinucCovariate')
-	str <- concat(str,' -cov HomopolymerCovariate')
-	str <- concat(str,' -cov MappingQualityCovariate')
-	str <- concat(str,' -cov MinimumNQSCovariate')
+	#str <- concat(str,' -cov ReadGroupCovariate')
+	#str <- concat(str,' -cov QualityScoreCovariate')
+	#str <- concat(str,' -cov CycleCovariate')
+	#str <- concat(str,' -cov DinucCovariate')
+	#str <- concat(str,' -cov HomopolymerCovariate')
+	#str <- concat(str,' -cov MappingQualityCovariate')
+	#str <- concat(str,' -cov MinimumNQSCovariate')
 	str <- concat(str,' -recalFile ',recalfile)
 	run_command(str)
 	
@@ -263,7 +263,7 @@ mpileup_vcf <- function(stem,ref)
 
 export_pileup <- function(sample,ref)
 {
-	run_command('python export_pileup.py ',sample,' ',ref)
+	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ',sample,' ',ref)
 }
 #export_pileup('merged','KT9')
 
@@ -274,8 +274,7 @@ output_bam <- function(stem,suffix)
 	run_command('cp ',infile,' ',outfile)
 	run_command('samtools index ',outfile)
 }
-
-output_bam
+#output_bam('merged','realigned.recal')
 
 ###########################################################
 
@@ -293,6 +292,9 @@ merge_bams <- function(config)
 	outfile <- 'tmp/merged.bam'
 	
 	str <- 'java -Xmx2g -jar $PICARD_HOME/MergeSamFiles.jar'
+	str <- concat(str,' MERGE_SEQUENCE_DICTIONARIES=true')
+	str <- concat(str,' CREATE_INDEX=true')
+	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
 	for (sample in rownames(config@samples))
 	{
 		ref <- config@samples[sample,'ref']
@@ -300,7 +302,7 @@ merge_bams <- function(config)
 	}
 	str <- concat(str,' OUTPUT=',outfile)
 	run_command(str)
-	run_command('samtools index ',outfile)
+	#run_command('samtools index ',outfile)
 }
 #merge_bams(config)
 
@@ -313,36 +315,70 @@ export_read_group <- function(stem,readgroup)
 }
 #export_read_group('merged','KT9.plasmid')
 
-export_read_groups <- function(config,stem)
+export_read_groups <- function(config,stem,ref)
 {
 	for (sample in rownames(config@samples))
 	{
-		#ref <- config@samples[sample,'ref']
-		export_read_group(stem,sample)
+		#export_read_group(stem,sample)
+		remove_duplicates(sample,ref)
+		#export_pileup(sample,ref)
 	}
 }
 #export_read_groups(config,'merged')
 
 export_unmapped_reads <- function(filename)
 {
-	run_command('bam2fastq --no-aligned --unaligned -o ',filename,'.un.fastq',filename)
+	run_command('bam2fastq --no-aligned --unaligned -o ',filename,'.unmapped.fastq',filename)
 }
 #export_unmapped_reads('bam/PXB0220-0002.wk11.bam')
+
+remove_duplicates <- function(stem,ref)
+{
+	metricsfile <- concat('tmp/',stem,'.nodup.metrics')
+	outfile <-  concat('tmp/',stem,'.nodup.bam')
+	
+	str <- 'java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar'
+	str <- concat(str,' INPUT=bam/',stem,'.bam')
+	str <- concat(str,' OUTPUT=',outfile)
+	str <- concat(str,' METRICS_FILE=',metricsfile)
+	str <- concat(str,' REMOVE_DUPLICATES=true')
+	run_command(str)
+	run_command('samtools index ',outfile)
+}
+
+count_codons <- function(config)
+{
+	for (subject in config@subjects$subject)
+	{
+		run_command('Rscript $VARDB_RUTIL_HOME/count_codons.r subject=',subject)
+	}
+}
+
+make_tables <- function()
+{
+	run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r')
+}
 
 analyze_reads_merged <- function(config)
 {
 	stem <- 'merged'
+	ref <- 'KT9'
 	#preprocess(config)
 	#map_reads_for_all_samples(config)
-	merge_bams()
-	realign_indels(stem,ref)
-	recalibrate(stem,'.realigned',ref)
-	output_bam(stem,'realigned.recal')
-	remove_duplicates(stem,ref)
+	#merge_bams(config)
+	#realign_indels(stem,ref)
+	#recalibrate(concat(stem,'.realigned'),ref)
+	#output_bam(stem,'realigned.recal')
 	
-	call_variants(stem,ref)
-	filter_variants(stem,ref)
-	export_read_groups(config,stem)
+	#call_variants(stem,ref)
+	#filter_variants(stem,ref)
+	#export_read_groups(config,stem,ref)
+	#count_codons(config)
+	make_tables()
 }
 
+#map_reads_for_sample('KT9.specific','KT9')
+
 analyze_reads_merged(config)
+
+#Rscript ~/workspace/vardb-util/src/main/r/analyze_reads_merged.r

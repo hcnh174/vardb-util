@@ -600,3 +600,13 @@ parseRanges <- function(str)
 #parseRanges('3495-3736,3861-4097,6321-6506,6510-6792')
 
 #########################################################################3
+
+calcMfrowLayout <- function(num, maxperrow=2)
+{
+	numrows <- floor(num/maxperrow)
+	if (num %% maxperrow >0)
+		numrows <- numrows+1
+	mfrow <- c(numrows,maxperrow)
+	return(mfrow)
+}
+#calcMfrowLayout(10,3)

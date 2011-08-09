@@ -3,36 +3,26 @@
 \begin{document}
 \maketitle
 
-%<<eval=TRUE,echo=FALSE,term=FALSE>>=
-%	source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'common.r',sep=''))
-%	#library(cacheSweave)
-%	library(xtable)
-%	loadUtilFiles('nextgen')
-%	setCurDir('nextgen2')
-%	config <- new('nextgenconfig')
-%	config@counts.dir <- 'n:/counts/'
-%	#config@counts.dir <- 'c:/Documents and Settings/nhayes/My Documents/My Dropbox/counts/'
-%	cutoff <- 2
-%	codon.tables <- makeVariantTables(config,'codons',cutoff=cutoff)
-%	aa.tables <- makeVariantTables(config,'aa',cutoff=cutoff)
-%@
-
 <<eval=TRUE,echo=FALSE,term=FALSE>>=
-cutoff <- 2
+cutoff <- 0
 codon.tables <- makeVariantTables(config,'codons',cutoff=cutoff)
 aa.tables <- makeVariantTables(config,'aa',cutoff=cutoff)
 @
 
-Codon counts
+<<results=tex,fig=TRUE,include=TRUE,echo=FALSE>>=
+plotTiters(config)
+@
+
+\textbf{Codon counts}
 
 <<results=tex,fig=FALSE,echo=FALSE>>=
-appendVariantTablesToLatex(codon.tables)
+appendVariantTablesToLatex(config,codon.tables)
 @
 \clearpage
 
-Amino acid counts
+\textbf{Amino acid counts}
 <<results=tex,fig=FALSE,echo=FALSE>>=
-appendVariantTablesToLatex(aa.tables)
+appendVariantTablesToLatex(config,aa.tables)
 @
 
 \end{document}
