@@ -36,7 +36,7 @@ setClass("nextgenconfig",
 	prototype(
 			counts.dir='counts/',
 			config.dir='config/',
-			#config.dir='n:/config/', #hack!	
+			#onfig.dir='n:/config/', #hack!	
 			variants.dir='variants/',
 			out.dir='out/',
 			ref.dir='ref/',
@@ -661,7 +661,7 @@ reportAminoAcidChange <- function(config, subject, region, log=FALSE, updown=5)
 	aanum <- as.integer(aanum)	
 	start <- aanum - updown
 	end <- aanum + updown
-
+	
 	data.subset <- getCodonCountSubset(config,subject,region,'aa', start, end)
 	
 	print(data.subset[which(data.subset$aanum==aanum),splitFields('replicate,rank,aa,count,freq')])
@@ -671,8 +671,8 @@ reportAminoAcidChange <- function(config, subject, region, log=FALSE, updown=5)
 	if (log)
 		frmla <- as.formula(log10(count) ~ aanum | replicate)
 	else frmla <- as.formula(count ~ aanum | replicate)	
-	chrt <- barchart(frmla, data.subset, group=rank,
-			horizontal=FALSE, stack=TRUE, main=subject, xlab='Amino acid number', sub=region,
+	chrt <- barchart(frmla, data.subset, group=rank, horizontal=FALSE, stack=TRUE,
+			main=subject, xlab='Amino acid number', ylab='Amino acid count', sub=region,
 			col=col, strip=FALSE, strip.left=TRUE, #strip.text = list(cex = 0.75),
 			#auto.key = list(space = "right"),
 			layout = c(1,length(unique(data.subset$replicate))))
@@ -723,8 +723,8 @@ reportCodonChange <- function(config, subject, region, log=FALSE, updown=5)
 	if (log)
 		frmla <- as.formula(log10(count) ~ aanum | replicate)
 	else frmla <- as.formula(count ~ aanum | replicate)
-	chrt <- barchart(frmla, data.subset, group=rank,
-			horizontal=FALSE, stack=TRUE, main=subject, xlab='Codon number', sub=region,
+	chrt <- barchart(frmla, data.subset, group=rank, horizontal=FALSE, stack=TRUE,
+			main=subject, xlab='Codon number', ylab='Codon count', sub=region,
 			col=col, strip=FALSE, strip.left=TRUE, #strip.text = list(cex = 0.75),
 			#auto.key = list(space = "right"),
 			layout = c(1,length(unique(data.subset$replicate))))
