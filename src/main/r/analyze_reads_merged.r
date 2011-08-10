@@ -344,9 +344,17 @@ export_read_groups <- function(config,stem,ref)
 }
 #export_read_groups(config,'merged')
 
-export_unmapped_reads <- function(filename)
+export_unmapped_reads <- function(stem)
 {
-	run_command('bam2fastq --no-aligned --unaligned -o ',filename,'.unmapped.fastq',filename)
+	bamfile <- concat('tmp/',stem,'.bam')
+	fastqfile <- concat('unmapped/',stem,'.unmapped.fastq')
+	trimmedfastqfile <- concat('unmapped/',stem,'.unmapped.fastq.trimmed')
+	fastafile <- concat('unmapped/',stem,'.unmapped.fasta')
+	#run_command('bam2fastq --force --no-aligned --unaligned --no-filtered -o ',fastqfile,' ',bamfile)
+	#run_command('cd unmapped; DynamicTrim.pl ',concat(stem,'.unmapped.fastq'))
+	run_command('perl $VARDB_RUTIL_HOME/fq_all2std.pl fq2fa ',trimmedfastqfile,' > ',fastafile)
+	run_command('perl $VARDB_RUTIL_HOME/fastq2table.pl -a ',trimmedfastqfile)
+	run_command('sort merged.nodup.unmapped.fastq.trimmed.table.txt | uniq -dc > unmapped/merged.unique.txt')
 }
 #export_unmapped_reads('bam/PXB0220-0002.wk11.bam')
 
@@ -385,7 +393,7 @@ analyze_reads_merged <- function(config)
 	#map_reads_for_all_samples(config)
 	#merge_bams(config)
 	#realign_indels(stem,ref)
-	recalibrate(concat(stem,'.realigned'),ref)
+	#recalibrate(concat(stem,'.realigned'),ref)
 	#output_bam(stem,'realigned.recal')
 	
 	#call_variants(stem,ref)
@@ -393,11 +401,12 @@ analyze_reads_merged <- function(config)
 	#export_read_groups(config,stem,ref)
 	#count_codons(config)
 	#make_tables()
+	export_unmapped_reads(concat(stem,'.nodup'))
 }
 
 #map_reads_for_sample('KT9.specific','KT9')
 
-#analyze_reads_merged(config)
-solexa_qa('KT9.plasmid')
+analyze_reads_merged(config)
+#solexa_qa('KT9.plasmid')
 
 #Rscript ~/workspace/vardb-util/src/main/r/analyze_reads_merged.r
