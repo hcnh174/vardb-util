@@ -71,6 +71,22 @@ solexa_qa <- function(sample)
 	run_command('cd quality; SolexaQA.pl ../fastq/',sample,'.fastq')
 }
 
+remove_exact_duplicates <- function(sample)
+{
+	infile <- concat('fastq/',sample,'.fastq')
+	outfile <- concat('fastq/',sample,'.dedup') #program adds .fastq extension automatically
+	run_command('prinseq-lite.pl -fastq ',infile,' -out_good ',outfile,' -derep 14')
+}
+#remove_exact_duplicates('PXB0220-0002.wk12')
+
+remove_exact_duplicates_for_all_samples <- function(config)
+{
+	for (sample in rownames(config@samples))
+	{
+		remove_exact_duplicates(sample)
+	}
+}
+
 run_bwa <- function(sample,ref)
 {
 	stem <- concat(sample,'.',ref)
@@ -390,6 +406,7 @@ analyze_reads_merged <- function(config)
 	stem <- 'merged'
 	ref <- 'KT9'
 	#preprocess(config)
+	remove_exact_duplicates_for_all_samples(config)
 	#map_reads_for_all_samples(config)
 	#merge_bams(config)
 	#realign_indels(stem,ref)
@@ -401,7 +418,7 @@ analyze_reads_merged <- function(config)
 	#export_read_groups(config,stem,ref)
 	#count_codons(config)
 	#make_tables()
-	export_unmapped_reads(concat(stem,'.nodup'))
+	#export_unmapped_reads(concat(stem,'.nodup'))
 }
 
 #map_reads_for_sample('KT9.specific','KT9')

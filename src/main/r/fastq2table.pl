@@ -6,9 +6,10 @@ use warnings;
 ##### ##### ##### ##### #####
 
 use Getopt::Std;
-use vars qw( $opt_a $opt_c $opt_v);
+use vars qw( $opt_i $opt_o);
 
 # Usage
+#perl %VARDB_RUTIL_HOME%\fastq2table.pl -i fastq/PXB0219-0011.wk09.fastq -o 219-11.wk9.txt
 my $usage = "
 
 fastq2table.pl - converts fastq files to tab-delimited table format
@@ -16,43 +17,33 @@ based on fastq2fasta.pl by Brian J. Knaus
 
 Usage: perl fastq2table.pl options
  required:
-  -a	fastq input file.
- optional:
-  -c	inset in nucleotides, used to remove barcodes [default = 0].
-  -v	verbose mode [T/F, default is F].
-
+  -i	fastq input file.
+  -o	txt output file.
 ";
 
 # command line processing.
-getopts('a:c:v:');
-die $usage unless ($opt_a);
+getopts('i:o:');
+die $usage unless ($opt_i);
 
-my ($inf, $inset, $verb);
-$inf	= $opt_a if $opt_a;
-$inset	= $opt_c ? $opt_c : 0;
-$verb	= $opt_v ? $opt_v : "F";
+my ($infile, $outfile);
+$infile	= $opt_i if $opt_i;
+$outfile	= $opt_o if $opt_o;
+
+print "$infile\n";
+print "$outfile\n";
 
 ##### ##### ##### ##### #####
 # Globals.
 
-my ($temp, $in, $out, $outf);
+my ($temp, $in, $out);
 my @temp;
-
-##### ##### ##### ##### #####
-# Manage outfile name.
-@temp = split(/\//, $inf);
-$temp = $temp[$#temp];
-#@temp = split(/\./, $temp);
-#$outf = $temp[0];
-$outf = "unmapped/$temp.table.txt";
-print "$outf\n";
 
 ##### ##### ##### ##### #####
 # Main.
 
 # Open input and output files.
-open( $in, "<",  $inf)  or die "Can't open $inf: $!";
-open( $out, ">",  $outf)  or die "Can't open $outf.table.txt $!";
+open( $in, "<",  $infile)  or die "Can't open $infile: $!";
+open( $out, ">",  $outfile)  or die "Can't open $outfile $!";
 
 print $out "sequence\n";
 while (<$in>){
@@ -64,12 +55,8 @@ while (<$in>){
   # Prune first char.
   $temp[0] = substr($temp[0], 1);
 
-  # Substring to inset value.
-  $temp[1] = substr($temp[1], $inset);
-
   # Print to fasta file.
-  # print $out "$temp[0]\t$temp[1]\n";
-  print $out "$temp[1]\n";
+   print $out "$temp[0]\t$temp[1]\t$temp[2]\t$temp[3]\n";
 }
 
 close $in or die "$in: $!";
