@@ -17,8 +17,7 @@ setClass("sampleparams",
 			nt.cutoff=0))
 
 setClass("nextgenconfig",
-	representation(
-			counts.dir='character',
+	representation(			
 			config.dir='character',
 			variants.dir='character',
 			out.dir='character',
@@ -32,28 +31,51 @@ setClass("nextgenconfig",
 			treatments='data.frame',
 			titers='data.frame',
 			subjects='data.frame',
-			samplenames='vector'),
+			samplenames='vector',
+			ref='character',
+			illumina.dir='character',
+			fastq.dir='character',
+			bam.dir='character',
+			vcf.dir='character',
+			qc.dir='character',
+			counts.dir='character',
+			tmp.dir='character'),
 	prototype(
-			counts.dir='counts/',
-			config.dir='config/',
-			#onfig.dir='n:/config/', #hack!	
-			variants.dir='variants/',
-			out.dir='out/',
-			ref.dir='ref/',
-			index.dir='indexes/'))
+			config.dir='config',
+			#config.dir='n:/config', #hack!	
+			variants.dir='variants',
+			out.dir='out',
+			ref.dir='ref',
+			ref='KT9',
+			index.dir='indexes',
+			illumina.dir='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
+			fastq.dir='fastq',
+			bam.dir='bam',
+			vcf.dir='vcf',
+			qc.dir='qc',
+			counts.dir='counts',
+			tmp.dir='tmp'))
 
 setMethod("initialize", "nextgenconfig", function(.Object)
 {
-	.Object@refs <- loadRefs(concat(.Object@config.dir,'refs.fasta'))
-	.Object@subjects <- loadDataFrame(concat(.Object@config.dir,'subjects.txt'), idcol='subject')
-	.Object@runs <- loadDataFrame(concat(.Object@config.dir,'runs.txt'), idcol='run')
-	.Object@samples <- loadDataFrame(concat(.Object@config.dir,'samples.txt'), idcol='sample')
-	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'regions.txt'), idcol='region')
-	.Object@variants <- loadDataFrame(concat(.Object@config.dir,'variants.txt'))
-	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'titers.txt'))
-	.Object@treatments <- loadDataFrame(concat(.Object@config.dir,'treatments.txt'))
+	.Object@refs <- loadRefs(concat(.Object@config.dir,'/refs.fasta'))
+	.Object@subjects <- loadDataFrame(concat(.Object@config.dir,'/subjects.txt'), idcol='subject')
+	.Object@runs <- loadDataFrame(concat(.Object@config.dir,'/runs.txt'), idcol='run')
+	.Object@samples <- loadDataFrame(concat(.Object@config.dir,'/samples.txt'), idcol='sample')
+	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='region')
+	.Object@variants <- loadDataFrame(concat(.Object@config.dir,'/variants.txt'))
+	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
+	.Object@treatments <- loadDataFrame(concat(.Object@config.dir,'/treatments.txt'))
 	#.Object@subjects <- unique(.Object@samples[,'subject'])
 	.Object@samplenames <- unique(.Object@runs$sample)
+	
+	#add dir subfolders onto out folder
+	.Object@fastq.dir <- concat(.Object@out.dir,'/',.Object@fastq.dir)
+	.Object@bam.dir <- concat(.Object@out.dir,'/',.Object@bam.dir)
+	.Object@vcf.dir <- concat(.Object@out.dir,'/',.Object@vcf.dir)
+	.Object@qc.dir <- concat(.Object@out.dir,'/',.Object@qc.dir)
+	#.Object@counts.dir <- concat(.Object@out.dir,'/',.Object@counts.dir)
+	.Object@tmp.dir <- concat(.Object@out.dir,'/',.Object@tmp.dir)
 	.Object
 })
 
@@ -530,6 +552,7 @@ createCodonCountTable <- function(config, data, params)
 #params <- new('sampleparams',subject='218-7', sample='218-7_03-01', region='NS3aa36')
 #table.codons <- createCodonCountTable(data,params)
 #head(table.codons, n=20)
+
 
 createAminoAcidCountTable <- function(config, data, params)
 {

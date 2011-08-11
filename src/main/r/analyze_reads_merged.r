@@ -1,22 +1,52 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'common.r',sep=''))
 loadUtilFiles('nextgen')
-#setCurDir('nextgen2')
 print(getwd())
+testrun <- FALSE
 
 config <- new('nextgenconfig')
 
-run_command <- function(...)
+if (FALSE)
 {
-	command <- concat(...)
-	print(command)	
-	if (command!='') system(command)
+	testrun <- TRUE
+	setCurDir('nextgen2')
+	config <- new('nextgenconfig')
+	#config@config.dir <- 'n:/config'
+	#config <- initialize(config)	
 }
 
-preprocess <- function(config, path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
-		temp.dir='tmp', fastq.dir='fastq')
+run_command <- function(..., dir=NULL)
 {
+	command <- concat(...)
+	olddir <- getwd()
+	if (!is.null(dir) & testrun==FALSE)
+		setwd(dir)
+	print(command)
+	if (command!='' & testrun==FALSE)
+		system(command)
+	if (!is.null(dir) & testrun==FALSE)
+		setwd(olddir)
+}
+#run_command('ls')
+#run_command('ls', dir='c:/temp')
+
+make_folders <- function(config, subdirs='fastq,tmp,bam,unmapped,vcf,variants,qc')
+{
+	dir <- config@out.dir
+	run_command('mkdir ',dir,' -p')
+	for (subdir in splitFields(subdirs))
+	{
+		subdir <- concat(dir,'/',subdir)
+		run_command('mkdir ',subdir,' -p; rm ',subdir,'/*')
+	}
+}
+#make_folders(config)
+
+preprocess <- function(config)# path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned', temp.dir='tmp', fastq.dir='fastq')
+{
+	fastq.dir <- config@fastq.dir
+	temp.dir <- config@tmp.dir
 	runs <- config@runs
-	run_command('rm -r tmp/*')	
+	run_command('rm -r ',temp.dir,'/*')
 	for (sample in unique(runs$sample))
 	{
 		dir.to <- concat(temp.dir,'/',sample)
@@ -32,7 +62,7 @@ preprocess <- function(config, path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639
 		project <- row$project
 		barcode <- row$barcode
 		lane <- row$lane		
-		dir.from <- concat(path,'/Project_',project,'/Sample_',project,'/')
+		dir.from <- concat(config@illumina.dir,'/Project_',project,'/Sample_',project,'/')
 		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
 		run_command('cp ',dir.from,filename,' ',dir.to)
 	}
@@ -52,66 +82,81 @@ preprocess <- function(config, path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639
 		
 	}
 	run_command('')
-	#run_command('rm -r ',temp.dir,'/*')
+	run_command('rm -r ',temp.dir)
 }
+#preprocess(config)
 
-qseq2fastq <- function(sample)
+#qseq2fastq <- function(sample)
+#{
+#	run_command('perl qseq2fastq.pl -a qseq/',sample,'.qseq -v T')
+#	run_command('mv ',sample,'.fastq fastq/',sample,'.fastq')
+#}
+#
+#trim <- function(sample)
+#{
+#	run_command('cd trimmed; DynamicTrim.pl ../fastq/',sample,'.fastq')
+#}
+
+solexa_qa <- function(config,sample)
 {
-	run_command('perl qseq2fastq.pl -a qseq/',sample,'.qseq -v T')
-	run_command('mv ',sample,'.fastq fastq/',sample,'.fastq')
+	run_command('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq')
 }
+#solexa_qa(config,'KT9.plasmid')
 
-trim <- function(sample)
+remove_exact_duplicates <- function(config,sample)
 {
-	run_command('cd trimmed; DynamicTrim.pl ../fastq/',sample,'.fastq')
-}
-
-solexa_qa <- function(sample)
-{
-	run_command('cd quality; SolexaQA.pl ../fastq/',sample,'.fastq')
-}
-
-remove_exact_duplicates <- function(sample)
-{
-	infile <- concat('fastq/',sample,'.fastq')
-	outfile <- concat('fastq/',sample,'.dedup') #program adds .fastq extension automatically
-	run_command('prinseq-lite.pl -fastq ',infile,' -out_good ',outfile,' -derep 14')
+	fastq.dir <- config@fastq.dir# concat(config@out.dir,'/',config@fastq.dir)
+	infile <- concat(fastq.dir,'/',sample,'.fastq')
+	outfile <- concat(fastq.dir,'/',sample,'.dedup') #program adds .fastq extension automatically
+	run_command('prinseq-lite.pl -fastq ',infile,' -out_good ',outfile,' -out_bad null -derep 14')
 }
 #remove_exact_duplicates('PXB0220-0002.wk12')
 
+#testrun <- TRUE
 remove_exact_duplicates_for_all_samples <- function(config)
 {
 	for (sample in rownames(config@samples))
 	{
-		remove_exact_duplicates(sample)
+		remove_exact_duplicates(config,sample)
 	}
 }
+#remove_exact_duplicates_for_all_samples(config)
 
-run_bwa <- function(sample,ref)
+######################################################################
+
+run_bwa <- function(config,sample, fastq.ext='.dedup.fastq')
 {
+	ref <- config@ref
 	stem <- concat(sample,'.',ref)
-	fqfile <- concat('fastq/',sample,'.fastq')
-	reffile <- concat('ref/',ref,'.fasta')
-	saifile <- concat('tmp/',stem,'.sai')
-	samfile <- concat('tmp/',stem,'.sam')
-	bamfile <- concat('tmp/',stem,'.bam')
+	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	tmp.dir <- config@tmp.dir
+
+	saifile <- concat(tmp.dir,'/',stem,'.sai')
+	samfile <- concat(tmp.dir,'/',stem,'.sam')
+	bamfile <- concat(tmp.dir,'/',stem,'.bam')
 	
 	run_command('bwa aln ',reffile,' ',fqfile,' > ',saifile)
 	run_command('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
-	run_command('samtools view -bS -o ',bamfile,' ',samfile)
-	run_command('samtools sort ',bamfile,' tmp/',stem)
-	run_command('samtools index ',bamfile)
+	#run_command('samtools view -bS -o ',bamfile,' ',samfile)
+	#run_command('samtools sort ',bamfile,' ',config@out.dir,'/',stem)
+	#run_command('samtools index ',bamfile)
 	return(stem)
 }
-#run_bwa('PXB0220-0002.wk13.lane8','KT9')
+#run_bwa(config,'PXB0220-0002.wk13')
 
-add_read_groups <- function(sample,ref)
+add_read_groups <- function(config,sample)
 {
+	ref <- config@ref
 	stem <- concat(sample,'.',ref)
 	newstem <- concat(stem,'.rg')
+	tmp.dir <- config@tmp.dir
+	infile <- concat(tmp.dir,'/',stem,'.sam')
+	outfile <- concat(tmp.dir,'/',newstem,'.bam')
+
 	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
-	str <- concat(str,' INPUT=tmp/',stem,'.bam')
-	str <- concat(str,' OUTPUT=tmp/',newstem,'.bam')
+	str <- concat(str,' INPUT=',infile)
+	str <- concat(str,' OUTPUT=',outfile)
 	str <- concat(str,' RGSM="',sample,'"')
 	str <- concat(str,' RGLB="',sample,'"')
 	str <- concat(str,' RGID="',sample,'"')
@@ -122,48 +167,72 @@ add_read_groups <- function(sample,ref)
 	run_command(str)
 	return(newstem)
 }
-#add_read_groups('PXB0220-0002.wk13','8','KT9')
+#add_read_groups(config,'PXB0220-0002.wk13')
 
-mark_duplicates <- function(stem) #sample,'.',ref,'.rg'
+#mark_duplicates <- function(config,stem) #sample,'.',ref,'.rg'
+#{
+#	newstem <- concat(stem,'.dedup')
+#	tmp.dir <- concat(config@out.dir,'/tmp')
+#	metricsfile <- concat(tmp.dir,'/qc/',newstem,'.metrics')
+#	infile <- concat(tmp.dir,'/',stem,'.bam')
+#	outfile <-  concat(tmp.dir,'/',newstem,'.bam')
+#	
+#	str <- 'java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar'
+#	str <- concat(str,' INPUT=',infile)
+#	str <- concat(str,' OUTPUT=',outfile)
+#	str <- concat(str,' METRICS_FILE=',metricsfile)
+#	run_command(str)
+#	run_command('samtools index ',outfile)
+#	return(newstem)
+#}
+#mark_duplicates(config,'PXB0220-0002.wk13.KT9.rg')
+
+map_reads_for_sample <- function(config, sample)
 {
-	newstem <- concat(stem,'.dedup')
-	metricsfile <- concat('qc/',newstem,'.metrics')
-	outfile <-  concat('tmp/',newstem,'.bam')
+	stem <- run_bwa(config,sample)
+	stem.rg <- add_read_groups(config,sample)
+	#stem.rg.dedup <- mark_duplicates(config,stem.rg)
+}
+#map_reads_for_sample(config,'PXB0220-0002.wk13')
+
+map_reads_for_all_samples <- function(config)
+{
+	for (sample in rownames(config@samples))
+	{
+		map_reads_for_sample(config,sample)
+	}
+}
+#map_reads_for_all_samples(config)
+
+merge_bams <- function(config)
+{
+	ref <- config@ref
+	tmp.dir <- config@tmp.dir
+	outfile <- concat(tmp.dir,'/merged.bam')
 	
-	str <- 'java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar'
-	str <- concat(str,' INPUT=tmp/',stem,'.bam')
+	str <- 'java -Xmx2g -jar $PICARD_HOME/MergeSamFiles.jar'
+	str <- concat(str,' MERGE_SEQUENCE_DICTIONARIES=true')
+	str <- concat(str,' CREATE_INDEX=true')
+	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
+	for (sample in rownames(config@samples))
+	{
+		infile <- concat(tmp.dir,'/',sample,'.',ref,'.rg.bam') #.dedup
+		str <- concat(str,' INPUT=',infile)
+	}
 	str <- concat(str,' OUTPUT=',outfile)
-	str <- concat(str,' METRICS_FILE=',metricsfile)
 	run_command(str)
-	run_command('samtools index ',outfile)
-	return(newstem)
 }
-#mark_duplicates('PXB0220-0002.wk13.KT9.rg')
 
-map_reads_for_sample <- function(sample, ref)
-{
-	stem <- run_bwa(sample,ref)
-	stem.rg <- add_read_groups(sample, ref)
-	stem.rg.dedup <- mark_duplicates(stem.rg)
-	return(stem.rg.dedup)
-}
-#map_reads_for_sample('PXB0220-0002.wk13','KT9')
+###################################################################
 
-extract_read_group <- function(infile,readgroup)
+realign_indels <- function(config, stem)
 {
-	outfile <- concat('bam/',readgroup,'.bam')
-	print(concat('sample=',infile))
-	run_command('samtools view -hu -o ',outfile,' -r ',readgroup,' ',infile) #b
-	run_command('samtools index ',outfile)
-}
-#extract_read_group('tmp/KT9.plasmid.lane1.KT9.rg.bam','KT9.plasmid')
-
-realign_indels <- function(stem,ref)
-{
-	reffile <- concat('ref/',ref,'.fasta')
-	bamfile <- concat('tmp/',stem,'.bam')
-	intervalfile <- concat('tmp/',stem,'.intervals')
-	outfile <- concat('tmp/',stem,'.realigned.bam')
+	ref <- config@ref
+	tmp.dir <- config@tmp.dir
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	bamfile <- concat(tmp.dir,'/',stem,'.bam')
+	intervalfile <- concat(tmp.dir,'/',stem,'.intervals')
+	outfile <- concat(tmp.dir,'/',stem,'.realigned.bam')
 	
 	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T RealignerTargetCreator'
 	str <- concat(str,' -R ',reffile)
@@ -178,14 +247,17 @@ realign_indels <- function(stem,ref)
 	str <- concat(str,' -o ',outfile)
 	run_command(str)
 }
-#realign_indels('merged','KT9')
+#realign_indels(config,'merged')
 
-analyze_covariates <- function(stem,ref,suffix)
+analyze_covariates <- function(config,stem,suffix)
 {
-	reffile <- concat('ref/',ref,'.fasta')
-	bamfile <- concat('tmp/',stem,'.bam')
-	maskfile <- concat('config/',ref,'.mask.vcf')
-	recalfile <- concat('tmp/',stem,'.recal.csv')
+	ref <- config@ref
+	tmp.dir <- config@tmp.dir
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	bamfile <- concat(tmp.dir,'/',stem,'.bam')
+	maskfile <- concat(config@config.dir,'/',ref,'.mask.vcf')
+	recalfile <- concat(tmp.dir,'/',stem,'.recal.csv')
+	output.dir <- concat(config@qc.dir,'/',stem,'.',suffix)
 	
 	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T CountCovariates'
 	str <- concat(str,' -l INFO')
@@ -206,20 +278,23 @@ analyze_covariates <- function(stem,ref,suffix)
 	str <- 'java -Xmx2g -jar $GTAK_HOME/AnalyzeCovariates.jar'
 	str <- concat(str,' -resources $GTAK_HOME/resources')
 	str <- concat(str,' -recalFile ',recalfile)
-	str <- concat(str,' -outputDir ./qc/',stem,'.',suffix)
+	str <- concat(str,' -outputDir ',output.dir)
 	run_command(str)
 }
+#analyze_covariates(config,'merged','before')
 
-recalibrate <- function(stem,ref) 
+recalibrate <- function(config,stem) 
 {
+	ref <- config@ref
+	tmp.dir <- config@tmp.dir
 	newstem <- concat(stem,'.recal')
-	reffile <- concat('ref/',ref,'.fasta')
-	bamfile <- concat('tmp/',stem,'.bam')
-	maskfile <- concat('config/',ref,'.mask.vcf')
-	recalfile <- concat('tmp/',newstem,'.csv')
-	outfile <- concat('tmp/',newstem,'.bam')
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	maskfile <- concat(config@config.dir,'/',ref,'.mask.vcf')
+	bamfile <- concat(tmp.dir,'/',stem,'.bam')	
+	recalfile <- concat(tmp.dir,'/',newstem,'.csv')
+	outfile <- concat(tmp.dir,'/',newstem,'.bam')
 	
-	#analyze_covariates(stem,ref,'before')
+	analyze_covariates(config,stem,'before')
 
 	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T TableRecalibration'
 	str <- concat(str,' -l INFO')
@@ -229,16 +304,28 @@ recalibrate <- function(stem,ref)
 	str <- concat(str,' -o ',outfile)
 	#run_command(str)
 
-	analyze_covariates(newstem,ref,'after')
+	analyze_covariates(config,newstem,'after')
 	return(newstem)
 }
-#recalibrate('merged','KT9')
+#recalibrate(config,'merged')
 
-call_variants <- function(stem,ref)
+output_bam <- function(config,stem,suffix)
+{
+	infile <- concat(config@tmp.dir,'/',stem,'.',suffix,'.bam')
+	outfile <- concat(config@bam.dir,'/',stem,'.bam')
+	run_command('cp ',infile,' ',outfile)
+	run_command('samtools index ',outfile)
+}
+#output_bam(config,'merged','realigned.recal')
+
+################################################################3
+
+call_variants <- function(config,stem)
 {	
-	reffile <- concat('ref/',ref,'.fasta')
-	bamfile <- concat('bam/',stem,'.bam')
-	outfile <- concat('vcf/',stem,'.vcf')
+	ref <- config@ref
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
+	outfile <- concat(config@vcf.dir,'/',stem,'.vcf')
 	
 	str <- 'java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper'
 	str <- concat(str,' -R ',reffile)
@@ -250,13 +337,14 @@ call_variants <- function(stem,ref)
 	str <- concat(str,' -o ',outfile)
 	run_command(str)
 }
-#call_variants('merged','KT9')
+#call_variants(config,'merged')
 
-filter_variants <- function(stem, ref)
+filter_variants <- function(config, stem)
 {
-	reffile <- concat('ref/',ref,'.fasta')
-	infile <- concat('vcf/',stem,'.vcf')
-	outfile <- concat('vcf/',stem,'.filtered.vcf')
+	ref <- config@ref
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	infile <- concat(config@vcf.dir,'/',stem,'.vcf')
+	outfile <- concat(config@vcf.dir,'/',stem,'.filtered.vcf')
 	
 	str <- 'java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T VariantFiltration'
 	str <- concat(str,' -R ',reffile)
@@ -285,15 +373,20 @@ filter_variants <- function(stem, ref)
 	
 	run_command(str)
 }
-#filter_variants('merged','KT9')
+#filter_variants(config,'merged')
 
-mpileup_vcf <- function(stem,ref)
+mpileup_vcf <- function(config,stem)
 {
-	reffile <- concat('ref/',ref,'.fasta')
-	run_command('samtools mpileup -u -f ',reffile,' bam/',stem,'.bam > tmp/',stem,'.bcf')
-	run_command('bcftools view tmp/',stem,'.bcf > vcf/',stem,'.mpileup.vcf')
+	ref <- config@ref
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
+	bcffile <- concat(config@tmp.dir,'/',stem,'.bcf')
+	vcffile <- concat(config@vcf.dir,'/',stem,'.mpileup.vcf')
+
+	run_command('samtools mpileup -u -f ',reffile,' ',bamfile,' > ',bcffile)
+	run_command('bcftools view ',bcffile,' > ',vcffile)
 }
-#mpileup_vcf('merged','KT9')
+#mpileup_vcf(config,'merged')
 
 export_pileup <- function(sample,ref)
 {
@@ -301,129 +394,96 @@ export_pileup <- function(sample,ref)
 }
 #export_pileup('merged','KT9')
 
-output_bam <- function(stem,suffix)
-{
-	infile <- concat('tmp/',stem,'.',suffix,'.bam')
-	outfile <- concat('bam/',stem,'.bam')
-	run_command('cp ',infile,' ',outfile)
-	run_command('samtools index ',outfile)
-}
-#output_bam('merged','realigned.recal')
+##################################################################3
 
-###########################################################
-
-map_reads_for_all_samples <- function(config)
+export_read_group <- function(config,stem,readgroup)
 {
-	for (sample in rownames(config@samples))
-	{
-		ref <- config@samples[sample,'ref']
-		map_reads_for_sample(sample,ref)
-	}
-}
-
-merge_bams <- function(config)
-{
-	outfile <- 'tmp/merged.bam'
-	
-	str <- 'java -Xmx2g -jar $PICARD_HOME/MergeSamFiles.jar'
-	str <- concat(str,' MERGE_SEQUENCE_DICTIONARIES=true')
-	str <- concat(str,' CREATE_INDEX=true')
-	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
-	for (sample in rownames(config@samples))
-	{
-		ref <- config@samples[sample,'ref']
-		str <- concat(str,' INPUT=tmp/',sample,'.',ref,'.rg.dedup.bam')
-	}
-	str <- concat(str,' OUTPUT=',outfile)
-	run_command(str)
-	#run_command('samtools index ',outfile)
-}
-#merge_bams(config)
-
-export_read_group <- function(stem,readgroup)
-{
-	infile <- concat('bam/',stem,'.bam')
-	outfile <- concat('bam/',readgroup,'.bam')
+	infile <- concat(config@bam.dir,'/',stem,'.bam')
+	outfile <- concat(config@bam.dir,'/',readgroup,'.bam')
 	run_command('samtools view -bhu -o ',outfile,' -r ',readgroup,' ',infile)
 	run_command('samtools index ',outfile)
 }
 #export_read_group('merged','KT9.plasmid')
 
-export_read_groups <- function(config,stem,ref)
+export_read_groups <- function(config,stem)
 {
 	for (sample in rownames(config@samples))
 	{
-		#export_read_group(stem,sample)
-		remove_duplicates(sample,ref)
+		export_read_group(config,stem,sample)
+		#remove_duplicates(sample,ref)
 		#export_pileup(sample,ref)
 	}
 }
 #export_read_groups(config,'merged')
-
-export_unmapped_reads <- function(stem)
-{
-	bamfile <- concat('tmp/',stem,'.bam')
-	fastqfile <- concat('unmapped/',stem,'.unmapped.fastq')
-	trimmedfastqfile <- concat('unmapped/',stem,'.unmapped.fastq.trimmed')
-	fastafile <- concat('unmapped/',stem,'.unmapped.fasta')
-	#run_command('bam2fastq --force --no-aligned --unaligned --no-filtered -o ',fastqfile,' ',bamfile)
-	#run_command('cd unmapped; DynamicTrim.pl ',concat(stem,'.unmapped.fastq'))
-	run_command('perl $VARDB_RUTIL_HOME/fq_all2std.pl fq2fa ',trimmedfastqfile,' > ',fastafile)
-	run_command('perl $VARDB_RUTIL_HOME/fastq2table.pl -a ',trimmedfastqfile)
-	run_command('sort merged.nodup.unmapped.fastq.trimmed.table.txt | uniq -dc > unmapped/merged.unique.txt')
-}
-#export_unmapped_reads('bam/PXB0220-0002.wk11.bam')
-
-remove_duplicates <- function(stem,ref)
-{
-	metricsfile <- concat('tmp/',stem,'.nodup.metrics')
-	outfile <-  concat('tmp/',stem,'.nodup.bam')
-	
-	str <- 'java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar'
-	str <- concat(str,' INPUT=bam/',stem,'.bam')
-	str <- concat(str,' OUTPUT=',outfile)
-	str <- concat(str,' METRICS_FILE=',metricsfile)
-	str <- concat(str,' REMOVE_DUPLICATES=true')
-	run_command(str)
-	run_command('samtools index ',outfile)
-}
+#
+#export_unmapped_reads <- function(stem)
+#{
+#	bamfile <- concat('tmp/',stem,'.bam')
+#	fastqfile <- concat('unmapped/',stem,'.unmapped.fastq')
+#	trimmedfastqfile <- concat('unmapped/',stem,'.unmapped.fastq.trimmed')
+#	fastafile <- concat('unmapped/',stem,'.unmapped.fasta')
+#	#run_command('bam2fastq --force --no-aligned --unaligned --no-filtered -o ',fastqfile,' ',bamfile)
+#	#run_command('cd unmapped; DynamicTrim.pl ',concat(stem,'.unmapped.fastq'))
+#	run_command('perl $VARDB_RUTIL_HOME/fq_all2std.pl fq2fa ',trimmedfastqfile,' > ',fastafile)
+#	run_command('perl $VARDB_RUTIL_HOME/fastq2table.pl -a ',trimmedfastqfile)
+#	run_command('sort merged.nodup.unmapped.fastq.trimmed.table.txt | uniq -dc > unmapped/merged.unique.txt')
+#}
+##export_unmapped_reads('bam/PXB0220-0002.wk11.bam')
+#
+#remove_duplicates <- function(stem,ref)
+#{
+#	metricsfile <- concat('tmp/',stem,'.nodup.metrics')
+#	outfile <-  concat('tmp/',stem,'.nodup.bam')
+#	
+#	str <- 'java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar'
+#	str <- concat(str,' INPUT=bam/',stem,'.bam')
+#	str <- concat(str,' OUTPUT=',outfile)
+#	str <- concat(str,' METRICS_FILE=',metricsfile)
+#	str <- concat(str,' REMOVE_DUPLICATES=true')
+#	run_command(str)
+#	run_command('samtools index ',outfile)
+#}
 
 count_codons <- function(config)
 {
 	for (subject in config@subjects$subject)
 	{
-		run_command('Rscript $VARDB_RUTIL_HOME/count_codons.r subject=',subject)
+		run_command('Rscript $VARDB_RUTIL_HOME/count_codons.r subject=',subject,' dir=',config@out.dir)
 	}
 }
 
-make_tables <- function()
+make_tables <- function(config)
 {
 	run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r')
 }
 
+
 analyze_reads_merged <- function(config)
 {
 	stem <- 'merged'
-	ref <- 'KT9'
+	ref <- config@ref
+	#make_folders(config)
 	#preprocess(config)
-	remove_exact_duplicates_for_all_samples(config)
+	#remove_exact_duplicates_for_all_samples(config)
 	#map_reads_for_all_samples(config)
-	#merge_bams(config)
-	#realign_indels(stem,ref)
-	#recalibrate(concat(stem,'.realigned'),ref)
-	#output_bam(stem,'realigned.recal')
+	merge_bams(config)
+	realign_indels(config,stem)
+	recalibrate(config,concat(stem,'.realigned'))
+	output_bam(config,stem,'realigned.recal')
 	
-	#call_variants(stem,ref)
-	#filter_variants(stem,ref)
-	#export_read_groups(config,stem,ref)
+	call_variants(config,stem)
+	filter_variants(config,stem)
+	export_read_groups(config,stem)
 	#count_codons(config)
-	#make_tables()
-	#export_unmapped_reads(concat(stem,'.nodup'))
+	#make_tables(config,)
+	#export_unmapped_reads(config,concat(stem,'.nodup'))
 }
 
-#map_reads_for_sample('KT9.specific','KT9')
+args <- commandArgs(TRUE) # from R.utils package
+config@ref <- args$ref
+config@out.dir <- args$out
 
 analyze_reads_merged(config)
-#solexa_qa('KT9.plasmid')
 
-#Rscript ~/workspace/vardb-util/src/main/r/analyze_reads_merged.r
+#Rscript ~/workspace/vardb-util/src/main/r/analyze_reads_merged.r ref=KT9 out=out
+
