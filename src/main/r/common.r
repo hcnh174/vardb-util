@@ -579,6 +579,8 @@ sweaveToPdf <- function(filename)
 	system(concat('rm ',auxfile))
 	system(concat('rm ',logfile))
 	system(concat('rm ',texfile))
+	system(concat('rm Rplots.pdf'))
+	system(concat('rm ',stem,'-*.pdf'))
 	system(concat('open ',pdffile))
 }
 #sweaveToPdf('tables.Rnw')

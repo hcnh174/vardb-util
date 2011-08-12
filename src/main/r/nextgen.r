@@ -19,7 +19,6 @@ setClass("sampleparams",
 setClass("nextgenconfig",
 	representation(			
 			config.dir='character',
-			variants.dir='character',
 			out.dir='character',
 			ref.dir='character',
 			index.dir='character',
@@ -38,23 +37,24 @@ setClass("nextgenconfig",
 			bam.dir='character',
 			vcf.dir='character',
 			qc.dir='character',
+			pileup.dir='character',
 			counts.dir='character',
 			tmp.dir='character'),
 	prototype(
 			config.dir='config',
 			#config.dir='n:/config', #hack!	
-			variants.dir='variants',
 			out.dir='out',
 			ref.dir='ref',
 			ref='KT9',
 			index.dir='indexes',
-			illumina.dir='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
-			fastq.dir='fastq',
-			bam.dir='bam',
-			vcf.dir='vcf',
-			qc.dir='qc',
-			counts.dir='counts',
-			tmp.dir='tmp'))
+			illumina.dir='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned'))
+			#fastq.dir='fastq',
+			#bam.dir='bam',
+			#vcf.dir='vcf',
+			#qc.dir='qc',
+			#counts.dir='counts',
+			#pileup.dir='pileup',
+			#tmp.dir='tmp'
 
 setMethod("initialize", "nextgenconfig", function(.Object)
 {
@@ -66,16 +66,15 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	.Object@variants <- loadDataFrame(concat(.Object@config.dir,'/variants.txt'))
 	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
 	.Object@treatments <- loadDataFrame(concat(.Object@config.dir,'/treatments.txt'))
-	#.Object@subjects <- unique(.Object@samples[,'subject'])
 	.Object@samplenames <- unique(.Object@runs$sample)
 	
-	#add dir subfolders onto out folder
-	.Object@fastq.dir <- concat(.Object@out.dir,'/',.Object@fastq.dir)
-	.Object@bam.dir <- concat(.Object@out.dir,'/',.Object@bam.dir)
-	.Object@vcf.dir <- concat(.Object@out.dir,'/',.Object@vcf.dir)
-	.Object@qc.dir <- concat(.Object@out.dir,'/',.Object@qc.dir)
-	#.Object@counts.dir <- concat(.Object@out.dir,'/',.Object@counts.dir)
-	.Object@tmp.dir <- concat(.Object@out.dir,'/',.Object@tmp.dir)
+	.Object@fastq.dir <- concat(.Object@out.dir,'/fastq')
+	.Object@bam.dir <- concat(.Object@out.dir,'/bam')
+	.Object@vcf.dir <- concat(.Object@out.dir,'/vcf')
+	.Object@qc.dir <- concat(.Object@out.dir,'/qc')
+	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
+	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
+	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
 	.Object
 })
 
@@ -286,32 +285,32 @@ makeVariants <- function(config, file='index_refs.txt')
 
 ####################################################################
 
-map_sample_reads <- function(config, sample, ref, file)
-{
-	#then loop through each reference
-	for (varref in getVarRefNames(config, ref))
-	{
-		appendFile('python map_reads.py ',sample,' ',varref, file=file)
-	}
-}
-
-map_reads <- function(config, file='out/map_reads.txt')
-{
-	createFile(file=file)
-	appendFile('mkdir sam; rm sam/*', file=file)
-	appendFile('mkdir bam; rm bam/*', file=file)
-	appendFile('mkdir sai; rm sai/*', file=file)
-	appendFile('mkdir unmapped; rm unmapped/*', file=file)
-	appendFile('mkdir variants; rm variants/*', file=file)
-	
-	#samples <- loadSamples()
-	samples <- config@samples
-	for (sample in rownames(samples))
-	{
-		ref <- samples[sample,'ref']
-		map_sample_reads(config,sample,ref,file)
-	}
-}
+#map_sample_reads <- function(config, sample, ref, file)
+#{
+#	#then loop through each reference
+#	for (varref in getVarRefNames(config, ref))
+#	{
+#		appendFile('python map_reads.py ',sample,' ',varref, file=file)
+#	}
+#}
+#
+#map_reads <- function(config, file='out/map_reads.txt')
+#{
+#	createFile(file=file)
+#	appendFile('mkdir sam; rm sam/*', file=file)
+#	appendFile('mkdir bam; rm bam/*', file=file)
+#	appendFile('mkdir sai; rm sai/*', file=file)
+#	appendFile('mkdir unmapped; rm unmapped/*', file=file)
+#	appendFile('mkdir variants; rm variants/*', file=file)
+#	
+#	#samples <- loadSamples()
+#	samples <- config@samples
+#	for (sample in rownames(samples))
+#	{
+#		ref <- samples[sample,'ref']
+#		map_sample_reads(config,sample,ref,file)
+#	}
+#}
 
 ##################################################################
 
@@ -372,7 +371,8 @@ extractRefSequence <- function(config, ref, start, end)
 
 getReferenceCodon <- function(config, subject, region)
 {
-	ref <- min(config@samples[which(config@samples$subject==subject),'ref'])
+	ref <- config@ref
+	#ref <- min(config@samples[which(config@samples$subject==subject),'ref'])
 	coords <- as.numeric(strsplit(config@regions[region,'ntfocus'],'-')[[1]])
 	refcodon <- toupper(extractRefSequence(config,ref,coords[1],coords[2]))
 	return(refcodon)
@@ -599,7 +599,7 @@ count_codons_for_sample <- function(config, params, variantdata)
 	sample <- as.character(params@sample)
 	print(concat('count_codons_for_sample: ',sample))
 	ref <- config@samples[sample,'ref'] # look up the ref for the sample
-	filename <- concat(config@variants.dir,sample,'.',ref,'.txt'); print(filename) # load the corresponding data file
+	filename <- concat(config@pileup.dir,'/',sample,'.',ref,'.txt'); print(filename) # load the corresponding data file
 	data <- loadDataFrame(filename)
 	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
 	# each sample has several runs targeting different regions
@@ -628,7 +628,7 @@ count_codons_for_subject <- function(config, params)
 		params@replicate <- samples[sample,'replicate']
 		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
 	}
-	counts.dir <- config@counts.dir
+	counts.dir <- concat(config@counts.dir,'/')
 	writeTable(variantdata@nt, concat(counts.dir,params@subject,'.nt.txt'), row.names=FALSE)
 	writeTable(variantdata@codons, concat(counts.dir,params@subject,'.codons.txt'), row.names=FALSE)
 	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
@@ -667,7 +667,7 @@ estimateReadCount <- function(mb)
 
 getCodonCountSubset <- function(config, subject, region, filetype, start, end=start, cutoff=0)
 {
-	filename <- concat(config@counts.dir,subject,'.',filetype,'.txt')
+	filename <- concat(config@counts.dir,'/',subject,'.',filetype,'.txt')
 	data <- loadDataFrame(filename)
 	data.subset <- data[which(data$region==region & data$aanum>=start &data$aanum<=end & data$count>=cutoff),]
 	data.subset$replicate <- factor(data.subset$replicate)
@@ -928,7 +928,7 @@ makeVariantTables <- function(config, type, subject=NULL, ...)
 	tables <- list()
 	for (subject in subjects)
 	{
-		filename <- concat(config@out.dir,subject,',',type,'.txt')
+		#filename <- concat(config@out.dir,subject,',',type,'.txt')
 		samples <- config@samples[which(config@samples$subject==subject),'sample']
 		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
 		tables[[subject]] <- list()

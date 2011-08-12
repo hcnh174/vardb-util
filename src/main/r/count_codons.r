@@ -10,7 +10,7 @@ config <- new('nextgenconfig')
 
 args <- commandArgs(TRUE) # from R.utils package
 subject <- args$subject
-dir <- args$dir
+countdir <- args$countdir
 
 #subject <- 'PXB0219-0011'
 #subject <- 'KT9'
@@ -18,7 +18,7 @@ dir <- args$dir
 print(concat('subject=',subject))
 params <- new('sampleparams', subject=subject)
 
-config@counts.dir <- concat(dir,config@counts.dir)
+config@counts.dir <- countdir
 
 #Rscript c:/workspace/vardb-util/src/main/r/count_codons.r subject=KT9
 #Rscript count_codons.r KT9
