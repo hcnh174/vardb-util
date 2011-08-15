@@ -21,6 +21,7 @@ install.packages('cacheSweave')
 install.packages('R.utils')
 #install.packages('stringr')
 install.packages('DAAG')
+install.packages('relaimpo')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")

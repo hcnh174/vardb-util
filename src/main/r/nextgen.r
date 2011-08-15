@@ -39,7 +39,9 @@ setClass("nextgenconfig",
 			qc.dir='character',
 			pileup.dir='character',
 			counts.dir='character',
-			tmp.dir='character'),
+			tmp.dir='character',
+			reffile='character',
+			maskfile='character'),
 	prototype(
 			config.dir='config',
 			#config.dir='n:/config', #hack!	
@@ -75,6 +77,9 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
 	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
+	
+	.Object@reffile <- concat(.Object@ref.dir,'/',.Object@ref,'.fasta')
+	.Object@maskfile <- concat(.Object@config.dir,'/',.Object@ref,'.mask.vcf')
 	.Object
 })
 
