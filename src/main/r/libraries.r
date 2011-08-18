@@ -65,6 +65,29 @@ http://www.inside-r.org/packages/cran/misc3d
 http://www.inside-r.org/packages/cran/beeswarm
 http://www.inside-r.org/packages/cran/microbenchmark
 http://www.inside-r.org/packages/cran/animation
+http://www.inside-r.org/packages/cran/heatmap.plus
+http://www.inside-r.org/packages/cran/laercio
+http://www.inside-r.org/packages/cran/multcomp
+http://www.inside-r.org/packages/cran/mlbench
+http://www.inside-r.org/packages/cran/aaMI
+http://www.inside-r.org/packages/cran/RgoogleMaps
+http://www.inside-r.org/packages/cran/gplots
+http://www.inside-r.org/packages/cran/deal
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
