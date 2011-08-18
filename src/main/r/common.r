@@ -26,7 +26,8 @@ loadUtilFiles <- function(filenames)
 	filenames <- c(filenames,'external')
 	for (filename in filenames)
 	{
-		source(paste(libdir,filename,'.r',sep=''))
+		#source(paste(libdir,filename,'.r',sep=''))
+		source(concat(libdir,'/',filename,'.r'))
 	}
 }
 

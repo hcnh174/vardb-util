@@ -1,4 +1,4 @@
-source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'common.r',sep=''))
+source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 loadUtilFiles('nextgen')
 print(getwd())
 testrun <- FALSE
@@ -110,7 +110,7 @@ trim_solexaqa <- function(config,sample)
 {
 	olddir <- getwd()
 	setwd(config@fastq.dir)
-	run_command('DynamicTrim.pl ',sample,'.fastq',' -phredcutoff 20')
+	run_command('DynamicTrim.pl ',sample,'.fastq',' -phredcutoff 30')
 	run_command('LengthSort.pl ',sample,'.fastq.trimmed',' -length 36')
 	checkFileExists(concat(sample,'.fastq.trimmed.single'))
 	run_command('mv ',sample,'.fastq.trimmed.single',' ',sample,'.trimmed.fastq')
@@ -143,8 +143,8 @@ trim_all <- function(config)
 {
 	for (sample in rownames(config@samples))
 	{
-		#trim_solexaqa(config,sample)
-		trim_prinseq(config,sample)
+		trim_solexaqa(config,sample)
+		#trim_prinseq(config,sample)
 	}
 }
 
@@ -170,7 +170,7 @@ remove_exact_duplicates_for_all_samples <- function(config)
 
 ######################################################################
 
-run_bwa <- function(config, sample, fastq.ext='.fastq')#, q=20, .trimmed.fastq
+run_bwa <- function(config, sample, fastq.ext='.trimmed.fastq', q=20)#, .trimmed.fastq
 {
 	#ref <- config@ref
 	stem <- concat(sample,'.',config@ref)
@@ -181,7 +181,7 @@ run_bwa <- function(config, sample, fastq.ext='.fastq')#, q=20, .trimmed.fastq
 	saifile <- concat(tmp.dir,'/',stem,'.sai')
 	samfile <- concat(tmp.dir,'/',stem,'.sam')
 	
-	run_command('bwa aln ',config@reffile,' ',fqfile,' > ',saifile) #-q ',q,'
+	run_command('bwa aln -q ',q,' ',config@reffile,' ',fqfile,' > ',saifile)
 	run_command('bwa samse ',config@reffile,' ',saifile,' ',fqfile,' > ',samfile)
 	checkFileExists(samfile)
 }
@@ -317,7 +317,7 @@ realign_indels <- function(config, stem)
 	str <- concat(str,' -o ',outfile)
 	run_command(str)
 	
-	checkFileExists(oufile)
+	checkFileExists(outfile)
 }
 #realign_indels(config,'merged')
 
@@ -390,6 +390,7 @@ output_bam <- function(config,stem,suffix)
 	infile <- concat(config@tmp.dir,'/',stem,'.',suffix,'.bam')
 	outfile <- concat(config@bam.dir,'/',stem,'.bam')
 	run_command('cp ',infile,' ',outfile)
+	checkFileExists(outfile)
 	run_command('samtools index ',outfile)
 }
 #output_bam(config,'merged','realigned.recal')
@@ -478,7 +479,6 @@ export_read_group <- function(config,stem,readgroup)
 }
 #export_read_group('merged','KT9.plasmid')
 
-
 export_pileup <- function(config,sample)
 {
 	print(concat('ref: ',config@ref))
@@ -486,13 +486,29 @@ export_pileup <- function(config,sample)
 }
 #export_pileup(config,'merged','KT9')
 
+filter_bam <- function(config, stem)
+{
+	#bamtools filter -in out/bam/KT9.plasmid.bam -out out/bam/KT9.plasmid.filtered.bam -mapQuality ">30" 
+	infile <- concat(config@bam.dir,'/',stem,'.bam')
+	outfile <- concat(config@bam.dir,'/',stem,'.filtered.bam')
+	checkFileExists(infile)
+	str <- 'bamtools filter'
+	str <- concat(str,' -in ',infile)
+	str <- concat(str,' -out ',outfile)
+	str <- concat(str,' -mapQuality ">30"')
+	run_command(str)
+	checkFileExists(outfile)
+	run_command('samtools index ',outfile)
+}
+
 export_read_groups <- function(config,stem)
 {
 	for (sample in rownames(config@samples))
 	{
-		export_read_group(config,stem,sample)
-		#remove_duplicates(sample,ref)
-		export_pileup(config,sample)
+		#export_read_group(config,stem,sample)
+		filter_bam(config,sample)
+		##remove_duplicates(sample,ref)
+		export_pileup(config,concat(sample,'.filtered'))
 	}
 }
 #export_read_groups(config,'merged')
@@ -538,7 +554,7 @@ count_codons <- function(config)
 
 make_tables <- function(config)
 {
-	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'tables.rnw'))
+	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/tables.rnw'))
 	#run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r dir=',config@count.dir)
 }
 
@@ -548,18 +564,17 @@ analyze_reads_merged <- function(config)
 	#make_folders(config)
 	#preprocess(config)
 	#trim_all(config)
-	#trim_prinseq(config,'KT9.plasmid')#'PXB0220-0002.wk13')
-	#remove_exact_duplicates_for_all_samples(config)
-	map_reads_for_all_samples(config)
-	merge_bams(config)
-	realign_indels(config,stem)
-	recalibrate(config,concat(stem,'.realigned'))
-	output_bam(config,stem,'realigned.recal')
+	##remove_exact_duplicates_for_all_samples(config)
+	#map_reads_for_all_samples(config)
+	#merge_bams(config)
+	#realign_indels(config,stem)
+	#recalibrate(config,stem) #concat(stem,'.realigned'))
+	#output_bam(config,stem,'recal') #'realigned.recal')
 	
-	call_variants(config,stem)
-	filter_variants(config,stem)
-	export_read_groups(config,stem)
-	count_codons(config)
+	#call_variants(config,stem)
+	#filter_variants(config,stem)
+	#export_read_groups(config,stem)
+	#count_codons(config)
 	make_tables(config)
 	#export_unmapped_reads(config,concat(stem,'.nodup'))
 }
@@ -573,4 +588,3 @@ analyze_reads_merged(config)
 #Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r ref=KT9 out=out
 #Rscript ~/workspace/vardb-util/src/main/r/analyze_reads_merged.r ref=KT9 out=out
 
-run_bwa(config,'KT9.plasmid')

@@ -1,4 +1,4 @@
-source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'common.r',sep=''))
+source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 loadUtilFiles('nextgen')
 #setCurDir('nextgen2')
 
