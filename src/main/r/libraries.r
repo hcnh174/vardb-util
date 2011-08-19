@@ -47,6 +47,8 @@ installstatconnDCOM()
 #install.packages('rrcov')
 
 #install.packages('ca')
+#install.packages('sqldf')
+
 
 http://unknownr.r-forge.r-project.org/toppkgs.html
 http://www.inside-r.org/packages/cran/debug

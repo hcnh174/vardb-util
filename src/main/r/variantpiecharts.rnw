@@ -1,0 +1,92 @@
+\SweaveOpts{prefix.string=tmp/fig} 
+\documentclass[a4paper,fleqn]{article}
+\title{Variant frequency by position}
+%http://dcwww.camd.dtu.dk/~schiotz/comp/LatexTips/LatexTips.html
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.75}
+\renewcommand{\figurename}{Fig.}
+\usepackage{subfig}
+\begin{document}
+\maketitle
+
+<<results=tex,echo=FALSE>>=  
+	
+	makeVariantPieChart <- function(tbl, sample, cutoff=1)
+	{
+		tbl.subset <- subsetNA(tbl[,c('codon',sample)])
+		tbl.subset <- tbl.subset[which(tbl.subset[[sample]]> cutoff),]
+		counts <- tbl.subset[[sample]]
+		pielabels <- sprintf("%s = %2.2f%s", tbl.subset$codon,	100*counts/sum(counts), "%")
+		colors <- c("white","grey70","grey90","grey50","black")
+		pie(counts, col=colors, cex=0.8, clockwise=TRUE, labels=NA) #labels=codons, main=sample, 
+		legend('bottom', legend=pielabels, fill=colors, bty="n", cex=2) #cex=0.8,'bottomright' -1,-1,
+		#text(0,1,sample)	
+	}
+
+	getPiechartFilename <- function(subject,region,replicate)
+	{
+		return(concat('tmp/fig-',subject,'-',region,'-',replicate,'.pdf')) 
+	}
+	
+	getTiterFilename <- function(subject)
+	{
+		return(concat('tmp/fig-titer-',subject,'.pdf')) 
+	}
+
+	codon.tables <<- makeVariantTables(config,'codons',cutoff=2)
+	
+	for (subject in config@subjects$subject)
+	{
+		if (containsElement(config@titers$subject,subject))
+		{
+			pdf(file=getTiterFilename(subject), paper="special")
+			plotTiter(config,subject)
+			dev.off()
+		}
+		
+		samples <- config@samples[which(config@samples$subject==subject),'sample']
+		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
+		for (region in regions)
+		{
+			tbl <- codon.tables[[subject]][[region]]
+			replicates <- colnames(tbl)[-1]
+			for (replicate in replicates)
+			{
+				file <- getPiechartFilename(subject,region,replicate)
+				pdf(file=file, paper="special") 
+				makeVariantPieChart(tbl,replicate)
+				dev.off()
+			}
+		}
+
+		cat('Subject: ',subject,'\n', sep='')
+		if (containsElement(config@titers$subject,subject))
+		{
+			cat('\\begin{figure}[ht]\n', sep='')
+			cat('\\includegraphics{',getTiterFilename(subject),'}\n', sep='')
+			cat('\\end{figure}\n', sep='')
+		}
+		for (region in regions)
+		{
+			tbl <- codon.tables[[subject]][[region]]
+			replicates <- colnames(tbl)[-1]
+			width <- 1/length(replicates)
+			
+			cat('\\begin{figure}[ht]\n', sep='')
+			cat('\t\\centering\n', sep='')
+			for (replicate in replicates)
+			{
+				file <- getPiechartFilename(subject,region,replicate)
+				cat('\t\\subfloat[',replicate,']{\\includegraphics[width=',width,'\\textwidth]{',file,'}}\n', sep='')
+				#cat('\t\\subfloat[',replicate,']{\\includegraphics[width=4cm]{',file,'}}\n', sep='')
+			}
+			cat('\t\\caption{',subject,': ',region,'}\n', sep='')
+			cat('\\end{figure}\n\n', sep='')			
+		}
+		cat('\\clearpage\n', sep='')
+	}
+@
+
+
+\end{document}

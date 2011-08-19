@@ -200,3 +200,15 @@ plot.summary.rms2 <- function (x, at, log = FALSE, q = c(0.7, 0.8, 0.9, 0.95, 0.
 }
 #plot.summary.rms2
 
+#http://www.r-bloggers.com/exporting-r-output-to-ms-word-with-r2wd-an-example-session/
+wdBody.anything <- function(output)
+{
+	# This function takes the output of an object and prints it line by line into the word document
+	# Notice that in many cases you will need to change the text font into courier new roman...
+	a <- capture.output(output)
+	for(i in seq_along(a))
+	{
+		wdBody(format(a[i]))
+	}
+}
+

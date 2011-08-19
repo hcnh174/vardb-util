@@ -964,17 +964,6 @@ appendVariantTablesToWord <- function(tables)
 	}
 }
 
-#http://www.r-bloggers.com/exporting-r-output-to-ms-word-with-r2wd-an-example-session/
-wdBody.anything <- function(output)
-{
-	# This function takes the output of an object and prints it line by line into the word document
-	# Notice that in many cases you will need to change the text font into courier new roman...
-	a <- capture.output(output)
-	for(i in seq_along(a))
-	{
-		wdBody(format(a[i]))
-	}
-}
 
 outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc',...)
 {
@@ -1108,7 +1097,7 @@ plotTiter <- function(config, subject)
 	titers <- titers[complete.cases(titers),]
 	if (nrow(titers)==0)
 		return()
-	plot(titer ~ week, titers, type='b', xlim=c(min(titers$week),max(titers$week)), 
+	plt <- plot(titer ~ week, titers, type='b', xlim=c(min(titers$week),max(titers$week)), 
 			main=concat('Viral titer: ',subject[1]), ylab='Titer (log10)', xlab='Weeks after inoculation')
 	treatments <- config@treatments[which(config@treatments$subject==subject),]
 	mtext(paste(unique(treatments$drug), collapse=', '))
@@ -1128,6 +1117,7 @@ plotTiter <- function(config, subject)
 		titer <- titers[which(titers$week==week),'titer']
 		points(y=titer, x=week, cex=2, pch=16)
 	}
+	return(plt)
 }
 #plotTiter(config,'PXB0220-0002')
 

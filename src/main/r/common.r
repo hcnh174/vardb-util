@@ -549,7 +549,7 @@ stripPath <- function(filenames)
 #stripPath('C:/workspace/vardb-util/src/main/r/tables.rnw')
 #stripPath('C:\\workspace\\vardb-util\\src\\main\\r\\tables.rnw')
 
-sweaveToPdf <- function(filename)
+sweaveToPdf <- function(filename, clean=TRUE)
 {
 	stem <- stripPath(filename)
 	stem <- stripExtension(stem)
@@ -577,11 +577,14 @@ sweaveToPdf <- function(filename)
 	system(concat('pdflatex -quiet ',texfile))
 	if (!isFile(pdffile))
 		throw(concat('Pdf file not created for tex file: ',texfile))
-	system(concat('rm ',auxfile))
-	system(concat('rm ',logfile))
-	system(concat('rm ',texfile))
-	system(concat('rm Rplots.pdf'))
-	system(concat('rm ',stem,'-*.pdf'))
+	if (clean)
+	{
+		system(concat('rm ',auxfile))
+		system(concat('rm ',logfile))
+		system(concat('rm ',texfile))
+		system(concat('rm Rplots.pdf'))
+		system(concat('rm ',stem,'-*.pdf'))
+	}
 	system(concat('open ',pdffile))
 }
 #sweaveToPdf('tables.Rnw')
