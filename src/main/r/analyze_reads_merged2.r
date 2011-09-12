@@ -1,36 +1,10 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
-loadUtilFiles('nextgen')
-print(getwd())
+loadUtilFiles('nextgen2')
 testrun <- FALSE
-
 config <- new('nextgenconfig')
+config@illumina.dir <- 'GA_RunData/110802_HWUSI-EAS1611_00068_FC634PPAAXX/Unaligned'
 
-if (FALSE)
-{
-	testrun <- TRUE
-	setCurDir('nextgen2')
-	config <- new('nextgenconfig')
-	#config@config.dir <- 'n:/config'
-	#config <- initialize(config)	
-}
-
-run_command <- function(..., dir=NULL)
-{
-	command <- concat(...)
-	olddir <- getwd()
-	if (!is.null(dir) & testrun==FALSE)
-		setwd(dir)
-	print(command)
-	if (command!='' & testrun==FALSE)
-		system(command)
-	if (!is.null(dir) & testrun==FALSE)
-		setwd(olddir)
-}
-#run_command('ls')
-#run_command('ls', dir='c:/temp')
-
-
-make_folders <- function(config, subdirs='fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
+make_folders <- function(config, subdirs='ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
 {
 	dir <- config@out.dir
 	run_command('mkdir ',dir,' -p')
@@ -42,41 +16,43 @@ make_folders <- function(config, subdirs='fastq,tmp,bam,unmapped,vcf,pileup,qc,c
 }
 #make_folders(config)
 
-preprocess <- function(config)# path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned', temp.dir='tmp', fastq.dir='fastq')
+preprocess <- function(config)
 {
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
-	runs <- config@runs
+	#runs <- config@runs
 	run_command('rm -r ',temp.dir,'/*')
-	for (sample in unique(runs$sample))
+	for (sample in config@samplenames)
 	{
 		dir.to <- concat(temp.dir,'/',sample)
 		run_command('mkdir ',dir.to)
 	}
 	run_command('')
 	
-	for (run in rownames(runs))
+	for (run in rownames(config@runs))
 	{
-		row <- runs[run,]
+		row <-  config@runs[run,]
 		sample <- row$sample
 		dir.to <- concat(temp.dir,'/',sample)
-		project <- row$project
+		folder <- row$folder
 		barcode <- row$barcode
-		lane <- row$lane		
-		dir.from <- concat(config@illumina.dir,'/Project_',project,'/Sample_',project,'/')
-		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
-		run_command('cp ',dir.from,filename,' ',dir.to)
+		lane <- row$lane
+		dir.from <- concat(config@illumina.dir,'/Project_',folder,'/Sample_',folder,'/')
+		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
+		run_command('cp ', dir.from, filename,' ',dir.to)
+		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq')
+		run_command('cp ', dir.from, filename,' ',dir.to)
 	}
 	run_command('')
 	
-	for (sample in unique(runs$sample))
+	for (sample in config@samplenames)
 	{
 		dir.from <- concat(temp.dir,'/',sample)
 		run_command('gunzip ',dir.from,'/*')
 	}
 	run_command('')
 	
-	for (sample in unique(runs$sample))
+	for (sample in config@samplenames)
 	{
 		dir.from <- concat(temp.dir,'/',sample)
 		fastqfile <- concat(fastq.dir,'/',sample,'.fastq')
@@ -84,15 +60,9 @@ preprocess <- function(config)# path='GA_RunData/110624_HWUSI-EAS1611_00063_FC63
 		checkFileExists(fastqfile)
 	}
 	run_command('')
-	run_command('rm -r ',temp.dir)
+	#run_command('rm -r ',temp.dir)
 }
 #preprocess(config)
-
-#qseq2fastq <- function(sample)
-#{
-#	run_command('perl qseq2fastq.pl -a qseq/',sample,'.qseq -v T')
-#	run_command('mv ',sample,'.fastq fastq/',sample,'.fastq')
-#}
 
 solexa_qa <- function(config,sample)
 {
@@ -112,94 +82,63 @@ trim_solexaqa <- function(config,sample)
 	run_command('rm ',sample,'.fastq.trimmed.discard')
 	setwd(olddir)
 }
-#trim(config,'PXB0220-0002.wk13')
+#trim_solexaqa(config,'PXB0220-0002.wk13')
 #cd out/fastq; DynamicTrim.pl PXB0220-0002.wk13.fastq
 #LengthSort.pl PXB0220-0002.wk13.fastq.trimmed
 
-trim_prinseq <- function(config,sample)
-{
-	fastq.dir <- config@fastq.dir
-	infile <- concat(fastq.dir,'/',sample,'.fastq')
-	outfile <- concat(fastq.dir,'/',sample,'.trimmed') #program adds .fastq extension automatically
-	str <- 'prinseq-lite.pl'
-	str <- concat(str,' -fastq ',infile)
-	str <- concat(str,' -out_good ',outfile)
-	str <- concat(str,' -out_bad null')
-	str <- concat(str,' -min_len 36')
-	str <- concat(str,' -min_qual_score 30')
-	str <- concat(str,' -ns_max_n 0')
-	#str <- concat(str,' -stats_all')
-	run_command(str)
-	checkFileExists(concat(outfile,'.fastq'))
-}
-
 trim_all <- function(config)
 {
-	for (sample in rownames(config@samples))
+	for (sample in config@samplenames)
 	{
 		trim_solexaqa(config,sample)
 		#trim_prinseq(config,sample)
 	}
 }
-
-remove_exact_duplicates <- function(config,sample)
-{
-	fastq.dir <- config@fastq.dir
-	infile <- concat(fastq.dir,'/',sample,'.trimmed.fastq')
-	outfile <- concat(fastq.dir,'/',sample,'.trimmed.dedup') #program adds .fastq extension automatically
-	run_command('prinseq-lite.pl -fastq ',infile,' -out_good ',outfile,' -out_bad null -derep 1')#4
-	checkFileExists(concat(outfile,'.fastq'))
-}
-#remove_exact_duplicates('PXB0220-0002.wk12')
-
-#testrun <- TRUE
-remove_exact_duplicates_for_all_samples <- function(config)
-{
-	for (sample in rownames(config@samples))
-	{
-		remove_exact_duplicates(config,sample)
-	}
-}
-#remove_exact_duplicates_for_all_samples(config)
+#trim_all(config)
 
 ######################################################################
 
-run_bwa <- function(config, sample, fastq.ext='.trimmed.fastq', q=20)#, .trimmed.fastq
+find_ref_for_sample <- function(config, sample)
 {
-	#ref <- config@ref
-	stem <- concat(sample,'.',config@ref)
+	refs <- unique(config@runs[which(config@runs$sample==sample),'ref'])
+	if (length(refs)>1)
+		throw('more than 1 unique ref per sample: ',sample)
+	return(refs[1])
+}
+#find_ref_for_sample(config,'110617HBV.HBV01')
+
+get_reffile <- function(config, ref)
+{
+	ref.dir <- config@ref.dir
+	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
+	seq <- config@refs[ref,1]	
+	print(concat('writing ref file ',reffile))
+	write.fasta(s2c(seq), ref, file.out=reffile)
+	return(reffile)
+}
+#get_reffile(config,'IL28B-70')
+
+run_bwa <- function(config, sample, ref, fastq.ext='.trimmed.fastq', q=20)#, .trimmed.fastq
+{
+	reffile <- get_reffile(config,ref)
+	print(concat('ref for sample ',sample,': ',ref,' (',reffile,')'))
+	stem <- concat(sample,'.',ref)
 	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
-	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
 	tmp.dir <- config@tmp.dir
 
 	saifile <- concat(tmp.dir,'/',stem,'.sai')
 	samfile <- concat(tmp.dir,'/',stem,'.sam')
 	
-	run_command('bwa aln -q ',q,' ',config@reffile,' ',fqfile,' > ',saifile)
-	run_command('bwa samse ',config@reffile,' ',saifile,' ',fqfile,' > ',samfile)
+	run_command('bwa index ',reffile)
+	run_command('bwa aln -q ',q,' ',reffile,' ',fqfile,' > ',saifile)
+	run_command('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 	checkFileExists(samfile)
 }
-#run_bwa(config,'PXB0220-0002.wk13')
+#run_bwa(config,'110617HBV.HBV03') #'PXB0220-0002.wk13')
 
-run_bowtie <- function(config, sample, fastq.ext='.trimmed.fastq')
+add_read_groups <- function(config,sample,ref)
 {
-	#ref <- config@ref
-	stem <- concat(sample,'.',config@ref)
-	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
-	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
-	tmp.dir <- config@tmp.dir
-	
-	samfile <- concat(tmp.dir,'/',stem,'.sam')
-	#unmappedfile <- concat(tmp.dir,'/unmapped/',stem,'.un.txt')
-	run_command('bowtie -S ',config@reffile,' ',fqfile,' ',samfile) #--un unmappedfile
-	checkFileExists(samfile)
-}
-#run_bowtie(config,'PXB0220-0002.wk13')
-
-add_read_groups <- function(config,sample)
-{
-	#ref <- config@ref
-	stem <- concat(sample,'.',config@ref)
+	stem <- concat(sample,'.',ref)
 	newstem <- concat(stem,'.rg')
 	tmp.dir <- config@tmp.dir
 	infile <- concat(tmp.dir,'/',stem,'.sam')
@@ -218,38 +157,22 @@ add_read_groups <- function(config,sample)
 	run_command(str)
 	return(newstem)
 }
-#add_read_groups(config,'PXB0220-0002.wk13')
-
-#mark_duplicates <- function(config,stem) #sample,'.',ref,'.rg'
-#{
-#	newstem <- concat(stem,'.dedup')
-#	tmp.dir <- concat(config@out.dir,'/tmp')
-#	metricsfile <- concat(tmp.dir,'/qc/',newstem,'.metrics')
-#	infile <- concat(tmp.dir,'/',stem,'.bam')
-#	outfile <-  concat(tmp.dir,'/',newstem,'.bam')
-#	
-#	str <- 'java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar'
-#	str <- concat(str,' INPUT=',infile)
-#	str <- concat(str,' OUTPUT=',outfile)
-#	str <- concat(str,' METRICS_FILE=',metricsfile)
-#	run_command(str)
-#	run_command('samtools index ',outfile)
-#	return(newstem)
-#}
-#mark_duplicates(config,'PXB0220-0002.wk13.KT9.rg')
+#add_read_groups(config,'110617HBV.HBV03')
 
 map_reads_for_sample <- function(config, sample)
 {
-	stem <- run_bwa(config,sample)
-	#stem <- run_bowtie(config,sample)
-	stem.rg <- add_read_groups(config,sample)
-	#stem.rg.dedup <- mark_duplicates(config,stem.rg)
+	try({
+		print(concat('mapping reads for sample: ',sample))
+		ref <- find_ref_for_sample(config,sample)
+		run_bwa(config,sample,ref)
+		add_read_groups(config,sample,ref)
+	}, silent=FALSE)
 }
-#map_reads_for_sample(config,'PXB0220-0002.wk13')
+#map_reads_for_sample(config,'110617HBV.HBV03')
 
 map_reads_for_all_samples <- function(config)
 {
-	for (sample in rownames(config@samples))
+	for (sample in config@samplenames)
 	{
 		map_reads_for_sample(config,sample)
 	}
@@ -258,7 +181,6 @@ map_reads_for_all_samples <- function(config)
 
 merge_bams <- function(config)
 {
-	#ref <- config@ref
 	tmp.dir <- config@tmp.dir
 	outfile <- concat(tmp.dir,'/merged.bam')
 	
@@ -266,15 +188,16 @@ merge_bams <- function(config)
 	str <- concat(str,' MERGE_SEQUENCE_DICTIONARIES=true')
 	str <- concat(str,' CREATE_INDEX=true')
 	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
-	for (sample in rownames(config@samples))
+	for (sample in config@samplenames)
 	{
-		infile <- concat(tmp.dir,'/',sample,'.',config@ref,'.rg.bam') #.dedup
+		ref <- find_ref_for_sample(config,sample)
+		infile <- concat(tmp.dir,'/',sample,'.',ref,'.rg.bam') #.dedup
 		str <- concat(str,' INPUT=',infile)
 	}
 	str <- concat(str,' OUTPUT=',outfile)
 	run_command(str)
 }
-
+#merge_bams(config)
 
 show_coverage <- function(config,stem)
 {
@@ -291,9 +214,7 @@ show_coverage <- function(config,stem)
 
 realign_indels <- function(config, stem)
 {
-	#ref <- config@ref
 	tmp.dir <- config@tmp.dir
-	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
 	bamfile <- concat(tmp.dir,'/',stem,'.bam')
 	intervalfile <- concat(tmp.dir,'/',stem,'.intervals')
 	outfile <- concat(tmp.dir,'/',stem,'.realigned.bam')
@@ -317,11 +238,8 @@ realign_indels <- function(config, stem)
 
 analyze_covariates <- function(config,stem,suffix)
 {
-	#ref <- config@ref
 	tmp.dir <- config@tmp.dir
-	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
 	bamfile <- concat(tmp.dir,'/',stem,'.bam')
-	#maskfile <- concat(config@config.dir,'/',ref,'.mask.vcf')
 	recalfile <- concat(tmp.dir,'/',stem,'.recal.csv')
 	output.dir <- concat(config@qc.dir,'/',stem,'.',suffix)
 	
@@ -353,11 +271,8 @@ analyze_covariates <- function(config,stem,suffix)
 
 recalibrate <- function(config,stem) 
 {
-	#ref <- config@ref
 	tmp.dir <- config@tmp.dir
 	newstem <- concat(stem,'.recal')
-	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
-	#maskfile <- concat(config@config.dir,'/',ref,'.mask.vcf')
 	bamfile <- concat(tmp.dir,'/',stem,'.bam')	
 	recalfile <- concat(tmp.dir,'/',newstem,'.csv')
 	outfile <- concat(tmp.dir,'/',newstem,'.bam')
@@ -393,8 +308,6 @@ output_bam <- function(config,stem,suffix)
 
 call_variants <- function(config,stem)
 {	
-	#ref <- config@ref
-	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
 	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
 	outfile <- concat(config@vcf.dir,'/',stem,'.vcf')
 	
@@ -473,10 +386,10 @@ export_read_group <- function(config,stem,readgroup)
 }
 #export_read_group('merged','KT9.plasmid')
 
-export_pileup <- function(config,sample)
+export_pileup <- function(config,sample,ref)
 {
-	print(concat('ref: ',config@ref))
-	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', sample,' ',config@ref,' ',config@bam.dir,' ',config@pileup.dir)
+	print(concat('ref: ',ref))
+	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', sample,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
 }
 #export_pileup(config,'merged','KT9')
 
@@ -497,45 +410,19 @@ filter_bam <- function(config, stem)
 
 export_read_groups <- function(config,stem)
 {
-	for (sample in rownames(config@samples))
+	for (sample in config@samplenames)
 	{
 		#export_read_group(config,stem,sample)
+		ref <- find_ref_for_sample(config,sample)
+		sample <- concat(sample,'.',ref,'.rg') #hack!
 		filter_bam(config,sample)
 		##remove_duplicates(sample,ref)
-		export_pileup(config,concat(sample,'.filtered'))
+		export_pileup(config,concat(sample,'.filtered'),ref)
 	}
 }
 #export_read_groups(config,'merged')
 
 ##################################################################3
-#
-#export_unmapped_reads <- function(stem)
-#{
-#	bamfile <- concat('tmp/',stem,'.bam')
-#	fastqfile <- concat('unmapped/',stem,'.unmapped.fastq')
-#	trimmedfastqfile <- concat('unmapped/',stem,'.unmapped.fastq.trimmed')
-#	fastafile <- concat('unmapped/',stem,'.unmapped.fasta')
-#	#run_command('bam2fastq --force --no-aligned --unaligned --no-filtered -o ',fastqfile,' ',bamfile)
-#	#run_command('cd unmapped; DynamicTrim.pl ',concat(stem,'.unmapped.fastq'))
-#	run_command('perl $VARDB_RUTIL_HOME/fq_all2std.pl fq2fa ',trimmedfastqfile,' > ',fastafile)
-#	run_command('perl $VARDB_RUTIL_HOME/fastq2table.pl -a ',trimmedfastqfile)
-#	run_command('sort merged.nodup.unmapped.fastq.trimmed.table.txt | uniq -dc > unmapped/merged.unique.txt')
-#}
-##export_unmapped_reads('bam/PXB0220-0002.wk11.bam')
-#
-#remove_duplicates <- function(stem,ref)
-#{
-#	metricsfile <- concat('tmp/',stem,'.nodup.metrics')
-#	outfile <-  concat('tmp/',stem,'.nodup.bam')
-#	
-#	str <- 'java -Xmx2g -jar $PICARD_HOME/MarkDuplicates.jar'
-#	str <- concat(str,' INPUT=bam/',stem,'.bam')
-#	str <- concat(str,' OUTPUT=',outfile)
-#	str <- concat(str,' METRICS_FILE=',metricsfile)
-#	str <- concat(str,' REMOVE_DUPLICATES=true')
-#	run_command(str)
-#	run_command('samtools index ',outfile)
-#}
 
 count_codons <- function(config)
 {
@@ -555,30 +442,28 @@ make_tables <- function(config)
 analyze_reads_merged <- function(config)
 {
 	stem <- 'merged'
-	#make_folders(config)
-	#preprocess(config)
-	#trim_all(config)
+	make_folders(config)
+	preprocess(config)
+	trim_all(config)
 	##remove_exact_duplicates_for_all_samples(config)
-	#map_reads_for_all_samples(config)
-	#merge_bams(config)
-	#realign_indels(config,stem)
+	map_reads_for_all_samples(config)
+	merge_bams(config)
+	##realign_indels(config,stem)
 	#recalibrate(config,stem) #concat(stem,'.realigned'))
-	#output_bam(config,stem,'recal') #'realigned.recal')
+	#output_bam(config,stem,'recal')
 	
 	#call_variants(config,stem)
 	#filter_variants(config,stem)
 	#export_read_groups(config,stem)
 	#count_codons(config)
-	make_tables(config)
+	#make_tables(config)
 	#export_unmapped_reads(config,concat(stem,'.nodup'))
 }
 
 args <- commandArgs(TRUE) # from R.utils package
-config@ref <- args$ref
 config@out.dir <- args$out
 
 analyze_reads_merged(config)
-#test2
-#Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r ref=KT9 out=out
-#Rscript ~/workspace/vardb-util/src/main/r/analyze_reads_merged.r ref=KT9 out=out
+
+#Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r out=out
 

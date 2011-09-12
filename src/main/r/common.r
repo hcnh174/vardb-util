@@ -47,6 +47,14 @@ loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.
 #temporarily alias the old version
 loadDataframe <- loadDataFrame
 
+run_command <- function(...)
+{
+	command <- concat(...)
+	print(command)
+	if (command!='' & testrun==FALSE)
+		system(command)
+}
+
 # check normality
 plotDistribution <- function(values, ylab='values')
 {	
@@ -616,3 +624,30 @@ calcMfrowLayout <- function(num, maxperrow=2)
 	return(mfrow)
 }
 #calcMfrowLayout(10,3)
+
+
+checkFileExists <- function(filename)
+{
+	if (!file.exists(filename))
+		throw(concat('file does not exist: ',filename))
+}
+#checkFileExists('test.txt')
+
+
+
+startsWith <- function(str, target)
+{
+	#str <- 'fsdfsf'; target <- 'HBV'
+	str <- substr(str,1,nchar(target))
+	return(str==target)
+	#return (charmatch(target, str)==1)
+}
+#startsWith('HBV.TransHigh_6','HBV.TransHigh')
+#startsWith('global normalization','HBV.TransHigh')
+
+joinFields <- function(fields, delimiter=',')
+{
+	return(paste(fields,collapse=delimiter))
+}
+#joinFields(c('A','B','C'))
+
