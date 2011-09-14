@@ -4,7 +4,7 @@ testrun <- FALSE
 config <- new('nextgenconfig')
 config@illumina.dir <- 'GA_RunData/110802_HWUSI-EAS1611_00068_FC634PPAAXX/Unaligned'
 
-make_folders <- function(config, subdirs='ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
+.make_folders <- function(config, subdirs='ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
 {
 	dir <- config@out.dir
 	run_command('mkdir ',dir,' -p')
@@ -14,10 +14,11 @@ make_folders <- function(config, subdirs='ref,fastq,tmp,bam,unmapped,vcf,pileup,
 		run_command('mkdir ',subdir,' -p; rm ',subdir,'/*')
 	}
 }
-#make_folders(config)
+# .make_folders(config)
 
 preprocess <- function(config)
 {
+	.make_folders(config)
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
 	#runs <- config@runs
@@ -64,12 +65,6 @@ preprocess <- function(config)
 }
 #preprocess(config)
 
-solexa_qa <- function(config,sample)
-{
-	run_command('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq')
-}
-#solexa_qa(config,'KT9.plasmid')
-
 trim_solexaqa <- function(config,sample)
 {
 	olddir <- getwd()
@@ -98,100 +93,77 @@ trim_all <- function(config)
 
 ######################################################################
 
-find_ref_for_sample <- function(config, sample)
+add_read_groups <- function(config,sample)
 {
-	refs <- unique(config@runs[which(config@runs$sample==sample),'ref'])
-	if (length(refs)>1)
-		throw('more than 1 unique ref per sample: ',sample)
-	return(refs[1])
-}
-#find_ref_for_sample(config,'110617HBV.HBV01')
-
-get_reffile <- function(config, ref)
-{
-	ref.dir <- config@ref.dir
-	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
-	seq <- config@refs[ref,1]	
-	print(concat('writing ref file ',reffile))
-	write.fasta(s2c(seq), ref, file.out=reffile)
-	return(reffile)
-}
-#get_reffile(config,'IL28B-70')
-
-run_bwa <- function(config, sample, ref, fastq.ext='.trimmed.fastq', q=20)#, .trimmed.fastq
-{
-	reffile <- get_reffile(config,ref)
-	print(concat('ref for sample ',sample,': ',ref,' (',reffile,')'))
-	stem <- concat(sample,'.',ref)
-	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
 	tmp.dir <- config@tmp.dir
-
-	saifile <- concat(tmp.dir,'/',stem,'.sai')
-	samfile <- concat(tmp.dir,'/',stem,'.sam')
+	samfile <- concat(tmp.dir,'/',sample,'.sam')
+	bamfile <- concat(tmp.dir,'/',sample,'.bam')
+	baifile <- concat(tmp.dir,'/',sample,'.bai')
 	
-	run_command('bwa index ',reffile)
-	run_command('bwa aln -q ',q,' ',reffile,' ',fqfile,' > ',saifile)
-	run_command('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
-	checkFileExists(samfile)
-}
-#run_bwa(config,'110617HBV.HBV03') #'PXB0220-0002.wk13')
-
-add_read_groups <- function(config,sample,ref)
-{
-	stem <- concat(sample,'.',ref)
-	newstem <- concat(stem,'.rg')
-	tmp.dir <- config@tmp.dir
-	infile <- concat(tmp.dir,'/',stem,'.sam')
-	outfile <- concat(tmp.dir,'/',newstem,'.bam')
-
 	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
-	str <- concat(str,' INPUT=',infile)
-	str <- concat(str,' OUTPUT=',outfile)
+	str <- concat(str,' INPUT=',samfile)
+	str <- concat(str,' OUTPUT=',bamfile)
 	str <- concat(str,' RGSM="',sample,'"')
 	str <- concat(str,' RGLB="',sample,'"')
 	str <- concat(str,' RGID="',sample,'"')
 	str <- concat(str,' RGPL=illumina')
 	str <- concat(str,' RGPU=barcode')
 	str <- concat(str,' SORT_ORDER=coordinate')
-	str <- concat(str,' CREATE_INDEX=true')	
+	str <- concat(str,' CREATE_INDEX=true')
 	run_command(str)
-	return(newstem)
+	
+	checkFileExists(bamfile)
+	checkFileExists(baifile)	
 }
-#add_read_groups(config,'110617HBV.HBV03')
+#add_read_groups(config,'110617HBV.HBV07@HBV-RT')
 
-map_reads_for_sample <- function(config, sample)
+run_bwa <- function(config, sample, fastq.ext='.trimmed.fastq', q=20)#, .trimmed.fastq
 {
-	try({
-		print(concat('mapping reads for sample: ',sample))
-		ref <- find_ref_for_sample(config,sample)
-		run_bwa(config,sample,ref)
-		add_read_groups(config,sample,ref)
-	}, silent=FALSE)
-}
-#map_reads_for_sample(config,'110617HBV.HBV03')
+	ref <- get_ref_for_sample(sample)
+	reffile <- get_reffile(config,ref)
+	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
+	tmp.dir <- config@tmp.dir
 
-map_reads_for_all_samples <- function(config)
+	samfile <- concat(tmp.dir,'/',sample,'.sam')
+	saifile <- concat(tmp.dir,'/',sample,'.sai')
+	
+	run_command('bwa index ',reffile)
+	run_command('bwa aln -q ',q,' ',reffile,' ',fqfile,' > ',saifile)
+	run_command('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
+	checkFileExists(samfile)
+	
+	add_read_groups(config,sample)
+	
+	run_command('rm ',samfile)
+	run_command('rm ',saifile)
+}
+#run_bwa(config,'110617HBV.HBV07@HBV-RT')
+
+map_reads <- function(config)
 {
 	for (sample in config@samplenames)
 	{
-		map_reads_for_sample(config,sample)
+		run_bwa(config,sample)
 	}
 }
-#map_reads_for_all_samples(config)
+#map_reads(config)
 
-merge_bams <- function(config)
+############################################
+
+merge_bams_for_ref <- function(config,ref)
 {
 	tmp.dir <- config@tmp.dir
-	outfile <- concat(tmp.dir,'/merged.bam')
+	outfile <- concat(tmp.dir,'/merged@',ref,'.bam')
 	
 	str <- 'java -Xmx2g -jar $PICARD_HOME/MergeSamFiles.jar'
 	str <- concat(str,' MERGE_SEQUENCE_DICTIONARIES=true')
 	str <- concat(str,' CREATE_INDEX=true')
 	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
-	for (sample in config@samplenames)
+	
+	for (sample in unique(config@runs[which(config@runs$ref=='HBV-RT'),'sample']))
 	{
-		ref <- find_ref_for_sample(config,sample)
-		infile <- concat(tmp.dir,'/',sample,'.',ref,'.rg.bam') #.dedup
+		ref <- get_ref_for_sample(sample)
+		infile <- concat(tmp.dir,'/',sample,'.bam')
 		str <- concat(str,' INPUT=',infile)
 	}
 	str <- concat(str,' OUTPUT=',outfile)
@@ -199,42 +171,16 @@ merge_bams <- function(config)
 }
 #merge_bams(config)
 
-show_coverage <- function(config,stem)
+merge_bams <- function(config)
 {
-	#tmp.dir <- config@tmp.dir
-	bamfile <- concat(config@tmp.dir,'/',stem,'.bam')
-	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T DepthOfCoverage'
-	str <- concat(str,' -I ',bamfile)
-	str <- concat(str,' -R ',config@reffile)
-	run_command(str)
-	#run_command('java -jar GenomeAnalysisTK.jar -I aln.bam -R hsRef.fa -T DepthOfCoverage -L intervals.txt -U -S SILENT')
+	for (ref in rownames(config@refs))
+	{
+		merge_bams_for_ref(config,ref)
+	}
 }
+#merge_bams(config)
 
 ###################################################################
-
-realign_indels <- function(config, stem)
-{
-	tmp.dir <- config@tmp.dir
-	bamfile <- concat(tmp.dir,'/',stem,'.bam')
-	intervalfile <- concat(tmp.dir,'/',stem,'.intervals')
-	outfile <- concat(tmp.dir,'/',stem,'.realigned.bam')
-	
-	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T RealignerTargetCreator'
-	str <- concat(str,' -R ',config@reffile)
-	str <- concat(str,' -I ',bamfile)
-	str <- concat(str,' -o ',intervalfile)
-	run_command(str)
-	
-	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T IndelRealigner'
-	str <- concat(str,' -R ',config@reffile)
-	str <- concat(str,' -I ',bamfile)
-	str <- concat(str,' -targetIntervals ',intervalfile)
-	str <- concat(str,' -o ',outfile)
-	run_command(str)
-	
-	checkFileExists(outfile)
-}
-#realign_indels(config,'merged')
 
 analyze_covariates <- function(config,stem,suffix)
 {
@@ -273,7 +219,7 @@ recalibrate <- function(config,stem)
 {
 	tmp.dir <- config@tmp.dir
 	newstem <- concat(stem,'.recal')
-	bamfile <- concat(tmp.dir,'/',stem,'.bam')	
+	bamfile <- concat(tmp.dir,'/',stem,'.bam')
 	recalfile <- concat(tmp.dir,'/',newstem,'.csv')
 	outfile <- concat(tmp.dir,'/',newstem,'.bam')
 	
@@ -376,7 +322,10 @@ mpileup_vcf <- function(config,stem)
 }
 #mpileup_vcf(config,'merged')
 
-export_read_group <- function(config,stem,readgroup)
+
+#export_read_group('merged','KT9.plasmid')
+
+unmerge_bams_for_ref <- function(config,stem,readgroup)
 {
 	infile <- concat(config@bam.dir,'/',stem,'.bam')
 	outfile <- concat(config@bam.dir,'/',readgroup,'.bam')
@@ -384,20 +333,34 @@ export_read_group <- function(config,stem,readgroup)
 	checkFileExists(outfile)
 	run_command('samtools index ',outfile)
 }
-#export_read_group('merged','KT9.plasmid')
+#merge_bams(config)
 
-export_pileup <- function(config,sample,ref)
+unmerge_bams <- function(config,stem)
 {
-	print(concat('ref: ',ref))
-	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', sample,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
+	for (ref in rownames(config@refs))
+	{
+		unmerge_bams_for_ref(config,ref)
+	}
+	
+#	for (sample in config@samplenames)
+#	{
+#		#export_read_group(config,stem,sample)
+#		ref <- get_ref_for_sample(sample)
+#		sample <- concat(sample,'.',ref,'.rg') #hack!
+#		filter_bam(config,sample)
+#		##remove_duplicates(sample,ref)
+#		export_pileup(config,concat(sample,'.filtered'),ref)
+#	}
 }
-#export_pileup(config,'merged','KT9')
+#unmerge_bams(config,'merged')
 
-filter_bam <- function(config, stem)
+##################################################################3
+
+filter_bam <- function(config, sample)
 {
 	#bamtools filter -in out/bam/KT9.plasmid.bam -out out/bam/KT9.plasmid.filtered.bam -mapQuality ">30" 
-	infile <- concat(config@bam.dir,'/',stem,'.bam')
-	outfile <- concat(config@bam.dir,'/',stem,'.filtered.bam')
+	infile <- concat(config@bam.dir,'/',sample,'.bam')
+	outfile <- concat(config@bam.dir,'/',sample,'.filtered.bam')
 	checkFileExists(infile)
 	str <- 'bamtools filter'
 	str <- concat(str,' -in ',infile)
@@ -408,30 +371,44 @@ filter_bam <- function(config, stem)
 	run_command('samtools index ',outfile)
 }
 
-export_read_groups <- function(config,stem)
+filter_bams <- function(config)
 {
 	for (sample in config@samplenames)
 	{
-		#export_read_group(config,stem,sample)
-		ref <- find_ref_for_sample(config,sample)
-		sample <- concat(sample,'.',ref,'.rg') #hack!
 		filter_bam(config,sample)
-		##remove_duplicates(sample,ref)
-		export_pileup(config,concat(sample,'.filtered'),ref)
 	}
 }
-#export_read_groups(config,'merged')
+#filter_bams(config)
 
-##################################################################3
+####################################################
+
+export_pileup_for_sample <- function(config,sample)
+{
+	ref <- get_ref_for_sample(sample)
+	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', sample,'.filtered ',ref,' ',config@bam.dir,' ',config@pileup.dir)
+}
+#export_pileup(config,'merged','KT9')
+
+export_pileup <- function(config)
+{
+	for (sample in config@samplenames)
+	{
+		export_pileup_for_sample(config,sample)
+	}
+}
+export_pileup(config)
+
+################################################
 
 count_codons <- function(config)
 {
-	for (subject in config@subjects$subject)
+	#for (subject in config@subjects$subject)
+	for (subject in unique(config@runs$subject))
 	{
-		count_codons_for_subject(config, subject)
-		#run_command('Rscript $VARDB_RUTIL_HOME/count_codons.r subject=',subject,' countdir=',countdir)
+		try(count_codons_for_subject(config, subject))
 	}
 }
+#count_codons(config)
 
 make_tables <- function(config)
 {
@@ -439,14 +416,12 @@ make_tables <- function(config)
 	#run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r dir=',config@count.dir)
 }
 
-analyze_reads_merged <- function(config)
+analyze_reads<- function(config)
 {
-	stem <- 'merged'
-	make_folders(config)
 	preprocess(config)
 	trim_all(config)
 	##remove_exact_duplicates_for_all_samples(config)
-	map_reads_for_all_samples(config)
+	map_reads(config)
 	merge_bams(config)
 	##realign_indels(config,stem)
 	#recalibrate(config,stem) #concat(stem,'.realigned'))
@@ -454,7 +429,7 @@ analyze_reads_merged <- function(config)
 	
 	#call_variants(config,stem)
 	#filter_variants(config,stem)
-	#export_read_groups(config,stem)
+	#unmerge_bams(config)
 	#count_codons(config)
 	#make_tables(config)
 	#export_unmapped_reads(config,concat(stem,'.nodup'))
@@ -463,7 +438,146 @@ analyze_reads_merged <- function(config)
 args <- commandArgs(TRUE) # from R.utils package
 config@out.dir <- args$out
 
-analyze_reads_merged(config)
+analyze_reads(config)
 
 #Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r out=out
 
+
+
+variants <- count_codons_for_subject(config, '10348001')
+
+
+
+
+
+
+
+
+#
+#
+#getCodonPositionsForRegion <- function(config, region)
+#{
+#	#region <- 'NS3-156@NS3aa156'
+#	ref <- config@regions[which(config@regions==region),'ref']
+#	startnt <- config@regions[region,'startnt']
+#	startntrel <- config@regions[region,'startntrel']
+#	#print(concat(start,':',end))
+#	sequence <- config@refs[ref,'sequence']#, regions[region,'start'], regions[region,'end'])
+#	endntrel <- startntrel + nchar(sequence)
+#	#print(sequence)
+#	#print(translateCodon(sequence))
+#	positions <- data.frame()
+#	codon <- startntrel/3 + 1
+#	if (startntrel %% 3 !=0)
+#		stop(concat('start number is not a multiple of 3: ',startntrel,' in region ',region))
+#	print(concat('ref: ',ref,' startnt: ',startnt,', startntrel: ',startntrel,', codon: ',codon))
+#	for (position in seq(startntrel,endntrel,3))
+#	{
+#		try({
+#		index <- position-startntrel+1
+#		print(index)
+#		refcodon <- extractSequence(sequence, index, index+2)
+#		refaa <- translateCodon(refcodon)
+#		positions <- rbind(positions, data.frame(codon=codon, ntnum=startnt+position, relpos=position, refcodon=refcodon, refaa=refaa))
+#		codon <- codon + 1
+#		})
+#	}	
+#	return(positions)
+#}
+##getCodonPositionsForRegion(config,'NS3-156@NS3aa156')#'HBV-RT@HBV-RT')
+#
+#createNtCountTable <- function(config, data, params)
+#{	
+#	region <- params@region
+#	offset <- config@regions[region,'offset']
+#	start <- config@regions[region,'start']
+#	end <- config@regions[region,'end']
+#	data <- subset(data, position >= start-offset & position <= end-offset)
+#	
+#	counts <- data.frame()
+#	positions <- getCodonPositionsForRegion(config,params@region)
+#	for (ntnum in positions$ntnum)
+#	{
+#		try({
+#			aanum <- positions[which(positions$ntnum==ntnum),'codon']
+#			for (offset in 0:2)
+#			{
+#				ntnum2 <- ntnum + offset
+#				nt <- data[which(data$position==ntnum2),'nt']
+#				#print(head(nt))
+#				#if (params@drop.ambig)
+#				#	nt <- removeAmbiguousCodons(nt)
+#				#print(concat('nt vector length: ',length(nt)))
+#				freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
+#				total <- sum(freqs)				
+#				rank <- 1
+#				for (base in names(freqs))
+#				{
+#					count <- freqs[base]
+#					freq <- count/total
+#					row <- data.frame(ntnum=ntnum2, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
+#					counts <- rbind(counts,row)
+#					rank <- rank+1
+#				}
+#			}
+#		}, silent=FALSE)
+#	}
+#	counts$nt <- as.character(counts$nt)
+#	counts$ntnum <- factor(counts$ntnum)
+#	counts$aanum <- factor(counts$aanum)
+#	counts <- appendSampleParams(counts, params)
+#	return(counts)
+#}
+#
+#count_codons_for_region <- function(config, data, params, variantdata)
+#{
+#	print(concat('count_codons_for_region: ',as.character(params@region)))
+#	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params))
+#	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params))
+#	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params))	
+#	return(variantdata)
+#}
+#
+#count_codons_for_sample <- function(config, params, variantdata)
+#{
+#	sample <- as.character(params@sample)
+#	print(concat('count_codons_for_sample: ',sample))
+#	#ref <- config@samples[sample,'ref'] # look up the ref for the sample
+#	ref <- get_ref_for_sample(sample)
+#	filename <- concat(config@pileup.dir,'/',sample,'.filtered.txt'); print(filename) # load the corresponding data file
+#	data <- loadDataFrame(filename)
+#	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
+#	# each sample has one or more runs targeting different regions
+#	for (region in config@runs[ config@runs[,'sample']==sample,'region'])
+#	{
+#		params@region <- region
+#		variantdata <- count_codons_for_region(config, data, params, variantdata)
+#	}
+#	return(variantdata)
+#}
+##tables <- count_codons_for_sample('218-7_03-01')
+#
+#params <- '10348001'
+#
+#count_codons_for_subject <- function(config, params)
+#{
+#	if (is.character(params))
+#		params <- new('sampleparams', subject=params)
+#	print(concat('count_codons_for_subject: ',as.character(params@subject)))
+#	variantdata <- new('variantdata')
+#	samples <- config@runs[which(config@runs$subject==params@subject),]
+#	if (nrow(samples)==0)
+#		stop(concat('cannot find any samples for subject ',params@subject))
+#	for (sample in samples[,'sample'])
+#	{
+#		params@sample <- sample
+#		params@replicate <- samples[sample,'replicate']
+#		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
+#	}
+#	counts.dir <- concat(config@counts.dir,'/')
+#	writeTable(variantdata@nt, concat(counts.dir,params@subject,'.nt.txt'), row.names=FALSE)
+#	writeTable(variantdata@codons, concat(counts.dir,params@subject,'.codons.txt'), row.names=FALSE)
+#	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
+#	return(variantdata)
+#}
+##variants <- count_codons_for_subject(config, '110719-4.p30.NS3aa36@NS3-36')

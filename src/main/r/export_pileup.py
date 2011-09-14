@@ -5,7 +5,7 @@ def export_sample(sample, ref, bamdir, pileupdir):
 	print 'sample='+sample+', ref='+ref+', bamdir='+bamdir+', pileupdir='+pileupdir
 	#infile = "bam/"+sample+"."+ref+".bam"
 	infile =bamdir+"/"+sample+".bam"
-	outfile = pileupdir+"/"+sample+"."+ref+".txt" 
+	outfile = pileupdir+"/"+sample+".txt" 
 	out = open(outfile, "w")
 	out.write('position\tread\tnt\n')
 	samfile = pysam.Samfile(infile, "rb" )

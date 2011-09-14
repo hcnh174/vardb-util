@@ -23,6 +23,8 @@ install.packages('R.utils')
 install.packages('DAAG')
 install.packages('relaimpo')
 install.packages('reshape')
+install.packages("foreach")
+install.packages("doSNOW")
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
