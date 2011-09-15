@@ -10,19 +10,18 @@ def export_sample(sample, ref, bamdir, pileupdir):
 	out.write('position\tread\tnt\n')
 	samfile = pysam.Samfile(infile, "rb" )
 	for pileupcolumn in samfile.pileup( ref):
-	    position =  pileupcolumn.pos
-	    #print 'coverage at base %s = %s' % (pileupcolumn.pos , pileupcolumn.n)
-	    for pileupread in pileupcolumn.pileups:
-		qname = pileupread.alignment.qname
-		#arr = qname.split(":")
-		#read = arr[2] + ":" + arr[3]
-		read = qname
-	    	nt = pileupread.alignment.seq[pileupread.qpos]
-		#print '\tbase in read %s = %s' % (pileupread.alignment.qname, pileupread.alignment.seq[pileupread.qpos])
-		line ='%s\t%s\t%s\n' % (position, read, nt)
-		#print line
-		out.write(line)
-
+		position =  pileupcolumn.pos
+		#print 'coverage at base %s = %s' % (pileupcolumn.pos , pileupcolumn.n)
+		for pileupread in pileupcolumn.pileups:
+			qname = pileupread.alignment.qname
+			#arr = qname.split(":")
+			#read = arr[2] + ":" + arr[3]
+			read = qname
+			nt = pileupread.alignment.seq[pileupread.qpos]
+			#print '\tbase in read %s = %s' % (pileupread.alignment.qname, pileupread.alignment.seq[pileupread.qpos])
+			line ='%s\t%s\t%s\n' % (position, read, nt)
+			#print line
+			out.write(line)	
 	out.close()
 	samfile.close()
 

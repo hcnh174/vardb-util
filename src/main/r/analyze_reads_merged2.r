@@ -4,6 +4,8 @@ testrun <- FALSE
 config <- new('nextgenconfig')
 config@illumina.dir <- 'GA_RunData/110802_HWUSI-EAS1611_00068_FC634PPAAXX/Unaligned'
 
+
+
 .make_folders <- function(config, subdirs='ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
 {
 	dir <- config@out.dir
@@ -23,7 +25,7 @@ preprocess <- function(config)
 	temp.dir <- config@tmp.dir
 	#runs <- config@runs
 	run_command('rm -r ',temp.dir,'/*')
-	for (sample in config@samplenames)
+	for (sample in config@samples)
 	{
 		dir.to <- concat(temp.dir,'/',sample)
 		run_command('mkdir ',dir.to)
@@ -46,14 +48,14 @@ preprocess <- function(config)
 	}
 	run_command('')
 	
-	for (sample in config@samplenames)
+	for (sample in config@samples)
 	{
 		dir.from <- concat(temp.dir,'/',sample)
 		run_command('gunzip ',dir.from,'/*')
 	}
 	run_command('')
 	
-	for (sample in config@samplenames)
+	for (sample in config@samples)
 	{
 		dir.from <- concat(temp.dir,'/',sample)
 		fastqfile <- concat(fastq.dir,'/',sample,'.fastq')
@@ -83,7 +85,7 @@ trim_solexaqa <- function(config,sample)
 
 trim_all <- function(config)
 {
-	for (sample in config@samplenames)
+	for (sample in config@samples)
 	{
 		trim_solexaqa(config,sample)
 		#trim_prinseq(config,sample)
@@ -141,7 +143,7 @@ run_bwa <- function(config, sample, fastq.ext='.trimmed.fastq', q=20)#, .trimmed
 
 map_reads <- function(config)
 {
-	for (sample in config@samplenames)
+	for (sample in config@samples)
 	{
 		run_bwa(config,sample)
 	}
@@ -342,7 +344,7 @@ unmerge_bams <- function(config,stem)
 		unmerge_bams_for_ref(config,ref)
 	}
 	
-#	for (sample in config@samplenames)
+#	for (sample in config@samples)
 #	{
 #		#export_read_group(config,stem,sample)
 #		ref <- get_ref_for_sample(sample)
@@ -373,7 +375,7 @@ filter_bam <- function(config, sample)
 
 filter_bams <- function(config)
 {
-	for (sample in config@samplenames)
+	for (sample in config@samples)
 	{
 		filter_bam(config,sample)
 	}
@@ -391,7 +393,7 @@ export_pileup_for_sample <- function(config,sample)
 
 export_pileup <- function(config)
 {
-	for (sample in config@samplenames)
+	for (sample in config@samples)
 	{
 		export_pileup_for_sample(config,sample)
 	}
@@ -400,15 +402,30 @@ export_pileup(config)
 
 ################################################
 
+#count_codons <- function(config)
+#{
+#	#for (subject in config@subjects$subject)
+#	for (subject in unique(config@runs$subject))
+#	{
+#		try(count_codons_for_subject(config, subject))
+#	}
+#}
+##count_codons(config)
+
 count_codons <- function(config)
 {
-	#for (subject in config@subjects$subject)
-	for (subject in unique(config@runs$subject))
-	{
+	require(foreach)
+	require(doMC)
+	registerDoMC() #cores=4
+	#print(concat('workers: ',getDoParWorkers(),' (',getDoParName(),' ',getDoParVersion(),')'))
+	foreach(i=1:length(config@subjects), .combine = cbind) %dopar% {
+		subject <- as.character(config@subjects[i])
+		print(concat('count_codons_for_subject: ',subject))
 		try(count_codons_for_subject(config, subject))
+		subject
 	}
 }
-#count_codons(config)
+count_codons(config)
 
 make_tables <- function(config)
 {
@@ -444,140 +461,4 @@ analyze_reads(config)
 
 
 
-variants <- count_codons_for_subject(config, '10348001')
-
-
-
-
-
-
-
-
-#
-#
-#getCodonPositionsForRegion <- function(config, region)
-#{
-#	#region <- 'NS3-156@NS3aa156'
-#	ref <- config@regions[which(config@regions==region),'ref']
-#	startnt <- config@regions[region,'startnt']
-#	startntrel <- config@regions[region,'startntrel']
-#	#print(concat(start,':',end))
-#	sequence <- config@refs[ref,'sequence']#, regions[region,'start'], regions[region,'end'])
-#	endntrel <- startntrel + nchar(sequence)
-#	#print(sequence)
-#	#print(translateCodon(sequence))
-#	positions <- data.frame()
-#	codon <- startntrel/3 + 1
-#	if (startntrel %% 3 !=0)
-#		stop(concat('start number is not a multiple of 3: ',startntrel,' in region ',region))
-#	print(concat('ref: ',ref,' startnt: ',startnt,', startntrel: ',startntrel,', codon: ',codon))
-#	for (position in seq(startntrel,endntrel,3))
-#	{
-#		try({
-#		index <- position-startntrel+1
-#		print(index)
-#		refcodon <- extractSequence(sequence, index, index+2)
-#		refaa <- translateCodon(refcodon)
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=startnt+position, relpos=position, refcodon=refcodon, refaa=refaa))
-#		codon <- codon + 1
-#		})
-#	}	
-#	return(positions)
-#}
-##getCodonPositionsForRegion(config,'NS3-156@NS3aa156')#'HBV-RT@HBV-RT')
-#
-#createNtCountTable <- function(config, data, params)
-#{	
-#	region <- params@region
-#	offset <- config@regions[region,'offset']
-#	start <- config@regions[region,'start']
-#	end <- config@regions[region,'end']
-#	data <- subset(data, position >= start-offset & position <= end-offset)
-#	
-#	counts <- data.frame()
-#	positions <- getCodonPositionsForRegion(config,params@region)
-#	for (ntnum in positions$ntnum)
-#	{
-#		try({
-#			aanum <- positions[which(positions$ntnum==ntnum),'codon']
-#			for (offset in 0:2)
-#			{
-#				ntnum2 <- ntnum + offset
-#				nt <- data[which(data$position==ntnum2),'nt']
-#				#print(head(nt))
-#				#if (params@drop.ambig)
-#				#	nt <- removeAmbiguousCodons(nt)
-#				#print(concat('nt vector length: ',length(nt)))
-#				freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
-#				total <- sum(freqs)				
-#				rank <- 1
-#				for (base in names(freqs))
-#				{
-#					count <- freqs[base]
-#					freq <- count/total
-#					row <- data.frame(ntnum=ntnum2, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
-#					counts <- rbind(counts,row)
-#					rank <- rank+1
-#				}
-#			}
-#		}, silent=FALSE)
-#	}
-#	counts$nt <- as.character(counts$nt)
-#	counts$ntnum <- factor(counts$ntnum)
-#	counts$aanum <- factor(counts$aanum)
-#	counts <- appendSampleParams(counts, params)
-#	return(counts)
-#}
-#
-#count_codons_for_region <- function(config, data, params, variantdata)
-#{
-#	print(concat('count_codons_for_region: ',as.character(params@region)))
-#	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params))
-#	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params))
-#	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params))	
-#	return(variantdata)
-#}
-#
-#count_codons_for_sample <- function(config, params, variantdata)
-#{
-#	sample <- as.character(params@sample)
-#	print(concat('count_codons_for_sample: ',sample))
-#	#ref <- config@samples[sample,'ref'] # look up the ref for the sample
-#	ref <- get_ref_for_sample(sample)
-#	filename <- concat(config@pileup.dir,'/',sample,'.filtered.txt'); print(filename) # load the corresponding data file
-#	data <- loadDataFrame(filename)
-#	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
-#	# each sample has one or more runs targeting different regions
-#	for (region in config@runs[ config@runs[,'sample']==sample,'region'])
-#	{
-#		params@region <- region
-#		variantdata <- count_codons_for_region(config, data, params, variantdata)
-#	}
-#	return(variantdata)
-#}
-##tables <- count_codons_for_sample('218-7_03-01')
-#
-#params <- '10348001'
-#
-#count_codons_for_subject <- function(config, params)
-#{
-#	if (is.character(params))
-#		params <- new('sampleparams', subject=params)
-#	print(concat('count_codons_for_subject: ',as.character(params@subject)))
-#	variantdata <- new('variantdata')
-#	samples <- config@runs[which(config@runs$subject==params@subject),]
-#	if (nrow(samples)==0)
-#		stop(concat('cannot find any samples for subject ',params@subject))
-#	for (sample in samples[,'sample'])
-#	{
-#		params@sample <- sample
-#		params@replicate <- samples[sample,'replicate']
-#		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
-#	}
-#	counts.dir <- concat(config@counts.dir,'/')
-#	writeTable(variantdata@nt, concat(counts.dir,params@subject,'.nt.txt'), row.names=FALSE)
-#	writeTable(variantdata@codons, concat(counts.dir,params@subject,'.codons.txt'), row.names=FALSE)
-#	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
-#	return(variantdata)
-#}
-##variants <- count_codons_for_subject(config, '110719-4.p30.NS3aa36@NS3-36')
+counts <- count_codons_for_subject(config, '10201689')

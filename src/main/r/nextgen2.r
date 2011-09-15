@@ -1,7 +1,7 @@
-library(gsubfn)
-library(seqinr)
-library(methods)
-library(reshape)
+#library(gsubfn)
+#library(seqinr)
+#library(methods)
+#library(reshape)
 #library(R2wd)
 
 setClass("variantdata", representation(nt="data.frame", codons="data.frame", aa="data.frame"))
@@ -23,15 +23,12 @@ setClass("nextgenconfig",
 			ref.dir='character',
 			index.dir='character',
 			runs='data.frame',
-			#samples='data.frame',
 			refs='data.frame',
 			regions='data.frame',
-			#variants='data.frame',
 			treatments='data.frame',
 			titers='data.frame',
-			subjects='data.frame',
-			samplenames='vector',
-			#ref='character',
+			subjects='vector',
+			samples='vector',
 			illumina.dir='character',
 			fastq.dir='character',
 			bam.dir='character',
@@ -40,28 +37,19 @@ setClass("nextgenconfig",
 			pileup.dir='character',
 			counts.dir='character',
 			tmp.dir='character'),
-			#reffile='character',
-			#maskfile='character'
 	prototype(
-			config.dir='config',
-			#config.dir='n:/config', #hack!	
+			config.dir='config',	
 			out.dir='out',
-			#ref='KT9',
 			index.dir='indexes'))
-			#illumina.dir='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned'))
 
 setMethod("initialize", "nextgenconfig", function(.Object)
 {
-	.Object@refs <- loadRefs(concat(.Object@config.dir,'/refs.fasta'))
-	.Object@subjects <- loadDataFrame(concat(.Object@config.dir,'/subjects.txt'), idcol='subject')
+	.Object@refs <- .loadRefs(concat(.Object@config.dir,'/refs.txt'), concat(.Object@config.dir,'/refs.fasta'))
 	.Object@runs <- loadDataFrame(concat(.Object@config.dir,'/runs.txt'), idcol='run')
-	#.Object@samples <- loadDataFrame(concat(.Object@config.dir,'/samples.txt'), idcol='sample')
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='region')
-	#.Object@variants <- loadDataFrame(concat(.Object@config.dir,'/variants.txt'))
-	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
-	#.Object@treatments <- loadDataFrame(concat(.Object@config.dir,'/treatments.txt'))
-	.Object@samplenames <- unique(.Object@runs$sample)
-	
+	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))	
+	.Object@samples <- unique(.Object@runs$sample)
+	.Object@subjects <- unique(.Object@runs$subject)
 	.Object@ref.dir <- concat(.Object@out.dir,'/ref')
 	.Object@fastq.dir <- concat(.Object@out.dir,'/fastq')
 	.Object@bam.dir <- concat(.Object@out.dir,'/bam')
@@ -70,26 +58,25 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
 	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
-	
-	#.Object@reffile <- concat(.Object@ref.dir,'/',.Object@ref,'.fasta')
-	#.Object@maskfile <- concat(.Object@config.dir,'/',.Object@ref,'.mask.vcf')
 	.Object
 })
 
-#if (!isGeneric("getSampleForSubject"))
-#{
-#	if (is.function("getSampleForSubject"))
-#		fun <- getSampleForSubject
-#	else fun <- function(object){standardGeneric("getSampleForSubject")}
-#	setGeneric("getSampleForSubject", fun)
-#}
-#
-#
-#setMethod("getSampleForSubject", signature("nextgenconfig", "character"), function(object, subject)
-#{
-#	return(object@samples[which(object@samples$subject == subject),'sample'])
-#})
-
+.loadRefs <- function(filename='config/refs.txt', fasta='config/refs.fasta')
+{
+	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
+	data <- loadDataFrame(filename, idcol='ref')
+	sequences <- read.fasta(file = fasta, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
+	#remove everything after the | in the sequence ID
+	ids <- names(sequences)
+	ids <- sapply(ids,function(value){return(strsplit(value,'\\|')[[1]][1])}, USE.NAMES=FALSE)
+	names(sequences) <- ids
+	for (id in names(sequences))
+	{
+		data[id,'sequence'] <- sequences[[id]][1]
+	}
+	return(data)
+}
+# .loadRefs()
 
 getSamplesForSubject <- function(config, subject)
 {
@@ -105,22 +92,6 @@ getReplicatesForSubject <- function(config, subject)
 	return(replicates)
 }
 #getReplicatesForSubject(config,'PXB0220-0002')
-
-loadRefs <- function(filename='config/refs.fasta')
-{
-	data <- data.frame()
-	sequences <- read.fasta(file = filename, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
-	#remove everything after the | in the sequence ID
-	ids <- names(sequences)
-	ids <- sapply(ids,function(value){return(strsplit(value,'\\|')[[1]][1])}, USE.NAMES=FALSE)
-	names(sequences) <- ids
-	for (id in names(sequences))
-	{
-		data[id,'sequence'] <- sequences[[id]][1]
-	}
-	return(data)
-}
-#loadRefs()
 
 get_ref_for_sample <- function(sample)
 {
@@ -143,57 +114,10 @@ get_reffile <- function(config, ref)
 }
 #get_reffile(config,'IL28B-70')
 
-# copy all files from the same sample (subject + date) to the same folder
-#preprocess <- function(config, dir='/home/nelson/nextgen2/', path='GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned',
-#		temp.dir='tmp', file='out/preprocess.txt', fastq.dir='fastq')
-#{
-#	#runs <- loadRuns()
-#	runs <- config@runs
-#	createFile(file=file)
-#	appendFile('cd ',dir, file=file)
-#	appendFile('mkdir ',temp.dir, file=file)
-#	appendFile('mkdir ',fastq.dir, file=file)
-#	appendFile('rm -r ',temp.dir,'/*', file=file)
-#	appendFile('rm ',fastq.dir,'/*', file=file)
-#	
-#	for (sample in unique(runs$sample))
-#	{
-#		dir.to <- concat(temp.dir,'/',sample)
-#		appendFile('mkdir ',dir.to,file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (run in rownames(runs))
-#	{
-#		row <- runs[run,]
-#		sample <- row$sample
-#		dir.to <- concat(temp.dir,'/',sample)
-#		project <- row$project
-#		barcode <- row$barcode
-#		lane <- row$lane		
-#		dir.from <- concat(path,'/Project_',project,'/Sample_',project,'/')
-#		filename <- concat(project,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
-#		
-#		appendFile('cp ',dir.from,filename,' ',dir.to, file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (sample in unique(runs$sample))
-#	{
-#		dir.from <- concat(temp.dir,'/',sample)
-#		appendFile('gunzip ',dir.from,'/*', file=file)
-#	}
-#	appendFile('', file=file)
-#	
-#	for (sample in unique(runs$sample))
-#	{
-#		dir.from <- concat(temp.dir,'/',sample)
-#		appendFile('cat ',dir.from,'/* > ',fastq.dir,'/',sample,'.fastq', file=file)
-#		
-#	}
-#	appendFile('', file=file)
-#	#appendFile('rm -r ',temp.dir,'/*', file=file)
-#}
+get_regions_for_sample <- function(config, sample)
+{
+	return(config@runs[config@runs[,'sample']==sample,'region'])
+}
 
 #########################################################################3
 
@@ -204,7 +128,6 @@ getVarRefName <- function(refid, index)
 	else name <- paste(refid,'var',(index-1), sep='')
 	return(name)
 }
-
 
 # makes variant reference sequences using all possible combinations of specified variants codons
 makeVariantsForRef <- function(config,refid)
@@ -375,6 +298,7 @@ removeAmbiguousCodons <- function(codons)
 
 translateCodon <- function(codon)
 {
+	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	#print(codon)
 	if (nchar(codon)!=3)
 		return(NA)
@@ -384,6 +308,7 @@ translateCodon <- function(codon)
 
 extractSequence <- function(sequence, start, end)
 {
+	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	sequence <- s2c(sequence)
 	return(c2s(sequence[start:end]))
 }
@@ -444,43 +369,119 @@ plotReadDistributions <- function(filename="histograms.pdf")
 }
 
 ####################################################################
+
+
+extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
+{
+	#hack!!!
+	ntnum <- ntnum - 1
+	nt1 <- data[which(data$ntnum==ntnum),'nt']
+	nt2 <- data[which(data$ntnum==ntnum+1),'nt']
+	nt3 <- data[which(data$ntnum==ntnum+2),'nt']
+	codons <- paste(nt1, nt2, nt3, sep='')
+	if (drop.ambig)
+		codons <- removeAmbiguousCodons(codons)
+	return(codons)
+}
+#extractCodonData(data,3495)
+
+################################################################################
+
+appendSampleParams <- function(counts, params)
+{
+	counts$subject <- as.character(params@subject)
+	counts$sample <- as.character(params@sample)
+	counts$replicate <- as.character(params@replicate)
+	counts$region <- as.character(params@region)
+	cols <- names(counts)
+	cols <- c('subject','sample','replicate','region',cols[1:(length(cols)-4)])
+	counts <- counts[,cols]
+	return(counts)
+}
+
 #
+#createNtCountTable <- function(config, data, params)
+#{
+#	ref <- config@regions[which(config@regions==params@region),'ref']
+#	startnt <- config@regions[params@region,'startnt']
+#	counts <- data.frame()
+#	positions <- getCodonPositionsForRegion(config,params@region)
+#	positions <- subset(positions,ntnum < max(data$position+startnt))
+#	for (ntnum in positions$ntnum)
+#	{
+#		#try({
+#		aanum <- positions[which(positions$ntnum==ntnum),'codon']
+#		for (offset in 0:2)
+#		{
+#			ntnum2 <- ntnum + offset
+#			#if (ntnum2 < max(data$position+startnt))
+#			nt <- data[which(data$position+startnt==ntnum2),'nt']
+#			freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
+#			total <- sum(freqs)				
+#			rank <- 1
+#			for (base in names(freqs))
+#			{
+#				count <- freqs[base]
+#				freq <- count/total
+#				row <- data.frame(ntnum=ntnum2, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
+#				counts <- rbind(counts,row)
+#				rank <- rank+1
+#			}
+#		}
+#		#}, silent=FALSE)
+#	}
+#	counts$nt <- as.character(counts$nt)
+#	counts$ntnum <- factor(counts$ntnum)
+#	counts$aanum <- factor(counts$aanum)
+#	counts <- appendSampleParams(counts, params)
+#	return(counts)
+#}
+
 #getCodonPositionsForRegion <- function(config, region)
 #{
-#	regions <- config@regions
-#	refs <- config@refs
-#	offset <- 0
-#	parent <- regions[region,'parent']
-#	if (!is.na(parent))
-#		offset <- regions[parent,'start']
-#	start <- regions[region,'start'] - offset
-#	end <- regions[region,'end'] - offset
+#	#region <- 'NS3-156@NS3aa156'
+#	ref <- config@regions[which(config@regions==region),'ref']
+#	startnt <- config@regions[region,'startnt']
+#	startntrel <- config@regions[region,'startntrel']
 #	#print(concat(start,':',end))
-#	sequence <- extractSequence(refs['KT9','sequence'], regions[region,'start'], regions[region,'end'])
+#	sequence <- config@refs[ref,'sequence']#, regions[region,'start'], regions[region,'end'])
+#	endntrel <- startntrel + nchar(sequence)
 #	#print(sequence)
 #	#print(translateCodon(sequence))
 #	positions <- data.frame()
-#	codon <- start/3 + 1
-#	if (start %% 3 !=0)
-#		stop(concat('start number is not a multiple of 3: ',start,' in region ',region))
-#	for (position in seq(start,end,3))
+#	print(startntrel)
+#	offset <- (startntrel-1) %% 3
+#	print(offset)
+#	if (offset!=0)
 #	{
-#		refcodon <- extractSequence(refs['KT9','sequence'], offset+position, offset+position+2)
-#		refaa <- translateCodon(refcodon)
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=offset+position, relpos=position, refcodon=refcodon, refaa=refaa))
-#		codon <- codon + 1
+#		print(concat('adjusting to the start of a codon: offset=',offset))
+#		startntrel <- startntrel + 3 - offset
+#		startnt <- startnt + 3 - offset
+#		if ((startntrel-1) %% 3!=0)
+#			stop(concat('start number is not a multiple of 3: ',startntrel,' in region ',region))
+#	}
+#	codon <- (startntrel-1)/3 + 1
+#	print(concat('ref: ',ref,' startnt: ',startnt,', startntrel: ',startntrel,', codon: ',codon))
+#	for (position in seq(startntrel,endntrel-1,3))
+#	{
+#		try({
+#					index <- position-startntrel+1
+#					refcodon <- extractSequence(sequence, index, index+2)
+#					refaa <- translateCodon(refcodon)
+#					positions <- rbind(positions, data.frame(codon=codon, ntnum=startnt+position, relpos=position, refcodon=refcodon, refaa=refaa))
+#					codon <- codon + 1
+#				})
 #	}	
 #	return(positions)
 #}
-##head(getCodonPositionsForRegion(config, 'NS3aa156'))
+##getCodonPositionsForRegion(config,'HBV-RT@HBV-RT')
+##getCodonPositionsForRegion(config,'NS3-156@NS3aa156')
 
 getCodonPositionsForRegion <- function(config, region)
 {
-	#region <- 'NS3-156@NS3aa156'
-	ref <- config@regions[which(config@regions==region),'ref']
-	startnt <- config@regions[region,'startnt']
-	startntrel <- config@regions[region,'startntrel']
-	#print(concat(start,':',end))
+	ref <- config@regions[region,'ref']
+	startnt <- config@refs[ref,'startnt']
+	startntrel <- config@refs[ref,'startntrel']
 	sequence <- config@refs[ref,'sequence']#, regions[region,'start'], regions[region,'end'])
 	endntrel <- startntrel + nchar(sequence)
 	#print(sequence)
@@ -501,124 +502,112 @@ getCodonPositionsForRegion <- function(config, region)
 	print(concat('ref: ',ref,' startnt: ',startnt,', startntrel: ',startntrel,', codon: ',codon))
 	for (position in seq(startntrel,endntrel-1,3))
 	{
-		try({
-			index <- position-startntrel+1
-			refcodon <- extractSequence(sequence, index, index+2)
-			refaa <- translateCodon(refcodon)
-			positions <- rbind(positions, data.frame(codon=codon, ntnum=startnt+position, relpos=position, refcodon=refcodon, refaa=refaa))
-			codon <- codon + 1
-		})
-	}	
+		#try({
+		index <- position-startntrel+1
+		refcodon <- extractSequence(sequence, index, index+2)
+		refaa <- translateCodon(refcodon)
+		positions <- rbind(positions, data.frame(codon=codon, ntnum=startnt+position, relpos=position, refcodon=refcodon, refaa=refaa))
+		codon <- codon + 1
+		#})
+	}
+	startaa <- config@regions[region,'startaa']
+	endaa <- config@regions[region,'endaa']
+	if (!is.na(startaa))
+		positions <- positions[which(positions$codon >= startaa),]
+	if (!is.na(endaa))
+		positions <- positions[which(positions$codon <= endaa),]
 	return(positions)
 }
+#positions <- getCodonPositionsForRegion(config,'NS3-156@NS3aa156')
+#positions <- getCodonPositionsForRegion(config,'NS3-36@NS3aa36')
 #getCodonPositionsForRegion(config,'HBV-RT@HBV-RT')
-#getCodonPositionsForRegion(config,'NS3-156@NS3aa156')
 
-extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
+#################################################################
+
+getNtCounts <- function(data, ntnum)
 {
-	#hack!!!
-	ntnum <- ntnum - 1
-	nt1 <- data[which(data$position==ntnum),'nt']
-	nt2 <- data[which(data$position==ntnum+1),'nt']
-	nt3 <- data[which(data$position==ntnum+2),'nt']
-	codons <- paste(nt1, nt2, nt3, sep='')		
-	if (drop.ambig)
-		codons <- removeAmbiguousCodons(codons)
-	return(codons)
-}
-#extractCodonData(data,3495)
-
-################################################################################
-
-appendSampleParams <- function(counts, params)
-{
-	counts$subject <- as.character(params@subject)
-	counts$sample <- as.character(params@sample)
-	counts$replicate <- as.character(params@replicate)
-	counts$region <- as.character(params@region)
-	cols <- names(counts)
-	cols <- c('subject','sample','replicate','region',cols[1:(length(cols)-4)])
-	counts <- counts[,cols]
+	counts <- data.frame()
+	nts <- data[which(data$ntnum==ntnum),'nt']
+	freqs <- sort(xtabs(as.data.frame(nts)), decreasing=TRUE)
+	total <- sum(freqs)				
+	rank <- 1
+	for (nt in names(freqs))
+	{
+		count <- freqs[nt]
+		freq <- count/total
+		row <- data.frame(ntnum=ntnum, aanum=NA, nt=nt, rank=rank, count=count, freq=freq) 
+		counts <- rbind(counts,row)
+		rank <- rank+1
+	}
 	return(counts)
 }
-#
-#createNtCountTable <- function(config, data, params)
-#{
-#	region <- params@region
-#	regions <- config@regions
-#	start <- regions[region,'start']
-#	end <- regions[region,'end']	
-#	data <- subset(data, position >= start & position <= end)
-#	
-#	counts <- data.frame()
-#	positions <- getCodonPositionsForRegion(config,params@region)
-#	for (ntnum in positions$ntnum)
-#	{
-#		try({
-#			aanum <- positions[which(positions$ntnum==ntnum),'codon']
-#			for (offset in 0:2)
-#			{
-#				ntnum2 <- ntnum + offset
-#				nt <- data[which(data$position==ntnum2),'nt']
-#				#print(head(nt))
-#				#if (params@drop.ambig)
-#				#	nt <- removeAmbiguousCodons(nt)
-#				#print(concat('nt vector length: ',length(nt)))
-#				freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
-#				total <- sum(freqs)				
-#				rank <- 1
-#				for (base in names(freqs))
-#				{
-#					count <- freqs[base]
-#					freq <- count/total
-#					row <- data.frame(ntnum=ntnum2, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
-#					counts <- rbind(counts,row)
-#					rank <- rank+1
-#				}
-#			}
-#		}, silent=FALSE)
-#	}
-#	counts$nt <- as.character(counts$nt)
-#	counts$ntnum <- factor(counts$ntnum)
-#	counts$aanum <- factor(counts$aanum)
-#	counts <- appendSampleParams(counts, params)
-#	return(counts)
-#}
+#counts <- getNtCounts(data,3731)
+
+getCodonCounts <- function(data, ntnum)
+{
+	counts <- data.frame()
+	codons <- extractCodonData(data,ntnum, FALSE)
+	if (length(codons)==0)
+		return(counts)
+	#print(codons)
+	#aanum <- positions[which(positions$ntnum==ntnum),'codon']
+	#print(paste('ntnum=',ntnum,'numcodons=',length(codons)))
+	freqs <- sort(xtabs(as.data.frame(codons)), decreasing=TRUE)
+	total <- sum(freqs)		
+	rank <- 1
+	for (codon in names(freqs))
+	{
+		count <- freqs[codon]
+		freq <- count/total
+		row <- data.frame(ntnum=ntnum, aanum=NA, codon=codon, rank=rank, count=count, freq=freq) #sample=sample, 
+		counts <- rbind(counts,row)
+		rank <- rank +1
+	}
+	counts$aa <- sapply(counts$codon,translateCodon)
+	return(counts)
+}
+#counts <- getCodonCounts(data,3602)
+
+getAaCounts <- function(data, ntnum)
+{
+	counts <- data.frame()
+	codons <- extractCodonData(data,ntnum,FALSE)
+	if (length(codons)==0)
+		return(counts)
+	#aanum <- positions[which(positions$ntnum==ntnum),'codon']
+	aa <- sapply(codons,translateCodon)
+	freqs <- sort(xtabs(as.data.frame(aa)), decreasing=TRUE)
+	total <- sum(freqs)
+	rank <- 1
+	for (aa in names(freqs))
+	{
+		count <- freqs[aa]
+		freq <- count/total
+		row <- data.frame(ntnum=ntnum, aanum=NA, aa=aa, rank=rank, count=count, freq=freq)
+		counts <- rbind(counts,row)
+		rank <- rank +1
+	}
+	return(counts)
+}
+#counts <- getAaCounts(data,3731)
+
+########################################################################
 
 createNtCountTable <- function(config, data, params)
-{	
-	#offset <- config@regions[region,'offset']
-	#start <- config@regions[region,'start']
-	#end <- config@regions[region,'end']
-	#data <- subset(data, position >= start-offset & position <= end-offset)
-	ref <- config@regions[which(config@regions==params@region),'ref']
-	startnt <- config@regions[params@region,'startnt']
-	
+{
 	counts <- data.frame()
 	positions <- getCodonPositionsForRegion(config,params@region)
-	positions <- subset(positions,ntnum < max(data$position+startnt))
 	for (ntnum in positions$ntnum)
 	{
-		#try({
-		aanum <- positions[which(positions$ntnum==ntnum),'codon']
 		for (offset in 0:2)
 		{
-			ntnum2 <- ntnum + offset
-			#if (ntnum2 < max(data$position+startnt))
-			nt <- data[which(data$position+startnt==ntnum2),'nt']
-			freqs <- sort(xtabs(as.data.frame(nt)), decreasing=TRUE)
-			total <- sum(freqs)				
-			rank <- 1
-			for (base in names(freqs))
+			ntcounts <- getNtCounts(data,ntnum + offset)			
+			if (nrow(ntcounts)>0)
 			{
-				count <- freqs[base]
-				freq <- count/total
-				row <- data.frame(ntnum=ntnum2, aanum=aanum, nt=base, rank=rank, count=count, freq=freq) 
-				counts <- rbind(counts,row)
-				rank <- rank+1
+				ntcounts$aanum <- positions[which(positions$ntnum==ntnum),'codon']
+				counts <- rbind(counts,ntcounts)		
 			}
 		}
-		#}, silent=FALSE)
 	}
 	counts$nt <- as.character(counts$nt)
 	counts$ntnum <- factor(counts$ntnum)
@@ -626,80 +615,42 @@ createNtCountTable <- function(config, data, params)
 	counts <- appendSampleParams(counts, params)
 	return(counts)
 }
-#data <- loadDataFrame('out/pileup/110617HBV.HBV01@HBV-RT.filtered.txt')
-#params <- new('sampleparams',subject='10348001', sample='110617HBV.HBV01@HBV-RT', region='HBV-RT@HBV-RT', replicate=1)
-#counts <- createNtCountTable(config,data,params)
-#head(table.codons, n=20)
+#params <- new('sampleparams',subject='10201689', sample='110719-4.p29.NS3aa36@NS3-36', region='NS3-36@NS3aa36', replicate=1)
+#data <- loadPileupData(config,params@sample)
+#counts <- createNtCountTable(config,data,params@region)
 
 createCodonCountTable <- function(config, data, params)
 {
-	ref <- config@regions[which(config@regions==params@region),'ref']
-	startnt <- config@regions[params@region,'startnt']
-	
 	counts <- data.frame()
 	positions <- getCodonPositionsForRegion(config,params@region)
-	positions <- subset(positions,ntnum < max(data$position+startnt))
 	for (ntnum in positions$ntnum)
 	{
-		#try({
-			#print(concat('ntnum=',ntnum,', startnt=',startnt,', diff=',(ntnum-startnt)))
-			codons <- extractCodonData(data,ntnum-startnt,params@drop.ambig)
-			if (length(codons)>0)
-			{
-				#print(codons)
-				aanum <- positions[which(positions$ntnum==ntnum),'codon']
-				print(paste('aanum=',aanum,'ntnum=',ntnum,'numcodons=',length(codons)))
-				freqs <- sort(xtabs(as.data.frame(codons)), decreasing=TRUE)
-				total <- sum(freqs)
-				
-				rank <- 1
-				for (codon in names(freqs))
-				{
-					count <- freqs[codon]
-					freq <- count/total
-					row <- data.frame(ntnum=ntnum, aanum=aanum, codon=codon, rank=rank, count=count, freq=freq) #sample=sample, 
-					counts <- rbind(counts,row)
-					rank <- rank +1
-				}
-			}
-		#})
+		codoncounts <- getCodonCounts(data,ntnum)
+		if (nrow(codoncounts)>0)
+		{
+			codoncounts$aanum <- positions[which(positions$ntnum==ntnum),'codon']
+			counts <- rbind(counts,codoncounts)
+		}
 	}
 	counts$codon <- as.character(counts$codon)
-	counts$aa <- sapply(counts$codon,translateCodon)
 	counts$ntnum <- factor(counts$ntnum)
 	counts$aanum <- factor(counts$aanum)
-	counts <- appendSampleParams(counts, params)
+	#counts <- appendSampleParams(counts, params)
 	return(counts)
 }
-#counts <- createCodonCountTable(config,data,params)
+#counts <- createCodonCountTable(config,data,params@region)
 
 createAminoAcidCountTable <- function(config, data, params)
 {
-	ref <- config@regions[which(config@regions==params@region),'ref']
-	startnt <- config@regions[params@region,'startnt']
-	
 	counts <- data.frame()
 	positions <- getCodonPositionsForRegion(config,params@region)
-	positions <- subset(positions,ntnum < max(data$position+startnt))
 	for (ntnum in positions$ntnum)
-	{		
-		codons <- extractCodonData(data,ntnum-startnt,params@drop.ambig)
-		if (length(codons)>0)
+	{	
+		aacounts <- getAaCounts(data,ntnum)
+		if (nrow(aacounts)>0)
 		{
-			aanum <- positions[which(positions$ntnum==ntnum),'codon']
-			aa <- sapply(codons,translateCodon)
-			freqs <- sort(xtabs(as.data.frame(aa)), decreasing=TRUE)
-			total <- sum(freqs)
-			rank <- 1
-			for (aa in names(freqs))
-			{
-				count <- freqs[aa]
-				#print(attributes(count))
-				freq <- count/total
-				row <- data.frame(ntnum=ntnum, aanum=aanum, aa=aa, rank=rank, count=count, freq=freq)
-				counts <- rbind(counts,row)
-				rank <- rank +1
-			}
+			aacounts$aanum <- positions[which(positions$ntnum==ntnum),'codon']
+			counts <- rbind(counts,aacounts)
 		}
 	}
 	counts$ntnum <- factor(counts$ntnum)
@@ -707,87 +658,48 @@ createAminoAcidCountTable <- function(config, data, params)
 	counts <- appendSampleParams(counts, params)
 	return(counts)
 }
-#counts <- createAminoAcidCountTable(config,data,params)
-
-#
-#count_codons_for_region <- function(config, data, params, variantdata)
-#{
-#	print(concat('count_codons_for_region: ',as.character(params@region)))
-#	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params))
-#	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params))
-#	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params))	
-#	return(variantdata)
-#}
+#counts <- createAminoAcidCountTable(config,data,params@region)
 
 count_codons_for_region <- function(config, data, params, variantdata)
 {
 	print(concat('count_codons_for_region: ',as.character(params@region)))
 	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params))
 	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params))
-	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params))	
+	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params))
 	return(variantdata)
 }
-#
-#count_codons_for_sample <- function(config, params, variantdata)
-#{
-#	sample <- as.character(params@sample)
-#	print(concat('count_codons_for_sample: ',sample))
-#	#ref <- config@samples[sample,'ref'] # look up the ref for the sample
-#	ref <- get_ref_for_sample(sample)
-#	filename <- concat(config@pileup.dir,'/',sample,'.txt'); print(filename) # load the corresponding data file
-#	data <- loadDataFrame(filename)
-#	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
-#	# each sample has several runs targeting different regions
-#	runs <- config@runs
-#	for (region in runs[runs[,'sample']==sample,'region'])
-#	{
-#		params@region <- region
-#		variantdata <- count_codons_for_region(config, data, params, variantdata)
-#	}
-#	return(variantdata)
-#}
-#tables <- count_codons_for_sample('218-7_03-01')
+#params@region <- 'NS3-36@NS3aa36'
+#variantdata <- count_codons_for_region(config, data, params, variantdata)
 
-count_codons_for_sample <- function(config, params, variantdata)
+loadPileupData <- function(config, sample)
 {
-	sample <- as.character(params@sample)
-	print(concat('count_codons_for_sample: ',sample))
-	#ref <- config@samples[sample,'ref'] # look up the ref for the sample
-	ref <- get_ref_for_sample(sample)
 	filename <- concat(config@pileup.dir,'/',sample,'.filtered.txt'); print(filename) # load the corresponding data file
 	data <- loadDataFrame(filename)
 	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
+	ref <- get_ref_for_sample(sample)
+	startnt <- config@refs[ref,'startnt']
+	data$ntnum <- data$position + startnt
+	return(data)
+}
+#data <- loadPileupData(config,'110719-4.p29.NS3aa36@NS3-36')
+
+count_codons_for_sample <- function(config, params, variantdata)
+{
+	print(concat('count_codons_for_sample: ',params@sample))
+	#ref <- get_ref_for_sample(params@sample)
+	#filename <- concat(config@pileup.dir,'/',params@sample,'.filtered.txt'); print(filename) # load the corresponding data file
+	#data <- loadDataFrame(filename)
+	#print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
 	# each sample has one or more runs targeting different regions
-	for (region in config@runs[ config@runs[,'sample']==sample,'region'])
+	data <- loadPileupData(config,params@sample)
+	for (region in get_regions_for_sample(config,params@sample))
 	{
 		params@region <- region
 		variantdata <- count_codons_for_region(config, data, params, variantdata)
 	}
 	return(variantdata)
 }
-#
-#count_codons_for_subject <- function(config, params)
-#{
-#	if (is.character(params))
-#		params <- new('sampleparams', subject=params)
-#	print(concat('count_codons_for_subject: ',as.character(params@subject)))
-#	variantdata <- new('variantdata')
-#	samples <- subset(config@samples, subject==params@subject)
-#	if (nrow(samples)==0)
-#		stop(concat('cannot find any samples for subject ',params@subject))
-#	for (sample in samples[,'sample'])
-#	{
-#		params@sample <- sample
-#		params@replicate <- samples[sample,'replicate']
-#		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
-#	}
-#	counts.dir <- concat(config@counts.dir,'/')
-#	writeTable(variantdata@nt, concat(counts.dir,params@subject,'.nt.txt'), row.names=FALSE)
-#	writeTable(variantdata@codons, concat(counts.dir,params@subject,'.codons.txt'), row.names=FALSE)
-#	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
-#	return(variantdata)
-#}
-#variants <- count_codons_for_subject(config, 'PXB0218-0007')
+#count_codons_for_sample(config,params,variantdata)
 
 count_codons_for_subject <- function(config, params)
 {
@@ -810,21 +722,21 @@ count_codons_for_subject <- function(config, params)
 	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
 	return(variantdata)
 }
+#counts <- count_codons_for_subject(config, '10201689')
 #count_codons_for_subject(config,'10348001')
-
-count_codons <- function(config, params=NULL)
-{
-	#samples <- config@samples
-	print('count_codons')
-	if (is.null(params))
-		params <- new('sampleparams')	
-	#for (subject in unique(samples$subject))
-	for (subject in config@subjects)
-	{
-		params@subject <- subject
-		count_codons_for_subject(config, params)
-	}
-}
+#
+#count_codons <- function(config, params=NULL)
+#{
+#	#samples <- config@samples
+#	print('count_codons')
+#	if (is.null(params))
+#		params <- new('sampleparams')
+#	for (subject in config@subjects)
+#	{
+#		params@subject <- subject
+#		count_codons_for_subject(config, params)
+#	}
+#}
 #count_codons()
 
 
@@ -1031,24 +943,6 @@ makeCodonBarcharts <- function(config, subject=NULL, ...)
 #makeCodonBarcharts(config)
 
 #############################################################3
-
-#makeVariantTable <- function(config, type, subject, region, cutoff=0)
-#{
-#	aanum <- as.integer(config@regions[region,'aafocus'])
-#	data.subset <- getCodonCountSubset(config,subject,region,type,aanum,cutoff=cutoff)
-#	if (type=='codons')
-#		frmla <- as.formula(codon ~ replicate)
-#	else frmla <- as.formula(aa ~ replicate)
-#	counts <- cast(data.subset, frmla, value='count', fun.aggregate=function(x) return(x[1])); counts
-#	counts <- counts[order(counts[,2], decreasing=TRUE),]
-#	row.names(counts) <- seq(nrow(counts))
-#	#row <- data.frame(codon="Total", t(colSums(counts[,-1], na.rm=TRUE)))
-#	#colnames(row) <- colnames(counts)
-#	#counts <- rbind(counts,row)	
-#	return(counts)
-#}
-##makeVariantTable(config,'codons','KT9','NS3aa156')
-##makeVariantTable(config,'aa','KT9','NS3aa156')
 
 makeVariantTable <- function(config, type, subject, region, cutoff=0)
 {
@@ -1307,3 +1201,77 @@ plotTiters <- function(config)
 	par(oldpar)
 }
 #plotTiters(config)
+
+
+#
+#createCodonCountTable <- function(config, data, params)
+#{
+#	ref <- config@regions[which(config@regions==params@region),'ref']
+#	startnt <- config@regions[params@region,'startnt']
+#	
+#	counts <- data.frame()
+#	positions <- getCodonPositionsForRegion(config,params@region)
+#	positions <- subset(positions,ntnum < max(data$position+startnt))
+#	for (ntnum in positions$ntnum)
+#	{
+#		#print(concat('ntnum=',ntnum,', startnt=',startnt,', diff=',(ntnum-startnt)))
+#		codons <- extractCodonData(data,ntnum-startnt,params@drop.ambig)
+#		if (length(codons)==0)
+#			next
+#		#print(codons)
+#		aanum <- positions[which(positions$ntnum==ntnum),'codon']
+#		print(paste('aanum=',aanum,'ntnum=',ntnum,'numcodons=',length(codons)))
+#		freqs <- sort(xtabs(as.data.frame(codons)), decreasing=TRUE)
+#		total <- sum(freqs)		
+#		rank <- 1
+#		for (codon in names(freqs))
+#		{
+#			count <- freqs[codon]
+#			freq <- count/total
+#			row <- data.frame(ntnum=ntnum, aanum=aanum, codon=codon, rank=rank, count=count, freq=freq) #sample=sample, 
+#			counts <- rbind(counts,row)
+#			rank <- rank +1
+#		}
+#	}
+#	counts$codon <- as.character(counts$codon)
+#	counts$aa <- sapply(counts$codon,translateCodon)
+#	counts$ntnum <- factor(counts$ntnum)
+#	counts$aanum <- factor(counts$aanum)
+#	counts <- appendSampleParams(counts, params)
+#	return(counts)
+#}
+##counts <- createCodonCountTable(config,data,params)
+#
+#createAminoAcidCountTable <- function(config, data, params)
+#{
+#	ref <- config@regions[which(config@regions==params@region),'ref']
+#	startnt <- config@regions[params@region,'startnt']
+#	
+#	counts <- data.frame()
+#	positions <- getCodonPositionsForRegion(config,params@region)
+#	positions <- subset(positions,ntnum < max(data$position+startnt))
+#	for (ntnum in positions$ntnum)
+#	{		
+#		codons <- extractCodonData(data,ntnum-startnt,params@drop.ambig)
+#		if (length(codons)==0)
+#			next
+#		aanum <- positions[which(positions$ntnum==ntnum),'codon']
+#		aa <- sapply(codons,translateCodon)
+#		freqs <- sort(xtabs(as.data.frame(aa)), decreasing=TRUE)
+#		total <- sum(freqs)
+#		rank <- 1
+#		for (aa in names(freqs))
+#		{
+#			count <- freqs[aa]
+#			freq <- count/total
+#			row <- data.frame(ntnum=ntnum, aanum=aanum, aa=aa, rank=rank, count=count, freq=freq)
+#			counts <- rbind(counts,row)
+#			rank <- rank +1
+#		}
+#	}
+#	counts$ntnum <- factor(counts$ntnum)
+#	counts$aanum <- factor(counts$aanum)
+#	counts <- appendSampleParams(counts, params)
+#	return(counts)
+#}
+##counts <- createAminoAcidCountTable(config,data,params)
