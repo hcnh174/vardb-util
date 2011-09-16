@@ -1,10 +1,8 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
-loadUtilFiles('nextgen2')
+loadUtilFiles('nextgen2,nextgen_counts')
 testrun <- FALSE
 config <- new('nextgenconfig')
 config@illumina.dir <- 'GA_RunData/110802_HWUSI-EAS1611_00068_FC634PPAAXX/Unaligned'
-
-
 
 .make_folders <- function(config, subdirs='ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
 {
@@ -63,7 +61,7 @@ preprocess <- function(config)
 		checkFileExists(fastqfile)
 	}
 	run_command('')
-	#run_command('rm -r ',temp.dir)
+	run_command('rm -r ',temp.dir)
 }
 #preprocess(config)
 
@@ -85,6 +83,8 @@ trim_solexaqa <- function(config,sample)
 
 trim_all <- function(config)
 {
+	if (!config@trim)
+		return()
 	for (sample in config@samples)
 	{
 		trim_solexaqa(config,sample)
@@ -95,13 +95,24 @@ trim_all <- function(config)
 
 ######################################################################
 
-add_read_groups <- function(config,sample)
+build_bam_index <- function(config, sample)
+{
+	tmp.dir <- config@tmp.dir
+	bamfile <- concat(tmp.dir,'/',sample,'.bam')
+	baifile <- concat(tmp.dir,'/',sample,'.bam.bai')
+	str <- 'java -Xmx2g -jar $PICARD_HOME/BuildBamIndex.jar'
+	str <- concat(str,' INPUT=',bamfile)
+	str <- concat(str,' OUTPUT=',baifile)
+	run_command(str)
+	checkFileExists(baifile)
+}
+#build_bam_index(config,'110617HBV.HBV07@HBV-RT')
+
+add_read_groups <- function(config, sample)
 {
 	tmp.dir <- config@tmp.dir
 	samfile <- concat(tmp.dir,'/',sample,'.sam')
 	bamfile <- concat(tmp.dir,'/',sample,'.bam')
-	baifile <- concat(tmp.dir,'/',sample,'.bai')
-	
 	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
 	str <- concat(str,' INPUT=',samfile)
 	str <- concat(str,' OUTPUT=',bamfile)
@@ -111,26 +122,26 @@ add_read_groups <- function(config,sample)
 	str <- concat(str,' RGPL=illumina')
 	str <- concat(str,' RGPU=barcode')
 	str <- concat(str,' SORT_ORDER=coordinate')
-	str <- concat(str,' CREATE_INDEX=true')
+	#str <- concat(str,' CREATE_INDEX=true')
 	run_command(str)
-	
 	checkFileExists(bamfile)
-	checkFileExists(baifile)	
+	build_bam_index(config,sample)
 }
 #add_read_groups(config,'110617HBV.HBV07@HBV-RT')
 
-run_bwa <- function(config, sample, fastq.ext='.trimmed.fastq', q=20)#, .trimmed.fastq
+run_bwa <- function(config, sample)#, .trimmed.fastq #, q=20
 {
+	fastq.ext <- ifelse(config@trim,'.trimmed.fastq','.fastq')
 	ref <- get_ref_for_sample(sample)
 	reffile <- get_reffile(config,ref)
 	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
 	tmp.dir <- config@tmp.dir
 
 	samfile <- concat(tmp.dir,'/',sample,'.sam')
-	saifile <- concat(tmp.dir,'/',sample,'.sai')
+	saifile <- concat(tmp.dir,'/',sample,'.sam.sai')
 	
 	run_command('bwa index ',reffile)
-	run_command('bwa aln -q ',q,' ',reffile,' ',fqfile,' > ',saifile)
+	run_command('bwa aln ',reffile,' ',fqfile,' > ',saifile)
 	run_command('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 	checkFileExists(samfile)
 	
@@ -384,10 +395,13 @@ filter_bams <- function(config)
 
 ####################################################
 
-export_pileup_for_sample <- function(config,sample)
+export_pileup_for_sample <- function(config,sample,filtered=TRUE)
 {
 	ref <- get_ref_for_sample(sample)
-	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', sample,'.filtered ',ref,' ',config@bam.dir,' ',config@pileup.dir)
+	if (filtered)
+		samplename <- concat(sample,'.filtered')
+	else samplename <- sample
+	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
 }
 #export_pileup(config,'merged','KT9')
 
@@ -395,22 +409,13 @@ export_pileup <- function(config)
 {
 	for (sample in config@samples)
 	{
-		export_pileup_for_sample(config,sample)
+		export_pileup_for_sample(config,sample,filtered=FALSE)
+		export_pileup_for_sample(config,sample,filtered=TRUE)
 	}
 }
 export_pileup(config)
 
 ################################################
-
-#count_codons <- function(config)
-#{
-#	#for (subject in config@subjects$subject)
-#	for (subject in unique(config@runs$subject))
-#	{
-#		try(count_codons_for_subject(config, subject))
-#	}
-#}
-##count_codons(config)
 
 count_codons <- function(config)
 {
@@ -425,7 +430,7 @@ count_codons <- function(config)
 		subject
 	}
 }
-count_codons(config)
+#count_codons(config)
 
 make_tables <- function(config)
 {

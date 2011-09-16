@@ -1,3 +1,9 @@
+#organize functions into a namespace 
+.my.env <- new.env()
+sys.source('c:/perf/bin/perfmon.r', envir=.my.env)
+attach(.my.env) 
+
+
 #installation
 install.packages("ggplot2") 
 
