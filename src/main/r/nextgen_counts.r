@@ -11,51 +11,6 @@ loadPileupData <- function(config, sample)
 }
 #data <- loadPileupData(config,'110719-4.p29.NS3aa36@NS3-36')
 
-#getCodonPositionsForRegion <- function(config, region)
-#{
-#	ref <- config@regions[region,'ref']
-#	startnt <- config@refs[ref,'startnt']
-#	startntrel <- config@refs[ref,'startntrel']
-#	sequence <- config@refs[ref,'sequence']
-#	endntrel <- startntrel + nchar(sequence)
-#	#print(sequence)
-#	#print(translateCodon(sequence))
-#	positions <- data.frame()
-#	print(startntrel)
-#	offset <- (startntrel-1) %% 3
-#	print(offset)
-#	if (offset!=0)
-#	{
-#		print(concat('adjusting to the start of a codon: offset=',offset))
-#		startntrel <- startntrel + 3 - offset
-#		startnt <- startnt + 3 - offset
-#		if ((startntrel-1) %% 3!=0)
-#			stop(concat('start number is not a multiple of 3: ',startntrel,' in region ',region))
-#	}
-#	codon <- (startntrel-1)/3 + 1
-#	print(concat('ref: ',ref,' startnt: ',startnt,', startntrel: ',startntrel,', codon: ',codon))
-#	
-#	for (position in seq(startntrel,endntrel,3))
-#	{
-#		index <- position-startntrel+1
-#		if (index+2 > nchar(sequence))
-#			break
-#		refcodon <- extractSequence(sequence, index, index+2)
-#		refaa <- translateCodon(refcodon)
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=startnt+position, relpos=position, refcodon=refcodon, refaa=refaa))
-#		codon <- codon + 1
-#	}
-#	startaa <- config@regions[region,'startaa']
-#	endaa <- config@regions[region,'endaa']
-#	#if (!is.na(startaa))
-#	#	positions <- positions[which(positions$codon >= startaa),]
-#	#if (!is.na(endaa))
-#	#	positions <- positions[which(positions$codon <= endaa),]
-#	print(concat('sequence: ',seqinr::c2s(positions$refaa)))
-#	return(positions)
-#}
-#
-
 #################################################################
 
 getNtCounts <- function(data, ntnum)
