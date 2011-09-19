@@ -187,7 +187,7 @@ getCodonPositionsForRegion <- function(config, region)
 	ref <- config@regions[region,'ref']	
 	startnt <- config@refs[ref,'startnt']
 	startntrel <- config@refs[ref,'startntrel']
-	print(concat('startnt=',startnt,' startntrel=',startntrel))
+	#print(concat('startnt=',startnt,' startntrel=',startntrel))
 	sequence <- config@refs[ref,'sequence']
 	positions <- data.frame()
 	#codon <- (startntrel-1-(startntrel-1)%%3)/3 + 1	
@@ -214,7 +214,7 @@ getCodonPositionsForRegion <- function(config, region)
 #		positions <- positions[which(positions$codon >= startaa),]
 #	if (!is.na(endaa))
 #		positions <- positions[which(positions$codon <= endaa),]
-	print(concat('sequence: ',seqinr::c2s(positions$refaa)))
+	#print(concat('sequence: ',seqinr::c2s(positions$refaa)))
 	return(positions)
 }
 #getCodonPositionsForRegion(config,'NS3-36@NS3aa36')
