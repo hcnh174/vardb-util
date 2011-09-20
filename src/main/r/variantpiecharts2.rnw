@@ -1,0 +1,95 @@
+\SweaveOpts{prefix.string=tmp/fig} 
+\documentclass[a4paper,fleqn]{article}
+\title{Variant frequency by position}
+%http://dcwww.camd.dtu.dk/~schiotz/comp/LatexTips/LatexTips.html
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.75}
+\renewcommand{\figurename}{Fig.}
+\usepackage{subfig}
+\begin{document}
+\maketitle
+
+<<eval=TRUE,echo=FALSE,term=FALSE>>=
+
+appendTiterFigure <- function(config, subject)
+{
+	if (!containsElement(config@titers$subject,subject))
+		return()
+	filename <- concat('tmp/fig-titer-',subject,'.pdf')
+	pdf(file=filename, paper="special")
+	plotTiter(config,subject)
+	dev.off()
+	
+	cat('\\begin{figure}[ht]\n', sep='')
+	cat('\\includegraphics{',filename,'}\n', sep='')
+	cat('\\end{figure}\n', sep='')
+}
+
+makeVariantPieChart <- function(codon.tables, subject, region, cutoff=1)
+{	
+	require(ggplot2)
+	tbl <- codon.tables[[subject]][[region]]
+	tbl.melted <- melt(tbl, id=c('codon'))
+	tbl.melted <- subsetNA(tbl.melted)
+	tbl.melted <- tbl.melted[which(tbl.melted$value > cutoff),]
+	tbl.melted$codon <- factor(tbl.melted$codon, levels=tbl$codon)
+	
+	plt <- ggplot(data=tbl.melted, 
+			aes(x=factor(1), y=value, fill = factor(codon), order = -as.numeric(value))) +
+			geom_bar(width = 1) +
+			coord_polar(theta="y") + 
+			facet_grid(facets=. ~ replicate) +
+			opts(plot.margin = unit(c(0,0,0,0), "lines")) +
+			xlab(concat(subject,': ',region)) + ylab('') + labs(fill='Codons')
+	print(plt)
+}
+#makeVariantPieChart(codon.tables, '98005606','NS3-156@NS3aa156')
+#makeVariantPieChart(codon.tables, 'PXB0218-0007','NS3aa156')
+
+appendVariantPieChart <- function(codon.tables, subject, region)
+{
+	filename <- concat('./tmp/fig-',subject,'-',region,'.pdf')
+	pdf(file=filename, paper="special", width=8, height=2.5)#6 
+	makeVariantPieChart(codon.tables, subject, region)
+	dev.off()
+	
+	cat('\\begin{figure}[ht]\n', sep='')
+	cat('\\includegraphics{',filename,'}\n', sep='')
+	cat('\\end{figure}\n', sep='')
+}
+#appendVariantPieChart(codon.tables, 'PXB0218-0007','NS3aa156')
+
+appendVariantTable <- function(codon.tables, subject, region)
+{
+	require(xtable)
+	tbl <- codon.tables[[subject]][[region]]
+	caption <- concat('Subject: ',as.character(subject[1]),', Region: ',as.character(region))
+	#caption <- concat(caption,'\\newline  Description: ',as.character(config@subjects[subject,'description']))
+	caption <- concat(caption,'\\newline')
+	xtbl <- xtable(tbl, caption=caption, digits=0)
+	print(xtbl, include.rownames=FALSE, caption.placement='top', latex.environments='flushleft')
+}
+@
+
+<<results=tex,echo=FALSE>>=  
+
+	codon.tables <<- makeVariantTables(config,'codons',cutoff=20)
+
+	for (subject in config@subjects)
+	{
+		cat('Subject: ',subject,'\n', sep='')
+		try(appendTiterFigure(config,subject),silent=FALSE)
+		for (region in getRegionsForSubject(config,subject))
+		{
+			try({
+			appendVariantTable(codon.tables, subject, region)
+			appendVariantPieChart(codon.tables, subject, region)
+			}, silent=FALSE)
+		}
+		cat('\\clearpage\n', sep='')
+	}
+@
+
+
+\end{document}

@@ -18,7 +18,7 @@
 		tbl.subset <- tbl.subset[which(tbl.subset[[sample]]> cutoff),]
 		counts <- tbl.subset[[sample]]
 		pielabels <- sprintf("%s = %2.2f%s", tbl.subset$codon,	100*counts/sum(counts), "%")
-		colors <- c("white","grey70","grey90","grey50","black")
+		colors <- splitFields('white,grey30,grey50,grey70,grey90,black')
 		pie(counts, col=colors, cex=0.8, clockwise=TRUE, labels=NA) #labels=codons, main=sample, 
 		legend('bottom', legend=pielabels, fill=colors, bty="n", cex=2) #cex=0.8,'bottomright' -1,-1,
 		#text(0,1,sample)	
@@ -36,7 +36,7 @@
 
 	codon.tables <<- makeVariantTables(config,'codons',cutoff=2)
 	
-	for (subject in config@subjects$subject)
+	for (subject in config@subjects)
 	{
 		if (containsElement(config@titers$subject,subject))
 		{
@@ -45,8 +45,10 @@
 			dev.off()
 		}
 		
-		samples <- config@samples[which(config@samples$subject==subject),'sample']
-		regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
+		#samples <- config@samples[which(config@samples$subject==subject),'sample']
+		#regions <- unique(config@runs[which(config@runs$sample %in% samples),'region'])
+		samples <- getSamplesForSubject(config,subject)
+		regions <- getRegionsForSubject(config,subject)
 		for (region in regions)
 		{
 			tbl <- codon.tables[[subject]][[region]]

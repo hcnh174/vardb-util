@@ -85,8 +85,6 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 getSamplesForSubject <- function(config, subject)
 {
 	samples <- config@runs[which(config@runs$subject==subject),'sample']
-	#samples <- config@samples[which(config@samples$subject==subject),c('sample','ref')]
-	#samples <- unique(paste(samples$sample,samples$ref,sep='.'))
 	return(samples)
 }
 #getSamplesForSubject(config,'10348001')
@@ -132,56 +130,6 @@ getRegionsForSubject <- function(config, subject)
 
 #############################################################################
 
-#getCodonPositionsForRegion <- function(config, region)
-#{
-#	ref <- config@regions[region,'ref']	
-#	startnt <- config@refs[ref,'startnt']
-#	startntrel <- config@refs[ref,'startntrel']
-#	print(concat('startnt=',startnt,' startntrel=',startntrel))
-#	sequence <- config@refs[ref,'sequence']
-#	if (startntrel<0)
-#	{
-#		diff <- abs(startntrel)
-#		startntrel <- startntrel + diff
-#		startnt <- startnt + diff
-#		sequence <- c2s(s2c(sequence)[(diff+1):nchar(sequence)])
-#	}
-#	endntrel <- startntrel + nchar(sequence)
-#	#print(concat('startnt=',startnt,' startntrel=',startntrel))
-#	positions <- data.frame()
-#	offset <- (startntrel) %% 3
-#	if (offset!=0)
-#	{
-#		print(concat('adjusting to the start of a codon: offset=',offset))
-#		startntrel <- startntrel + 3 - offset
-#		startnt <- startnt + 3 - offset
-#		if ((startntrel) %% 3!=0)
-#			stop(concat('start number is not a multiple of 3: ',startntrel,' in region ',region))
-#	}
-#	codon <- (startntrel)/3 + 1
-#	#print(concat('ref: ',ref,' startnt: ',startnt,', startntrel: ',startntrel,', codon: ',codon))
-#	for (position in seq(startntrel,endntrel,3))
-#	{
-#		index <- position-startntrel+1
-#		if (index+2 > nchar(sequence))
-#			break
-#		refcodon <- extractSequence(sequence, index, index+2)
-#		refaa <- translateCodon(refcodon)
-#		ntnum <- startnt + position - startntrel
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=ntnum, relpos=position, refcodon=refcodon, refaa=refaa))#position
-#		codon <- codon + 1
-#	}
-#	startaa <- config@regions[region,'startaa']
-#	endaa <- config@regions[region,'endaa']
-#	if (!is.na(startaa))
-#		positions <- positions[which(positions$codon >= startaa),]
-#	if (!is.na(endaa))
-#		positions <- positions[which(positions$codon <= endaa),]
-#	#print(concat('sequence: ',seqinr::c2s(positions$refaa)))
-#	return(positions)
-#}
-
-
 getCodonPositionsForRegion <- function(config, region)
 {
 	ref <- config@regions[region,'ref']	
@@ -204,7 +152,7 @@ getCodonPositionsForRegion <- function(config, region)
 		if (nchar(refcodon)<3)
 			break
 		refaa <- translateCodon(refcodon)
-		print(concat('index=',index,' relpos=',relpos,', ntnum=',ntnum,', refcodon=',refcodon,', refaa=',refaa))
+		#print(concat('index=',index,' relpos=',relpos,', ntnum=',ntnum,', refcodon=',refcodon,', refaa=',refaa))
 		positions <- rbind(positions, data.frame(codon=codon, ntnum=ntnum, relpos=relpos, refcodon=refcodon, refaa=refaa))#position
 		codon <- codon + 1
 	}
@@ -483,16 +431,16 @@ makeVariantTables <- function(config, type, subject=NULL, ...)
 		tables[[subject]] <- list()
 		for (region in getRegionsForSubject(config,subject))
 		{
-			try({
-				print(concat('subject=',subject,', region=',region))
+			#try({
+				#print(concat('subject=',subject,', region=',region))
 				tbl <- makeVariantTable(config, type, subject, region, ...)
 				tables[[subject]][[region]] <- tbl
-			}, silent=FALSE)
+			#}, silent=FALSE)
 		}
 	}
 	return(tables)
 }
-tables <- makeVariantTables(config, 'codons')
+#tables <- makeVariantTables(config, 'codons')
 #tables <- makeVariantTables(config, 'codons', '8538159')
 #tables <- makeVariantTables(config, 'codons', '10348001')
 
@@ -601,8 +549,9 @@ plotTiter <- function(config, subject)
 	}
 	
 	# plot the sampling dates as points
-	samples <- config@samples[which(config@samples$subject==subject),]
-	for (week in samples$value)
+	#config@samples[which(config@samples$subject==subject),]
+	replicates <- config@runs[which(config@runs$subject==subject),'replicate']
+	for (week in replicates)
 	{
 		titer <- titers[which(titers$week==week),'titer']
 		points(y=titer, x=week, cex=2, pch=16)

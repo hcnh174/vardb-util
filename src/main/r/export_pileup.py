@@ -6,10 +6,11 @@ def export_sample(sample, ref, bamdir, pileupdir):
 	#infile = "bam/"+sample+"."+ref+".bam"
 	infile =bamdir+"/"+sample+".bam"
 	outfile = pileupdir+"/"+sample+".txt" 
+	print 'infile='+infile+', outfile='+outfile
 	out = open(outfile, "w")
 	out.write('position\tread\tnt\n')
 	samfile = pysam.Samfile(infile, "rb" )
-	for pileupcolumn in samfile.pileup( ref):
+	for pileupcolumn in samfile.pileup(ref):
 		position =  pileupcolumn.pos
 		#print 'coverage at base %s = %s' % (pileupcolumn.pos , pileupcolumn.n)
 		for pileupread in pileupcolumn.pileups:

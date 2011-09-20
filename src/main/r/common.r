@@ -1,8 +1,8 @@
 library(lattice)
+library(R.oo)
 #library(car)
 #library(MASS)
 #library(xtable)
-#library(R.oo)
 #library(R.utils)
 
 #library(rcom)
@@ -34,6 +34,11 @@ loadUtilFiles <- function(filenames)
 setCurDir <- function(dir)
 {
 	setwd(paste(Sys.getenv("ANALYSIS_HOME"),'/',dir,'/',sep=''))
+}
+
+loadLibrary <- function(name)
+{
+	require(name, quietly=TRUE, warn.conflicts=FALSE, character.only=TRUE)	
 }
 
 loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.stringsAsFactors())
@@ -568,6 +573,8 @@ sweaveToPdf <- function(filename, clean=TRUE)
 	
 	#if (isOpen(pdffile))
 	#	throw(concat('Pdf file is already open: ',pdffile))
+	
+	require(R.utils)
 	
 	if (isFile(auxfile))
 		system(concat('rm ',logfile))
