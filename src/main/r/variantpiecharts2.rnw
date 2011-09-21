@@ -26,39 +26,53 @@ appendTiterFigure <- function(config, subject)
 	cat('\\end{figure}\n', sep='')
 }
 
-makeVariantPieChart <- function(codon.tables, subject, region, cutoff=1)
-{	
-	require(ggplot2)
+meltVariantData <- function(codon.tables, subject, region, cutoff=1)
+{
 	tbl <- codon.tables[[subject]][[region]]
 	tbl.melted <- melt(tbl, id=c('codon'))
 	tbl.melted <- subsetNA(tbl.melted)
 	tbl.melted <- tbl.melted[which(tbl.melted$value > cutoff),]
 	tbl.melted$codon <- factor(tbl.melted$codon, levels=tbl$codon)
-	
+	return(tbl.melted)
+}
+#tbl.melted <- meltVariantData(codon.tables, '10405686','HBVRT')
+
+makeVariantPieChart <- function(tbl.melted, ncol=4)
+{	
+	require(ggplot2)
+	numreps <- length(unique(tbl.melted$replicate))
 	plt <- ggplot(data=tbl.melted, 
 			aes(x=factor(1), y=value, fill = factor(codon), order = -as.numeric(value))) +
 			geom_bar(width = 1) +
 			coord_polar(theta="y") + 
-			facet_grid(facets=. ~ replicate) +
 			opts(plot.margin = unit(c(0,0,0,0), "lines")) +
-			xlab(concat(subject,': ',region)) + ylab('') + labs(fill='Codons')
+			xlab('') + ylab('') + labs(fill='Codons')
+	if (numreps==1)
+		plt <- plt + facet_grid(facets=. ~ replicate)
+	else plt <- plt + facet_wrap(~ replicate, ncol = ncol)
 	print(plt)
 }
-#makeVariantPieChart(codon.tables, '98005606','NS3-156@NS3aa156')
-#makeVariantPieChart(codon.tables, 'PXB0218-0007','NS3aa156')
+#makeVariantPieChart(tbl.melted)
 
-appendVariantPieChart <- function(codon.tables, subject, region)
+appendVariantPieChart <- function(codon.tables, subject, region, width=7, rowheight=2, ncol=4)
 {
+	tbl.melted <- meltVariantData(codon.tables, subject, region)
+	
+	numreps <- length(unique(tbl.melted$replicate))
+	numrows <- calcMfrowLayout(numreps,ncol)[1]
+	height <- rowheight*numrows
+	
 	filename <- concat('./tmp/fig-',subject,'-',region,'.pdf')
-	pdf(file=filename, paper="special", width=8, height=2.5)#6 
-	makeVariantPieChart(codon.tables, subject, region)
+	pdf(file=filename, paper="special", width=width, height=height)#, width=8, height=2.5)#6 
+	makeVariantPieChart(tbl.melted,ncol)
 	dev.off()
 	
 	cat('\\begin{figure}[ht]\n', sep='')
 	cat('\\includegraphics{',filename,'}\n', sep='')
 	cat('\\end{figure}\n', sep='')
 }
-#appendVariantPieChart(codon.tables, 'PXB0218-0007','NS3aa156')
+#appendVariantPieChart(codon.tables, '10405686','HBVRT')
+#appendVariantPieChart(codon.tables, '10464592','NS3aa156')
 
 appendVariantTable <- function(codon.tables, subject, region)
 {
@@ -70,22 +84,28 @@ appendVariantTable <- function(codon.tables, subject, region)
 	xtbl <- xtable(tbl, caption=caption, digits=0)
 	print(xtbl, include.rownames=FALSE, caption.placement='top', latex.environments='flushleft')
 }
+#appendVariantTable(codon.tables,'10464592','NS3aa156')
 @
 
 <<results=tex,echo=FALSE>>=  
 
-	codon.tables <<- makeVariantTables(config,'codons',cutoff=20)
-
-	for (subject in config@subjects)
+	codon.tables <<- makeVariantTables(config,'codons',cutoff=1)
+	for (goal in rownames(config@goals))
 	{
-		cat('Subject: ',subject,'\n', sep='')
-		try(appendTiterFigure(config,subject),silent=FALSE)
-		for (region in getRegionsForSubject(config,subject))
+		cat('Experiment ',goal,': ',config@goals[goal,'description'], sep='')
+		for (subject in getSubjectsByGoal(config,goal))
 		{
-			try({
-			appendVariantTable(codon.tables, subject, region)
-			appendVariantPieChart(codon.tables, subject, region)
-			}, silent=FALSE)
+			cat('Subject: ',subject,'\n', sep='')
+			try(appendTiterFigure(config,subject),silent=FALSE)
+			for (region in getRegionsForSubject(config,subject))
+			{
+				try({
+					#makeVariantPieChart(codon.tables, subject, region)
+					appendVariantTable(codon.tables, subject, region)
+					appendVariantPieChart(codon.tables, subject, region)
+				}, silent=FALSE)
+			}
+			cat('\\clearpage\n', sep='')
 		}
 		cat('\\clearpage\n', sep='')
 	}

@@ -123,3 +123,11 @@ plotReadDistributions <- function(filename="histograms.pdf")
 	par(mfrow=c(1,1))
 	dev.off()
 }
+
+########################################################
+
+calcOffsets <- function(config,ref)
+{
+	ref <- 'HCV-NS3-156'
+	sequence <- config@refs[ref,'sequence']
+}

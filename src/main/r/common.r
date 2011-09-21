@@ -56,7 +56,7 @@ run_command <- function(...)
 {
 	command <- concat(...)
 	print(command)
-	if (command!='' & testrun==FALSE)
+	if (command!='')
 		system(command)
 }
 
@@ -589,7 +589,7 @@ sweaveToPdf <- function(filename, clean=TRUE)
 	Sweave(filename)
 	if (!isFile(texfile))
 		throw(concat('Tex file not created for Sweave file: ',filename))
-	system(concat('pdflatex -quiet ',texfile))
+	system(concat('pdflatex ',texfile)) #-quiet
 	if (!isFile(pdffile))
 		throw(concat('Pdf file not created for tex file: ',texfile))
 	if (clean)
@@ -597,8 +597,8 @@ sweaveToPdf <- function(filename, clean=TRUE)
 		system(concat('rm ',auxfile))
 		system(concat('rm ',logfile))
 		system(concat('rm ',texfile))
-		system(concat('rm Rplots.pdf'))
-		system(concat('rm ',stem,'-*.pdf'))
+		system(concat('rm --f Rplots.pdf'))
+		system(concat('rm --f ',stem,'-*.pdf'))
 	}
 	system(concat('open ',pdffile))
 }

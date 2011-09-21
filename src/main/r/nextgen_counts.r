@@ -11,6 +11,20 @@ loadPileupData <- function(config, sample)
 }
 #data <- loadPileupData(config,'110719-4.p29.NS3aa36@NS3-36')
 
+extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
+{
+	#hack!!!
+	ntnum <- ntnum - 1
+	nt1 <- data[which(data$ntnum==ntnum),'nt']
+	nt2 <- data[which(data$ntnum==ntnum+1),'nt']
+	nt3 <- data[which(data$ntnum==ntnum+2),'nt']
+	codons <- paste(nt1, nt2, nt3, sep='')
+	if (drop.ambig)
+		codons <- removeAmbiguousCodons(codons)
+	return(codons)
+}
+#extractCodonData(data,3495)
+
 #################################################################
 
 getNtCounts <- function(data, ntnum)
@@ -82,9 +96,8 @@ getAaCounts <- function(data, ntnum)
 
 ########################################################################
 
-createNtCountTable <- function(config, data, params)
+createNtCountTable <- function(config, data, params, positions)
 {
-	positions <- getCodonPositionsForRegion(config,params@region)
 	counts <- data.frame()
 	for (ntnum in positions$ntnum)
 	{
@@ -108,10 +121,9 @@ createNtCountTable <- function(config, data, params)
 #data <- loadPileupData(config,params@sample)
 #counts <- createNtCountTable(config,data,params)
 
-createCodonCountTable <- function(config, data, params)
+createCodonCountTable <- function(config, data, params, positions)
 {
 	counts <- data.frame()
-	positions <- getCodonPositionsForRegion(config,params@region)
 	for (ntnum in positions$ntnum)
 	{
 		codoncounts <- getCodonCounts(data,ntnum)
@@ -129,10 +141,9 @@ createCodonCountTable <- function(config, data, params)
 }
 #counts <- createCodonCountTable(config,data,params)
 
-createAminoAcidCountTable <- function(config, data, params)
+createAminoAcidCountTable <- function(config, data, params, positions)
 {
-	counts <- data.frame()
-	positions <- getCodonPositionsForRegion(config,params@region)
+	counts <- data.frame()	
 	for (ntnum in positions$ntnum)
 	{	
 		aacounts <- getAaCounts(data,ntnum)
@@ -155,10 +166,11 @@ createAminoAcidCountTable <- function(config, data, params)
 		counts$subject <- as.character(params@subject)
 		counts$sample <- as.character(params@sample)
 		counts$replicate <- as.character(params@replicate)
+		counts$ref <- as.character(params@ref)
 		counts$region <- as.character(params@region)
 	}, silent=FALSE)
 	cols <- names(counts)
-	cols <- c('subject','sample','replicate','region',cols[1:(length(cols)-4)])
+	cols <- c('subject','sample','replicate','ref','region',cols[1:(length(cols)-5)])
 	counts <- counts[,cols]
 	return(counts)
 }
@@ -166,9 +178,10 @@ createAminoAcidCountTable <- function(config, data, params)
 count_codons_for_region <- function(config, data, params, variantdata)
 {
 	print(concat('count_codons_for_region: ',as.character(params@region)))
-	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params))
-	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params))
-	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params))
+	positions <- getCodonPositionsForRegion(config,params@region)
+	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params, positions))
+	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params, positions))
+	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params, positions))
 	return(variantdata)
 }
 #params@region <- 'NS3-36@NS3aa36'
@@ -201,6 +214,7 @@ count_codons_for_subject <- function(config, params)
 	{
 		params@sample <- sample
 		params@replicate <- samples[sample,'replicate']
+		params@ref <- get_ref_for_sample(sample)
 		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
 	}
 	counts.dir <- concat(config@counts.dir,'/')

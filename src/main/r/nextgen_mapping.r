@@ -1,18 +1,13 @@
-.make_folders <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
+preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
 {
-	dir <- config@out.dir
-	run_command('mkdir ',dir,' -p')
+	run_command('mkdir ',config@out.dir,' -p')
 	for (subdir in splitFields(subdirs))
 	{
-		subdir <- concat(dir,'/',subdir)
+		subdir <- concat(config@out.dir,'/',subdir)
 		run_command('mkdir ',subdir,' -p; rm ',subdir,'/*')
 	}
-}
-# .make_folders(config)
-
-preprocess <- function(config)
-{
-	.make_folders(config)
+	writeRefs(config)
+	
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
 	#runs <- config@runs
@@ -37,7 +32,7 @@ preprocess <- function(config)
 		run_command('cp ', dir.from, filename,' ',dir.to)
 		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq')
 		run_command('cp ', dir.from, filename,' ',dir.to)
-	}
+	}	
 	run_command('')
 	
 	for (sample in config@samples)
@@ -55,7 +50,7 @@ preprocess <- function(config)
 		checkFileExists(fastqfile)
 	}
 	run_command('')
-	run_command('rm -r ',temp.dir)
+	run_command('rm -r ',temp.dir,'/*')
 }
 #preprocess(config)
 
@@ -77,47 +72,35 @@ trim_solexaqa <- function(config,sample)
 #cd out/fastq; DynamicTrim.pl PXB0220-0002.wk13.fastq
 #LengthSort.pl PXB0220-0002.wk13.fastq.trimmed
 
-#trim_all <- function(config)
-#{
-#	if (!config@trim)
-#		return()
-#	for (sample in config@samples)
-#	{
-#		trim_solexaqa(config,sample)
-#		#trim_prinseq(config,sample)
-#	}
-#}
-
 trim_all <- function(config)
 {
-	if (!config@trim)
-		return()
-	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	registerDoMC()	
-	foreach(i=1:length(config@samples), .combine = cbind) %dopar% {
-		sample <- as.character(config@samples[i])
-		print(concat('trim_solexaqa: ',sample))
-		try(trim_solexaqa(config,sample))
-		sample
+	#if (!config@trim)
+	#	return()
+	for (sample in config@samples)
+	{
+		trim_solexaqa(config,sample)
+		#trim_prinseq(config,sample)
 	}
 }
 #trim_all(config)
 
-######################################################################
-
-#build_bam_index <- function(config, sample)
+#trim_all <- function(config)
 #{
-#	tmp.dir <- config@tmp.dir
-#	bamfile <- concat(tmp.dir,'/',sample,'.bam')
-#	baifile <- concat(tmp.dir,'/',sample,'.bam.bai')
-#	str <- 'java -Xmx2g -jar $PICARD_HOME/BuildBamIndex.jar'
-#	str <- concat(str,' INPUT=',bamfile)
-#	str <- concat(str,' OUTPUT=',baifile)
-#	run_command(str)
-#	checkFileExists(baifile)
+#	if (!config@trim)
+#		return()
+#	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
+#	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
+#	registerDoMC()	
+#	foreach(i=1:length(config@samples), .combine = cbind) %dopar% {
+#		sample <- as.character(config@samples[i])
+#		print(concat('trim_solexaqa: ',sample))
+#		try(trim_solexaqa(config,sample))
+#		sample
+#	}
 #}
-##build_bam_index(config,'110617HBV.HBV07@HBV-RT')
+#trim_all(config)
+
+######################################################################
 
 add_read_groups <- function(config, sample)
 {
@@ -163,29 +146,28 @@ run_bwa <- function(config, sample)#, .trimmed.fastq #, q=20
 	
 	add_read_groups(config,sample)
 	
-	run_command('rm ',samfile)
-	run_command('rm ',saifile)
+	#run_command('rm ',samfile)
+	#run_command('rm ',saifile)
 }
-#run_bwa(config,'110617HBV.HBV07@HBV-RT')
-
-#map_reads <- function(config)
-#{
-#	for (sample in config@samples)
-#	{
-#		run_bwa(config,sample)
-#	}
-#}
+#run_bwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
+#run_bwa(config,'110617HBV-1.10348001.20020624__HBV-RT')
+#run_bwa(config,'110617HBV-1.10348001.20040128__HBV-RT')
+#run_bwa(config,'110617HBV-1.10348001.20040315__HBV-RT')
+#run_bwa(config,'110617HBV-1.10348001.20040804__HBV-RT')
+#run_bwa(config,'110628-1.PXB0220-0030.13__HCV-NS5A-31')
 
 map_reads <- function(config)
 {
-	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	registerDoMC()	
-	foreach(i=1:length(config@samples), .combine = cbind) %dopar% {
-		sample <- as.character(config@samples[i])
+	#require(foreach, quietly=TRUE, warn.conflicts=FALSE)
+	#require(doMC, quietly=TRUE, warn.conflicts=FALSE)
+	#registerDoMC()
+	#foreach(i=1:length(config@samples), .combine = cbind) %do% { #dopar
+	#	sample <- as.character(config@samples[i])
+	for (sample in config@samples)
+	{
 		print(concat('run_bwa: ',sample))
 		try(run_bwa(config,sample))
-		sample
+		#sample
 	}
 }
 #map_reads(config)
@@ -202,7 +184,7 @@ merge_bams_for_ref <- function(config,ref)
 	str <- concat(str,' CREATE_INDEX=true')
 	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
 	
-	for (sample in unique(config@runs[which(config@runs$ref=='HBV-RT'),'sample']))
+	for (sample in unique(config@runs[which(config@runs$ref==ref),'sample']))
 	{
 		ref <- get_ref_for_sample(sample)
 		infile <- concat(tmp.dir,'/',sample,'.bam')
@@ -282,15 +264,24 @@ recalibrate <- function(config,stem)
 }
 #recalibrate(config,'merged')
 
-output_bam <- function(config,stem,suffix)
+output_bam <- function(config,sample,suffix='')
 {
-	infile <- concat(config@tmp.dir,'/',stem,'.',suffix,'.bam')
-	outfile <- concat(config@bam.dir,'/',stem,'.bam')
+	infile <- concat(config@tmp.dir,'/',sample,suffix,'.bam')
+	outfile <- concat(config@bam.dir,'/',sample,'.bam')
 	run_command('cp ',infile,' ',outfile)
 	checkFileExists(outfile)
-	run_command('samtools index ',outfile)
+	#run_command('samtools index ',outfile)
 }
-#output_bam(config,'merged','realigned.recal')
+#output_bam(config,'merged','.realigned.recal')
+
+output_bams <- function(config,stem,suffix='')
+{
+	for (sample in config@samples)
+	{
+		output_bam(config,sample,suffix)
+	}
+}
+#output_bams(config)
 
 ################################################################3
 
@@ -443,24 +434,28 @@ export_pileup_for_sample <- function(config,sample,filtered=TRUE)
 	if (filtered)
 		samplename <- concat(sample,'.filtered')
 	else samplename <- sample
+	oldbaifile <- concat(config@bam.dir,'/',sample,'.bai')
+	newbaifile <- concat(config@bam.dir,'/',sample,'.bam.bai')
+	run_command('mv "',oldbaifile,'" "',newbaifile,'"')
 	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
+	run_command('mv "',newbaifile,'" "',oldbaifile,'"')
 }
-#export_pileup_for_sample(config,'110719-4.p25.NS3aa36@NS3-36',filtered=FALSE)
+#export_pileup_for_sample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
 
-export_pileup <- function(config)
-{
-	for (sample in config@samples)
-	{
-		export_pileup_for_sample(config,sample,filtered=FALSE)
-		#export_pileup_for_sample(config,sample,filtered=TRUE)
-	}
-}
+#export_pileup <- function(config)
+#{
+#	for (sample in config@samples)
+#	{
+#		export_pileup_for_sample(config,sample,filtered=FALSE)
+#		#export_pileup_for_sample(config,sample,filtered=TRUE)
+#	}
+#}
 
 export_pileup <- function(config)
 {
 	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
 	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	registerDoMC() #cores=4
+	#registerDoMC() #cores=4
 	#print(concat('workers: ',getDoParWorkers(),' (',getDoParName(),' ',getDoParVersion(),')'))
 	foreach(i=1:length(config@samples), .combine = cbind) %do% {#dopar
 		sample <- as.character(config@samples[i])
