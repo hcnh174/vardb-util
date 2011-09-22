@@ -120,9 +120,6 @@ add_read_groups <- function(config, sample)
 	run_command(str)
 	checkFileExists(bamfile)
 	baifile <- concat(tmp.dir,'/',sample,'.bai')
-	#oldbaifile <- concat(tmp.dir,'/',sample,'.bai')
-	#newbaifile <- concat(tmp.dir,'/',sample,'.bam.bai')
-	#run_command('mv "',oldbaifile,'" "',newbaifile,'"')
 	checkFileExists(baifile)
 }
 #add_read_groups(config,'110617HBV.HBV07@HBV-RT')
@@ -136,7 +133,6 @@ run_bwa <- function(config, sample)#, .trimmed.fastq #, q=20
 	tmp.dir <- config@tmp.dir
 	
 	samfile <- concat(tmp.dir,'/',sample,'.sam')
-	#saifile <- concat(tmp.dir,'/',sample,'.sam.sai')
 	saifile <- concat(tmp.dir,'/',sample,'.sai')
 	
 	run_command('bwa index ',reffile)
@@ -270,6 +266,11 @@ output_bam <- function(config,sample,suffix='')
 	outfile <- concat(config@bam.dir,'/',sample,'.bam')
 	run_command('cp ',infile,' ',outfile)
 	checkFileExists(outfile)
+	
+	infile <- concat(config@tmp.dir,'/',sample,suffix,'.bai')
+	outfile <- concat(config@bam.dir,'/',sample,'.bai')
+	run_command('cp ',infile,' ',outfile)
+	checkFileExists(outfile)
 	#run_command('samtools index ',outfile)
 }
 #output_bam(config,'merged','.realigned.recal')
@@ -387,6 +388,23 @@ unmerge_bams <- function(config,stem)
 }
 #unmerge_bams(config,'merged')
 
+################################################################
+
+fix_bai_files <- function(config)
+{
+	for (filename in list.files(config@bam.dir, pattern='\\.bam$'))
+	{
+		stem <- stripExtension(filename)
+		baifile <- concat(config@bam.dir,'/',stem,'.bam.bai')
+		if (!file.exists(baifile))
+		{
+			oldbaifile <- concat(config@bam.dir,'/',stem,'.bai')
+			run_command('mv "',oldbaifile,'" "',baifile,'"')
+		}
+	}
+}
+#fix_bai_files(config)
+
 ##################################################################3
 
 filter_bam <- function(config, sample)
@@ -431,43 +449,40 @@ filter_bams <- function(config)
 export_pileup_for_sample <- function(config,sample,filtered=TRUE)
 {
 	ref <- get_ref_for_sample(sample)
-	if (filtered)
-		samplename <- concat(sample,'.filtered')
-	else samplename <- sample
-	oldbaifile <- concat(config@bam.dir,'/',sample,'.bai')
-	newbaifile <- concat(config@bam.dir,'/',sample,'.bam.bai')
-	run_command('mv "',oldbaifile,'" "',newbaifile,'"')
+	samplename <- ifelse(filtered,concat(sample,'.filtered'), sample)
+#	if (filtered)
+#		samplename <- concat(sample,'.filtered')
+#	else samplename <- sample
 	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
-	run_command('mv "',newbaifile,'" "',oldbaifile,'"')
 }
 #export_pileup_for_sample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
 
-#export_pileup <- function(config)
-#{
-#	for (sample in config@samples)
-#	{
-#		export_pileup_for_sample(config,sample,filtered=FALSE)
-#		#export_pileup_for_sample(config,sample,filtered=TRUE)
-#	}
-#}
-
 export_pileup <- function(config)
 {
-	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	#registerDoMC() #cores=4
-	#print(concat('workers: ',getDoParWorkers(),' (',getDoParName(),' ',getDoParVersion(),')'))
-	foreach(i=1:length(config@samples), .combine = cbind) %do% {#dopar
-		sample <- as.character(config@samples[i])
-		print(concat('export_pileup: ',sample))
-		#try({
-			export_pileup_for_sample(config,sample,filtered=FALSE)
-			#export_pileup_for_sample(config,sample,filtered=TRUE)
-		#}, silent=FALSE)
-		sample
+	for (sample in config@samples)
+	{
+		export_pileup_for_sample(config,sample,filtered=FALSE)
+		export_pileup_for_sample(config,sample,filtered=TRUE)
 	}
 }
 #export_pileup(config)
+
+#export_pileup <- function(config)
+#{
+#	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
+#	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
+#	registerDoMC() #cores=4
+#	#print(concat('workers: ',getDoParWorkers(),' (',getDoParName(),' ',getDoParVersion(),')'))
+#	foreach(i=1:length(config@samples), .combine = cbind) %dopar% {#dopar
+#		sample <- as.character(config@samples[i])
+#		print(concat('export_pileup: ',sample))
+#		#try({
+#			export_pileup_for_sample(config,sample,filtered=FALSE)
+#			export_pileup_for_sample(config,sample,filtered=TRUE)
+#		#}, silent=FALSE)
+#		sample
+#	}
+#}
 
 ################################################
 
@@ -486,15 +501,14 @@ count_codons <- function(config)
 }
 #count_codons(config)
 
-make_tables <- function(config)
-{
-	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/tables.rnw'))
-	#run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r dir=',config@count.dir)
-}
+#make_tables <- function(config)
+#{
+#	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/tables.rnw'))
+#	#run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r dir=',config@count.dir)
+#}
 
 make_piecharts <- function(config)
 {
-	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/variantpiecharts2.rnw'))
-	#run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r dir=',config@count.dir)
+	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/nextgen_piecharts.rnw'))
 }
 #make_piecharts(config)

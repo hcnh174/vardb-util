@@ -45,17 +45,17 @@ setClass("nextgenconfig",
 			config.dir='config',	
 			out.dir='out',
 			index.dir='indexes',
-			trim=FALSE,
-			filter=FALSE))
+			goals=data.frame(),
+			trim=TRUE,
+			filter=TRUE))
 
 setMethod("initialize", "nextgenconfig", function(.Object)
-{
+{	
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
-	
 	.Object@runs <- loadDataFrame(concat(.Object@config.dir,'/runs.txt'), idcol='run')
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='region')
 	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
-	.Object@goals <- loadDataFrame(concat(.Object@config.dir,'/goals.txt'), idcol='goal')
+	.Object@goals <- loadDataFrame( concat(.Object@config.dir,'/goals.txt'), idcol='goal')
 	.Object@samples <- unique(.Object@runs$sample)
 	.Object@subjects <- unique(.Object@runs$subject)
 	.Object@ref.dir <- concat(.Object@out.dir,'/ref')
@@ -66,6 +66,12 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
 	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
+	
+#	goalfile <- concat(.Object@config.dir,'/goals.txt')
+#	if (file.exists(goalfile))
+#		.Object@goals <- loadDataFrame(goalfile, idcol='goal')
+#	if (is.null(.Object@runs$goal))
+#		.Object@runs$goal <- '1'
 	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
 	fastafilename <- concat(.Object@config.dir,'/refs.fasta')
@@ -79,13 +85,6 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	{
 		seq <- sequences[[id]][1]
 		data[id,'sequence'] <- seq
-#		reffile <- concat(.Object@ref.dir,'/',id,'.fasta')
-#		if (!file.exists(reffile))
-#		{
-#			print(concat('writing ref file ',reffile))
-#			write.fasta(s2c(seq), id, file.out=reffile)
-#			checkFileExists(reffile)
-#		}
 	}
 	.Object@refs <- data
 	.Object
@@ -93,6 +92,7 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 
 writeRefs <- function(config)
 {
+	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	for (ref in rownames(config@refs))
 	{
 		reffile <- concat(config@ref.dir,'/',ref,'.fasta')
@@ -145,9 +145,11 @@ getReplicatesForSubject <- function(config, subject)
 
 get_ref_for_sample <- function(sample)
 {
-	return(strsplit(sample,'__', fixed=TRUE)[[1]][2])
+	ref <- strsplit(sample,'__', fixed=TRUE)[[1]][2] #use the part after the delimiter (__)
+	ref <- strsplit(ref,'.', fixed=TRUE)[[1]][1] # remove any extensions
+	return(ref)
 }
-#get_ref_for_sample('110628-2.CTE247-21.1__HCV-NS3-156')
+#get_ref_for_sample('10348001.20040315__HBV-RT.filtered')
 
 #get_reffile <- function(config, ref)
 #{

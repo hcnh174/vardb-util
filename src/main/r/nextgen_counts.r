@@ -213,7 +213,7 @@ count_codons_for_subject <- function(config, params)
 	for (sample in samples[,'sample'])
 	{
 		params@sample <- sample
-		params@replicate <- samples[sample,'replicate']
+		params@replicate <- samples[which(samples$sample==sample),'replicate']
 		params@ref <- get_ref_for_sample(sample)
 		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
 	}

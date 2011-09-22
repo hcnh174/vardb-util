@@ -128,6 +128,20 @@ plotReadDistributions <- function(filename="histograms.pdf")
 
 calcOffsets <- function(config,ref)
 {
-	ref <- 'HCV-NS3-156'
-	sequence <- config@refs[ref,'sequence']
+	#ref <- 'HCV-NS3-156'
+	#sequence <- config@refs[ref,'sequence']
 }
+
+refseq <- config@refs['HCV-KT9','sequence']
+seq <- config@refs['HCV-NS3-156','sequence']
+
+library(Biostrings)
+
+psa1 <- pairwiseAlignment(pattern = refseq, subject = seq)
+startnt <- pattern(psa1)@range@start #3861
+#NS3	3420	5312
+startntrel <- startnt-3420
+#441
+
+
+

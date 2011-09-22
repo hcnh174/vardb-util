@@ -31,6 +31,7 @@ biocLite("limma")
 biocLite("statmod")
 biocLite("RmiR")
 biocLite("hgu133plus2.db")
+biocLite("Biostrings")
 
 install.packages('R2wd')
 library(R2wd)
