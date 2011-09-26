@@ -8,14 +8,14 @@ getCodonCountSubset <- function(config, subject, region, filetype, start, end=st
 	data.subset$aanum <- factor(data.subset$aanum)
 	return(data.subset)
 }
-#getCodonCountSubset(config,'10348001','HBV-RT@HBV-RT','codons',200,250)
+#getCodonCountSubset(config,'KT9','NS3aa156','codons',156)
 
 makeVariantTable <- function(config, type, subject, region, cutoff=0)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
 	#hack!!!
 	#ref <- unique(config@runs[which(config@runs$subject==subject & config@runs$region==region),'ref'])[1]
-	aanum <- as.integer(config@regions[region,'aafocus'])
+	aanum <- as.integer(config@regions[region,'focusaa'])
 	positions <- getCodonPositionsForRegion(config,region)
 	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
 	data.subset <- getCodonCountSubset(config,subject,region,type,aanum,cutoff=cutoff)
@@ -54,6 +54,7 @@ makeVariantTable <- function(config, type, subject, region, cutoff=0)
 	}
 	return(counts)
 }
+#makeVariantTable(config,'codons','KT9','NS3aa156')
 #makeVariantTable(config,'codons','8538159','NS3-156-R@NS3aa156')
 
 makeVariantTables <- function(config, type, subject=NULL, ...)

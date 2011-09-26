@@ -5,11 +5,11 @@ loadPileupData <- function(config, sample)
 	data <- loadDataFrame(filename)
 	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
 	ref <- get_ref_for_sample(sample)
-	startnt <- config@refs[ref,'startnt']
-	data$ntnum <- data$position + startnt
+	startnt <- getField(config@refs,ref,'start')#startnt <- config@refs[ref,'start']	
+	data$ntnum <- data$position + startnt - 1 #hack! - subtract 1?
 	return(data)
 }
-#data <- loadPileupData(config,'110719-4.p29.NS3aa36@NS3-36')
+#data <- loadPileupData(config,'KT9.plasmid__KT9')
 
 extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 {
@@ -184,7 +184,7 @@ count_codons_for_region <- function(config, data, params, variantdata)
 	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params, positions))
 	return(variantdata)
 }
-#params@region <- 'NS3-36@NS3aa36'
+#params@region <- 'NS3aa156'
 #variantdata <- count_codons_for_region(config, data, params, variantdata)
 
 count_codons_for_sample <- function(config, params, variantdata)
@@ -200,7 +200,7 @@ count_codons_for_sample <- function(config, params, variantdata)
 }
 #count_codons_for_sample(config,params,variantdata)
 
-#params <- new('sampleparams', subject='8538159', sample='110719-2.p39.NS3aa156@NS3-156-R', region='NS3-156-R@NS3aa156', replicate=1)
+
 count_codons_for_subject <- function(config, params)
 {
 	if (is.character(params))
@@ -210,10 +210,12 @@ count_codons_for_subject <- function(config, params)
 	samples <- config@runs[which(config@runs$subject==params@subject),]
 	if (nrow(samples)==0)
 		stop(concat('cannot find any samples for subject ',params@subject))
-	for (sample in samples[,'sample'])
+	for (sample in unique(samples[,'sample']))
 	{
 		params@sample <- sample
-		params@replicate <- samples[which(samples$sample==sample),'replicate']
+		params@replicate <- unique(samples[which(samples$sample==sample),'replicate'])
+		if (length(params@replicate)>1)
+			throw('more than one replicate for sample: sample=',sample,', replicates=',params@replicate)
 		params@ref <- get_ref_for_sample(sample)
 		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
 	}
@@ -223,7 +225,8 @@ count_codons_for_subject <- function(config, params)
 	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
 	return(variantdata)
 }
-#counts <- count_codons_for_subject(config,'8538159')
+#params <- new('sampleparams', subject='KT9', sample='KT9.plasmid__KT9', region='NS3aa156', replicate=1)
+#counts <- count_codons_for_subject(config,'KT9')
 #counts <- count_codons_for_subject(config,'10348001')
 #counts <- count_codons_for_subject(config, '10201689')
 

@@ -50,7 +50,7 @@ loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.
 }
 
 #temporarily alias the old version
-loadDataframe <- loadDataFrame
+#loadDataframe <- loadDataFrame
 
 run_command <- function(...)
 {
@@ -59,6 +59,21 @@ run_command <- function(...)
 	if (command!='')
 		system(command)
 }
+
+getField <- function(data, id, col, msg=concat('cannot find col [',col,'] for row [',id,'] in dataframe'))
+{
+	value <- data[id,col]
+	if (is.null(value) || is.na(value))
+	{
+		if (nrow(data[id,])==0)
+			throw('no rows found with id ',id)
+		if (is.null(data[[col]]))
+			throw('column not found: ',col)
+		throw(msg)
+	}
+	return(value)
+}
+#getField(config@regions,'NS3aa156','feature')
 
 # check normality
 plotDistribution <- function(values, ylab='values')

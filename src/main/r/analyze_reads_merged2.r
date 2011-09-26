@@ -1,8 +1,7 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 loadUtilFiles('nextgen2,nextgen_mapping,nextgen_counts,nextgen_tables')
 config <- new('nextgenconfig')
-#config@illumina.dir <- 'GA_RunData/110802_HWUSI-EAS1611_00068_FC634PPAAXX/Unaligned' #nextgen3
-config@illumina.dir <- 'GA_RunData/110624_HWUSI-EAS1611_00063_FC639J3AAXX/Unaligned' #nextgen2
+
 
 
 analyze_reads<- function(config)
@@ -38,3 +37,6 @@ analyze_reads(config)
 
 
 counts <- count_codons_for_subject(config, '10201689')
+
+
+count_codons_for_subject(config, 'KT9')
