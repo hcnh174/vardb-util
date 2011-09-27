@@ -76,12 +76,6 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 		slot(.Object,name) <- getField(params,name,'value')
 	}
 	
-#	goalfile <- concat(.Object@config.dir,'/goals.txt')
-#	if (file.exists(goalfile))
-#		.Object@goals <- loadDataFrame(goalfile, idcol='goal')
-#	if (is.null(.Object@runs$goal))
-#		.Object@runs$goal <- '1'
-	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
 	fastafilename <- concat(.Object@config.dir,'/refs.fasta')
 	data <- loadDataFrame(reffilename, idcol='ref')
@@ -116,28 +110,6 @@ writeRefs <- function(config)
 }
 #writeRefs(config)
 
-#.loadRefs <- function(filename='config/refs.txt', fasta='config/refs.fasta')
-#{
-#	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
-#	data <- loadDataFrame(filename, idcol='ref')
-#	sequences <- read.fasta(file = fasta, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
-#	#remove everything after the | in the sequence ID
-#	ids <- names(sequences)
-#	ids <- sapply(ids,function(value){return(strsplit(value,'\\|')[[1]][1])}, USE.NAMES=FALSE)
-#	names(sequences) <- ids
-#	for (id in names(sequences))
-#	{
-#		seq <- sequences[[id]][1]
-#		data[id,'sequence'] <- seq
-#		reffile <- concat(config@ref.dir,'/',id,'.fasta')
-#		print(concat('writing ref file ',reffile))
-#		write.fasta(s2c(seq), ref, file.out=reffile)
-#		checkFileExists(reffile)
-#	}
-#	return(data)
-#}
-# .loadRefs()
-
 getSamplesForSubject <- function(config, subject)
 {
 	samples <- config@runs[which(config@runs$subject==subject),'sample']
@@ -160,20 +132,14 @@ get_ref_for_sample <- function(sample)
 }
 #get_ref_for_sample('10348001.20040315__HBV-RT.filtered')
 
-#get_reffile <- function(config, ref)
-#{
-#	ref.dir <- config@ref.dir
-#	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
-#	if (!file.exists(reffile))
-#	{
-#		seq <- config@refs[ref,'sequence']
-#		print(concat('writing ref file ',reffile))
-#		write.fasta(s2c(seq), ref, file.out=reffile)
-#	}
-#	checkFileExists(reffile)
-#	return(reffile)
-#}
-##get_reffile(config,'HBV-RT')
+get_ref_for_subject <- function(config, subject, region)
+{
+	ref <- unique(config@runs[which(config@runs$subject==subject & config@runs$region==region),'ref'])
+	if (length(ref)>1)
+		throw('multiple refs found for subject+region: ',joinFields(ref,','))
+	return(ref)
+}
+#get_ref_for_subject(config,'PXB0218-0007','NS3aa156')
 
 get_reffile <- function(config, ref)
 {
@@ -196,143 +162,18 @@ getRegionsForSubject <- function(config, subject)
 
 #############################################################################
 
-
-#getCodonPositionsForRef <- function(config, ref)
-#{
-#	startnt <- config@refs[ref,'startnt']
-#	startntrel <- config@refs[ref,'startntrel']
-#	sequence <- config@refs[ref,'sequence']
-#	if (is.na(startnt)) throw('cannot find startnt for ref: ',ref)
-#	if (is.na(startntrel)) throw('cannot find startntrel for ref: ',ref)
-#	if (is.na(sequence)) throw('cannot find sequence for ref: ',ref)
-#	positions <- data.frame()
-#	#print(concat('startnt=',startnt,' startntrel=',startntrel))
-#	codon <- (startntrel-(startntrel%%3))/3 + 1	
-#	if ((startntrel)%%3!=0) # if the startntrel is in the middle of a codon, increment the codon number by 1
-#		codon <- codon + 1
-#	for (index in 1:nchar(sequence))
-#	{
-#		relpos <- startntrel + index - 1
-#		if (relpos%%3!=0)
-#			next
-#		ntnum <- startnt + index
-#		refcodon <- extractSequence(sequence, index, index+2)
-#		if (nchar(refcodon)<3)
-#			break
-#		refaa <- translateCodon(refcodon)
-#		#print(concat('index=',index,' relpos=',relpos,', ntnum=',ntnum,', refcodon=',refcodon,', refaa=',refaa))
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=ntnum, relpos=relpos, refcodon=refcodon, refaa=refaa))#position
-#		codon <- codon + 1
-#	}
-#	return(positions)
-#}
-
-#getCodonPositionsForRegion <- function(config, region)
-#{
-#	ref <- config@regions[region,'ref']
-#	if (is.na(ref)) throw('cannot find ref for region: ',region)
-#	startnt <- config@refs[ref,'startnt']
-#	if (is.na(startnt)) throw('cannot find startnt for ref: ',ref)
-#	startntrel <- config@regions[region,'startntrel']
-#	if (is.na(startntrel)) throw('cannot find startntrel for region: ',region)
-#	sequence <- config@refs[ref,'sequence']	
-#	if (is.na(sequence)) throw('cannot find sequence for ref: ',ref)
-#	positions <- data.frame()
-#	#print(concat('startnt=',startnt,' startntrel=',startntrel))
-#	codon <- (startntrel-(startntrel%%3))/3 + 1	
-#	if ((startntrel)%%3!=0) # if the startntrel is in the middle of a codon, increment the codon number by 1
-#		codon <- codon + 1
-#	for (index in 1:nchar(sequence))
-#	{
-#		relpos <- startntrel + index - 1
-#		if (relpos%%3!=0)
-#			next
-#		ntnum <- startnt + index
-#		refcodon <- extractSequence(sequence, index, index+2)
-#		if (nchar(refcodon)<3)
-#			break
-#		refaa <- translateCodon(refcodon)
-#		#print(concat('index=',index,' relpos=',relpos,', ntnum=',ntnum,', refcodon=',refcodon,', refaa=',refaa))
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=ntnum, relpos=relpos, refcodon=refcodon, refaa=refaa))#position
-#		codon <- codon + 1
-#	}
-#	return(positions)
-#}
-
-printParams <- function(...)
-{
-	args <- as.list(substitute(list(...)))[-1L]
-	values <- list(...)
-	arr <- c()
-	for (i in 1:length(args))
-	{
-		name <- args[[i]]
-		value <- values[[i]] 
-		arr <- c(arr,concat(name,'=',value))
-	}
-	print(joinFields(arr,', '))
-}
-#printParams(region,ref)
-
-#
-#getCodonPositionsForRegion <- function(config, region)
-#{
-#	feature <- getField(config@regions,region,'feature')
-#	ref <- getField(config@regions,region,'ref')
-#	ref.start <- getField(config@refs,ref,'start')
-#	feature.start <- getField(config@features,feature,'start')
-#	feature.end <- getField(config@features,feature,'end')
-#	region.start <- getField(config@regions,region,'startaa')
-#	region.end <- getField(config@regions,region,'endaa')
-#	region.focus <- getField(config@regions,region,'focusaa')	
-#	sequence <- getField(config@refs,ref,'sequence')
-#	
-#	seq.start <- feature.start-ref.start+1
-#	seq.end <- feature.end-ref.start+1
-#	printParams(feature,ref,ref.start,feature.start,feature.end,seq.start,seq.end,region.start,region.end,region.focus)
-#	
-#	codon <- 1
-#	if (seq.start<1)
-#	{
-#		offset <- abs(seq.start)+1
-#		print(offset)
-#		seq.start <- seq.start+offset
-#	}
-#	if (seq.end>nchar(sequence))
-#		seq.end <- nchar(sequence)
-#	printParams(feature,ref,ref.start,feature.start,feature.end,seq.start,seq.end,region.start,region.end,region.focus,codon)
-#	
-#	nts <- extractSequence(sequence, seq.start, seq.end)
-#	print(nts)
-#	aas <- translateSequence(nts)
-#	print(aas)
-##
-##	positions <- data.frame()
-##	codon <- 0
-##	for (ntnum in seq(seq.start,seq.end,3))
-##	{
-##		codon <- codon + 1
-##		printParams(ntnum,codon,ref.start)
-##		if (ntnum<ref.start)
-##			next
-##		refcodon <- extractCodon(nts, codon)
-##		refaa <- translateCodon(refcodon)
-##		#printParams(ntnum,codon,refcodon,refaa)
-##		positions <- rbind(positions, data.frame(codon=codon, ntnum=ntnum, refcodon=refcodon, refaa=refaa))
-##	}
-##	positions <- positions[which(positions$codon>=region.start & positions$codon<=region.end),]
-##	positions$focus <- ifelse(positions$codon==region.focus,'*','')
-##	return(positions)
-#}
-#getCodonPositionsForRegion(config,'NS3aa36')
-
 getCodonPositionsForRegion <- function(config, region)
 {
 	#first check if it is cached in the config
-	#positions <- config@positions[[region]]
-	#if (!is.null(positions))
-	#	return(positions)	
-	
+	positions <- config@positions[[region]]
+	if (is.null(positions))
+		positions <- calculateCodonPositionsForRegion(config,region)
+	return(positions)
+}
+#getCodonPositionsForRegion(config,'NS3aa156')
+
+calculateCodonPositionsForRegion <- function(config, region)
+{
 	feature <- getField(config@regions,region,'feature')
 	ref <- getField(config@regions,region,'ref')
 	ref.start <- getField(config@refs,ref,'start')
@@ -344,47 +185,41 @@ getCodonPositionsForRegion <- function(config, region)
 	sequence <- getField(config@refs,ref,'sequence')
 	
 	startntrel <- ref.start-feature.start
-	#printParams(feature,ref,ref.start,feature.start,feature.end,startntrel,region.start,region.end,region.focus)
-
+	printParams(feature,ref,ref.start,feature.start,feature.end,startntrel,region.start,region.end,region.focus)
+	
 	codon <- (startntrel-(startntrel%%3))/3 + 1	
 	if ((startntrel)%%3!=0) # if the startntrel is in the middle of a codon, increment the codon number by 1
 		codon <- codon + 1
-	#printParams(startntrel,codon)
 	positions <- data.frame()
 	for (index in 1:nchar(sequence))
 	{
 		relpos <- startntrel + index - 1
 		if (relpos%%3!=0)
 			next
-		#ntnum <- ref.start + index
 		ntnum <- feature.start+((codon-1)*3)
 		if (index+2>nchar(sequence))
 			break
 		refcodon <- extractSequence(sequence, index, index+2)
-		#if (nchar(refcodon)<3)
-		#	break
 		refaa <- translateCodon(refcodon)
-		#print(concat('index=',index,' relpos=',relpos,', ntnum=',ntnum,', refcodon=',refcodon,', refaa=',refaa))
 		positions <- rbind(positions, data.frame(codon=codon, ntnum=ntnum, refcodon=refcodon, refaa=refaa))#position,relpos=relpos, 
 		codon <- codon + 1
 	}
 	positions <- positions[which(positions$codon>=region.start & positions$codon<=region.end),]
 	positions$focus <- ifelse(positions$codon==region.focus,'*','')
-	#config@positions[[region]] <- positions
 	return(positions)
 }
-#getCodonPositionsForRegion(config,'NS3aa156')
-#getCodonPositionsForRegion(config,'NS3aa36')
-#getCodonPositionsForRegion(config,'HBVRT')
-#getCodonPositionsForRegion(config,'NS3aa156R')
-#getCodonPositionsForRegion(config,'NS5Aaa31')
-#getCodonPositionsForRegion(config,'NS5Aaa93')
+#calculateCodonPositionsForRegion(config,'NS3aa156')
+#calculateCodonPositionsForRegion(config,'NS3aa36')
+#calculateCodonPositionsForRegion(config,'HBVRT')
+#calculateCodonPositionsForRegion(config,'NS3aa156R')
+#calculateCodonPositionsForRegion(config,'NS5Aaa31')
+#calculateCodonPositionsForRegion(config,'NS5Aaa93')
 
 preloadCodonPositionsByRegion <- function(config)
 {
 	for (region in unique(config@runs$region))
 	{
-		config@regions[region,'positions'] <- getCodonPositionsForRegion(config,region)
+		config@positions[[region]] <- calculateCodonPositionsForRegion(config,region)
 	}
 	return(config)
 }

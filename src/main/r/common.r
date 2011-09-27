@@ -615,7 +615,8 @@ sweaveToPdf <- function(filename, clean=TRUE)
 		system(concat('rm --f Rplots.pdf'))
 		system(concat('rm --f ',stem,'-*.pdf'))
 	}
-	system(concat('open ',pdffile))
+	system(concat('evince ',pdffile))
+	#system(concat('open ',pdffile))
 }
 #sweaveToPdf('tables.Rnw')
 
@@ -655,8 +656,6 @@ checkFileExists <- function(filename)
 }
 #checkFileExists('test.txt')
 
-
-
 startsWith <- function(str, target)
 {
 	#str <- 'fsdfsf'; target <- 'HBV'
@@ -672,4 +671,20 @@ joinFields <- function(fields, delimiter=',')
 	return(paste(fields,collapse=delimiter))
 }
 #joinFields(c('A','B','C'))
+
+printParams <- function(...)
+{
+	args <- as.list(substitute(list(...)))[-1L]
+	values <- list(...)
+	arr <- c()
+	for (i in 1:length(args))
+	{
+		name <- args[[i]]
+		value <- values[[i]] 
+		arr <- c(arr,concat(name,'=',value))
+	}
+	print(joinFields(arr,', '))
+}
+#printParams(region,ref)
+
 

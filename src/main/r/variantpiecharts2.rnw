@@ -92,7 +92,7 @@ appendVariantTable <- function(codon.tables, subject, region)
 	codon.tables <<- makeVariantTables(config,'codons',cutoff=1)
 	for (goal in rownames(config@goals))
 	{
-		cat('Experiment ',goal,': ',config@goals[goal,'description'], sep='')
+		cat('Experiment ',goal,': ',config@goals[goal,'description'],'\n', sep='')
 		for (subject in getSubjectsByGoal(config,goal))
 		{
 			cat('Subject: ',subject,'\n', sep='')
@@ -100,7 +100,8 @@ appendVariantTable <- function(codon.tables, subject, region)
 			for (region in getRegionsForSubject(config,subject))
 			{
 				try({
-					#makeVariantPieChart(codon.tables, subject, region)
+					ref <- get_ref_for_subject(config,subject,region)
+					cat('Reference sequence: ',ref,'\n', sep='')
 					appendVariantTable(codon.tables, subject, region)
 					appendVariantPieChart(codon.tables, subject, region)
 				}, silent=FALSE)

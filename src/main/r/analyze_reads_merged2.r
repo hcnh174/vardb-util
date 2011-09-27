@@ -1,8 +1,7 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 loadUtilFiles('nextgen2,nextgen_mapping,nextgen_counts,nextgen_tables')
 config <- new('nextgenconfig')
-
-
+config <- preloadCodonPositionsByRegion(config)
 
 analyze_reads<- function(config)
 {
@@ -33,10 +32,3 @@ config@out.dir <- args$out
 analyze_reads(config)
 
 #Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r out=out
-
-
-
-counts <- count_codons_for_subject(config, '10201689')
-
-
-count_codons_for_subject(config, 'KT9')

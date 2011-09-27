@@ -450,9 +450,6 @@ export_pileup_for_sample <- function(config,sample,filtered=TRUE)
 {
 	ref <- get_ref_for_sample(sample)
 	samplename <- ifelse(filtered,concat(sample,'.filtered'), sample)
-#	if (filtered)
-#		samplename <- concat(sample,'.filtered')
-#	else samplename <- sample
 	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
 }
 #export_pileup_for_sample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)

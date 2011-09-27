@@ -6,10 +6,26 @@ loadPileupData <- function(config, sample)
 	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
 	ref <- get_ref_for_sample(sample)
 	startnt <- getField(config@refs,ref,'start')#startnt <- config@refs[ref,'start']	
-	data$ntnum <- data$position + startnt - 1 #hack! - subtract 1?
+	data$ntnum <- data$position + startnt - 1
 	return(data)
 }
+#data <- loadPileupData(config,'11323912.1__HCV-NS3-36')
 #data <- loadPileupData(config,'KT9.plasmid__KT9')
+
+getPileupConsensusSequence <- function(config,sample)
+{
+	data <- loadPileupData(config,sample)
+	data.subset <- as.data.frame(data[,c('position','nt')])
+	xtab <- xtabs(~nt + position, data.subset)
+	sequence <- c()
+	for (col in colnames(xtab))
+	{
+		nt <- names(sort(xtab[,col], decreasing=TRUE)[1])
+		sequence <- c(sequence,nt)
+	}
+	return(tolower(joinFields(sequence,'')))
+}
+#getPileupConsensusSequence(config,'11551793.1__HCV-NS3-36')
 
 extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 {
@@ -103,7 +119,7 @@ createNtCountTable <- function(config, data, params, positions)
 	{
 		for (offset in 0:2)
 		{
-			ntcounts <- getNtCounts(data,ntnum + offset)			
+			ntcounts <- getNtCounts(data,ntnum + offset)
 			if (nrow(ntcounts)>0)
 			{
 				ntcounts$aanum <- positions[which(positions$ntnum==ntnum),'codon']
@@ -229,4 +245,5 @@ count_codons_for_subject <- function(config, params)
 #counts <- count_codons_for_subject(config,'KT9')
 #counts <- count_codons_for_subject(config,'10348001')
 #counts <- count_codons_for_subject(config, '10201689')
+#counts <- count_codons_for_subject(config, '11323912')
 
