@@ -39,6 +39,7 @@ setClass("nextgenconfig",
 			vcf.dir='character',
 			qc.dir='character',
 			pileup.dir='character',
+			tables.dir='character',
 			counts.dir='character',
 			tmp.dir='character',
 			trim='logical',
@@ -68,6 +69,7 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	.Object@qc.dir <- concat(.Object@out.dir,'/qc')
 	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
 	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
+	.Object@tables.dir <- concat(.Object@out.dir,'/tables')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
 	
 	params <- loadDataFrame(concat(.Object@config.dir,'/params.txt'), idcol='name')

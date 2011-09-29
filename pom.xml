@@ -18,6 +18,11 @@
 		    <artifactId>commons-cli</artifactId>
 		    <version>1.2</version>
 		</dependency>
+		<dependency>
+		    <groupId>commons-lang</groupId>
+		    <artifactId>commons-lang</artifactId>
+		    <version>2.6</version>
+		</dependency>
 	</dependencies>
 	<profiles>  
 		<profile>  
@@ -39,21 +44,21 @@
 									<mainClass>org.vardb.util.tools.snps.PlinkConverter</mainClass>  
 									<arguments>
 										<argument>-dir</argument>
-										<argument>c:/projects/analysis/GWAS/ochi/</argument> 
+											<argument>d:/projects/analysis/GWAS/ochi/</argument> 
 										<argument>-snpfile</argument>
-										<argument>Human610-Quadv1_B.txt</argument> 
+											<argument>Human610-Quadv1_B.txt</argument> 
 										<argument>-genofile</argument>
-										<argument>L32_Cutoff_AB_090508_FinalReport_extr_plus.csv</argument> 
+											<argument>L32_Cutoff_AB_090508_FinalReport_extr_plus.csv</argument> 
 										<argument>-phenofile</argument>
-										<argument>c:/projects/analysis/GWAS/plink/plink.phe</argument> 
+											<argument>d:/projects/analysis/GWAS/plink/plink.phe</argument> 
 										<argument>-outdir</argument>
-										<argument>c:/temp/</argument> 
+											<argument>d:/temp/</argument> 
 										<argument>-name</argument>
-										<argument>plink</argument> 
+											<argument>plink</argument> 
 										<argument>-rsonly</argument> 
-										<argument>false</argument> 
+											<argument>false</argument> 
 										<argument>-minimize</argument>
-										<argument>false</argument> 
+											<argument>false</argument> 
 									</arguments>  
 								</configuration>  
 							</execution>  

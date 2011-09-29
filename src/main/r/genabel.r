@@ -1,7 +1,7 @@
 #install.packages('GenABEL', dep=TRUE)
-library(nlme)
-library(LDheatmap)
-library(genetics)
+#library(nlme)
+#library(LDheatmap)
+#library(genetics)
 library(GenABEL)
 
 qualityControl <- function(data0, maf=0.05, make.plot=FALSE)

@@ -1,4 +1,4 @@
-preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts')
+preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables')
 {
 	run_command('mkdir ',config@out.dir,' -p')
 	for (subdir in splitFields(subdirs))

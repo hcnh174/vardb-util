@@ -195,3 +195,32 @@ appendVariantTablesToLatex <- function(config,tables)
 		}
 	}
 }
+
+###############################################
+
+write_table <- function(config, codon.tables, goal, subject, region)
+{
+	tbl <- codon.tables[[subject]][[region]]
+	tbl <- applyReplicateLabels(config,tbl,subject)
+	ref <- get_ref_for_subject(config,subject,region)
+	filename <- concat(config@out.dir,'/tables/table-',goal,'-',subject,'-',region,'-',ref,'.txt')
+	writeTable(tbl,filename,row.names=FALSE)
+}
+
+write_tables <- function(config)
+{ 
+	codon.tables <- makeVariantTables(config,'codons',cutoff=2)
+	for (goal in rownames(config@goals))
+	{
+		subjects <- getSubjectsByGoal(config,goal)
+		for (subject in subjects)
+		{
+			for (region in getRegionsForSubject(config,subject))
+			{
+				write_table(config, codon.tables, goal, subject, region)
+			}
+		}
+	}
+}
+#write_tables(config)
+

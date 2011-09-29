@@ -208,3 +208,29 @@ install.packages("RXKCD", repos="http://R-Forge.R-project.org")
 
 suppressWarnings(as.integer(c(input.list, recursive=TRUE)))
 sprintf("%s and %s","value1", "value2")
+
+
+
+#http://blog.carlislerainey.com/2011/09/26/using-inkscape-to-post-edit-labels-in-r-graphs/
+# add names to plot and then fix overlapping labels in Inkscape
+ur <- c(3.8, 3.0, 4.1, 5.5, 5.2, 3.6, 5.6,
+		7.7, 7.1, 7.5, 5.5, 7.5, 5.4, 4.0, 5.5, 5.8)
+mar <- c(4.5, -10.9, 15.5, -0.1, 22.6, 0.7,
+		23.2, -2.1, -9.7, 18.2, 7.7, -5.5, 8.5, 0.5,
+		2.4, -7.2)
+names <- c("Truman 1948", "Stevenson 1952", "Ike 1956",
+		"Nixon 1960", "LBJ 1964", "Humphrey 1968", "Nixon 1972",
+		"Ford 1976", "Carter 1980", "Reagan 1984", "Bush 1988",
+		"Bush 1992", "Clinton 1996", "Gore 2000", "Bush 2004",
+		"McCain 2008")
+
+svg("allelections.svg", height = 5, width = 6)
+par(mfrow = c(1,1))
+plot(ur, mar, xlab = "Unemployment",
+		ylab = "Margin of Victory",
+		main = "All Presidential Elections",
+		pch = 19, xlim = c(2,10))
+text(ur, mar, names, pos = 4)
+abline(lm(mar ~ ur))
+dev.off()
+
