@@ -546,10 +546,10 @@ pad <- function(num,ch='0')
 	return(as.character(num))
 }
 
-writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE, eol='\n')
+writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE, col.names=TRUE, eol='\n')
 {
 	#col.names <- c('id',names(table))
-	write.table(table, filename, quote=FALSE, row.names = row.names, sep='\t', na = '', eol=eol)
+	write.table(table, filename, quote=FALSE, row.names=row.names, col.names=col.names, sep='\t', na = '', eol=eol)
 	if (verbose)
 		print(paste('wrote table to file:',filename))
 }

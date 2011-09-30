@@ -55,10 +55,8 @@ exportChromosome <- function(config, data, chr)
 
 exportChromosomes <- function(config, data)
 {
-	for (chr in 1:23)
+	for (chr in 1:22) #	for (chr in c(2,4,6,8,10,15,17))
 	{
-		#if (chr==19)
-		#	next
 		exportChromosome(config,data,chr)
 	}
 }
@@ -66,25 +64,61 @@ exportChromosomes <- function(config, data)
 
 #####################################################################
 
-liftOver <- function(config, chr, chainfile)
+liftOverChromosome <- function(config, chr, chainfile=concat(config@ref.dir,'/hg18ToHg19.over.chain'))
 {
-	#dir <- '~/out.dir'
-	dir <- 'd:/temp'
 	chrstr <- padChr(chr)	
-	strandfile <- concat(dir,'/gwas.chr',chrstr,'.strand')
+	strandfile <- concat(config@in.dir,'/gwas.chr',chrstr,'.strand')
 	print(strandfile)
 	
-	dataframe <- read.table(strandfile, header=FALSE, sep=' ', stringsAsFactors=FALSE)
-	colnames(dataframe) <- splitFields('snp,pos,strand')
-	dataframe$chr <- concat('chr',chr)
-	print(head(dataframe))
-	#data <- data.frame(chr=data$chr, start=data$pos, end=data$pos, name=data$snp)
-	return(data)
+	data <- read.table(strandfile, header=FALSE, sep=' ', stringsAsFactors=FALSE)
+	colnames(data) <- splitFields('snp,pos,strand')
+	data$chr <- concat('chr',chr)
+	data$pos2 <- data$pos+1
+	data <- data.frame(chr=data$chr, start=data$pos, end=data$pos2, name=data$snp)
+	
+	oldbedfile <- concat(config@tmp.dir,'/gwas.chr',chrstr,'.strand.hg18.bed')
+	newbedfile <- concat(config@tmp.dir,'/gwas.chr',chrstr,'.strand.hg19.bed')
+	unmappedfile <- concat(config@tmp.dir,'/unmapped.chr',chrstr,'.txt')
+	
+	writeTable(data, oldbedfile, row.names=FALSE, col.names=FALSE)
+	
+	str <- 'liftOver'	
+	#str <- concat(str,' -multiple')
+	str <- concat(str,' ',oldbedfile)
+	str <- concat(str,' ',chainfile)
+	str <- concat(str,' ',newbedfile)
+	str <- concat(str,' ',unmappedfile)
+	#print(str)
+	run_command(str)
+	
+	checkFileExists(newbedfile)	
+	data <- read.table(newbedfile, header=FALSE, sep='\t', stringsAsFactors=FALSE)
+	colnames(data) <- splitFields('chr,pos,pos2,snp')
+	#print(head(data))
+	
+	data <- data.frame(snp=data$snp, pos=data$pos)
+	data$strand <- '+'
+	#print(head(data))
+	
+	strandfile2 <- concat(config@in.dir,'/gwas.chr',chrstr,'.hg19.strand')
+	writeTable(data, strandfile2, row.names=FALSE, col.names=FALSE)
+	
+	#run_command('rm ',oldbedfile)
+	#run_command('rm ',newbedfile)
+	#run_command('rm ',unmappedfile)
 }
-#data <- liftOver(config,19,'')
+#liftOverChromosome(config,2)
+
+liftOver <- function()
+{
+	for (chr in 1:22)
+	{
+		liftOverChromosome(config,chr)
+	}
+}
+#liftOver()
 
 #####################################################################
-
 
 partitionChromosome <- function(config,chr)
 {
@@ -109,9 +143,12 @@ prephase_interval <- function(config, chr, start, end)
 {
 	print(concat('prephase_interval: ',chr,' ',start,':',end))
 	chrstr <- padChr(chr)
-	mapfile <- concat(config@in.dir,'/example.chr',chrstr,'.map')
-	genotypefile <- concat(config@in.dir,'/example.chr',chrstr,'.study.gens')
-	strandfile <- concat(config@in.dir,'/example.chr',chrstr,'.study.strand')
+	
+	ref.sub.dir <- concat(config@ref.dir,'/ALL_1000G_phase1interim_jun2011_impute')
+	
+	mapfile <- concat(ref.sub.dir,'/genetic_map_chr',chr,'_combined_b37.txt')
+	genotypefile <- concat(config@in.dir,'/gwas.chr',chrstr,'.gen')
+	strandfile <- concat(config@in.dir,'/gwas.chr',chrstr,'.hg19.strand')
 	outfile <- concat(config@tmp.dir,'/prephase.chr',chrstr,'.impute2')
 	
 	str <- 'impute2'
@@ -126,7 +163,7 @@ prephase_interval <- function(config, chr, start, end)
 	print(str)
 	#run_command(str)
 }
-#prephase_chromosome(config, 22, 20.4e6, 20.5e6)
+#prephase_interval(config, 22, 20.4e6, 20.5e6)
 
 prephase_chromosome <- function(config, chr)
 {
@@ -139,6 +176,7 @@ prephase_chromosome <- function(config, chr)
 		prephase_interval(config,chr,start,end)
 	}
 }
+#prephase_chromosome(config,22)
 
 prephase <- function(config)
 {
