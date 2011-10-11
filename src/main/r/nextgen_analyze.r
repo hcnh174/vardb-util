@@ -1,7 +1,8 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
-loadUtilFiles('nextgen2,nextgen_mapping,nextgen_counts,nextgen_tables')
-config <- new('nextgenconfig')
-config <- preloadCodonPositionsByRegion(config)
+loadUtilFiles('nextgen_classes,nextgen_core,nextgen_mapping,nextgen_counts,nextgen_tables')
+#config <- new('nextgenconfig',config.dir='nelson')
+#config <- preloadCodonPositionsByRegion(config)
+config <- loadConfig('f:/analysis/nextgen2/config')
 
 analyze_reads<- function(config)
 {
