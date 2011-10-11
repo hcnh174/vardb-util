@@ -74,30 +74,12 @@ trim_solexaqa <- function(config,sample)
 
 trim_all <- function(config)
 {
-	#if (!config@trim)
-	#	return()
 	for (sample in config@samples)
 	{
 		trim_solexaqa(config,sample)
 		#trim_prinseq(config,sample)
 	}
 }
-#trim_all(config)
-
-#trim_all <- function(config)
-#{
-#	if (!config@trim)
-#		return()
-#	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-#	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-#	registerDoMC()	
-#	foreach(i=1:length(config@samples), .combine = cbind) %dopar% {
-#		sample <- as.character(config@samples[i])
-#		print(concat('trim_solexaqa: ',sample))
-#		try(trim_solexaqa(config,sample))
-#		sample
-#	}
-#}
 #trim_all(config)
 
 ######################################################################
@@ -152,23 +134,29 @@ run_bwa <- function(config, sample)#, .trimmed.fastq #, q=20
 #run_bwa(config,'110617HBV-1.10348001.20040804__HBV-RT')
 #run_bwa(config,'110628-1.PXB0220-0030.13__HCV-NS5A-31')
 
-map_reads <- function(config)
+map_reads <- function(config, samples=NULL)
 {
-	#require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-	#require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	#registerDoMC()
-	#foreach(i=1:length(config@samples), .combine = cbind) %do% { #dopar
-	#	sample <- as.character(config@samples[i])
-	for (sample in config@samples)
+	if (is.null(samples))
+		samples <- config@samples
+	for (sample in samples)
 	{
 		print(concat('run_bwa: ',sample))
 		try(run_bwa(config,sample))
-		#sample
 	}
 }
 #map_reads(config)
+#map_reads(config, getSamplesForSubject(config,'10464592'))
 
 ############################################
+
+bambino <- function(config, sample)
+{
+	bamfile <- concat(config@tmp.dir,'/',sample,'.bam')
+	ref <- get_ref_for_sample(sample)
+	reffile <- get_reffile(config,ref)
+	run_command('java -Xmx3072m -cp $BAMBINO_HOME/bambino_bundle_1.03.jar Ace2.AceViewer -bam ',bamfile,' -fasta ',reffile)
+}
+#bambino(config,'KT9.plasmid__KT9')
 
 merge_bams_for_ref <- function(config,ref)
 {
@@ -275,14 +263,17 @@ output_bam <- function(config,sample,suffix='')
 }
 #output_bam(config,'merged','.realigned.recal')
 
-output_bams <- function(config,stem,suffix='')
+output_bams <- function(config,samples=NULL,suffix='')
 {
-	for (sample in config@samples)
+	if (is.null(samples))
+		samples <- config@samples
+	for (sample in samples)
 	{
 		output_bam(config,sample,suffix)
 	}
 }
 #output_bams(config)
+#output_bams(config,getSamplesForSubject(config,'10464592'))
 
 ################################################################3
 
@@ -416,7 +407,7 @@ filter_bam <- function(config, sample)
 	str <- 'bamtools filter'
 	str <- concat(str,' -in ',infile)
 	str <- concat(str,' -out ',outfile)
-	str <- concat(str,' -mapQuality ">30"')
+	str <- concat(str,' -mapQuality "',config@map.quality,'"')
 	run_command(str)
 	checkFileExists(outfile)
 	run_command('samtools index ',outfile)
@@ -430,13 +421,15 @@ filter_bam <- function(config, sample)
 #	}
 #}
 
-filter_bams <- function(config)
+filter_bams <- function(config, samples=NULL)
 {
 	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
 	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
 	registerDoMC()
-	foreach(i=1:length(config@samples), .combine = cbind) %dopar% {
-		sample <- as.character(config@samples[i])
+	if (is.null(samples))
+		samples <- config@samples
+	foreach(i=1:length(samples), .combine = cbind) %dopar% {
+		sample <- as.character(samples[i])
 		print(concat('filter_bam: ',sample))
 		try(filter_bam(config,sample))
 		sample
@@ -454,49 +447,35 @@ export_pileup_for_sample <- function(config,sample,filtered=TRUE)
 }
 #export_pileup_for_sample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
 
-export_pileup <- function(config)
+export_pileup <- function(config, samples=NULL)
 {
-	for (sample in config@samples)
+	if (is.null(samples))
+		samples <- config@samples
+	for (sample in samples)
 	{
 		export_pileup_for_sample(config,sample,filtered=FALSE)
 		export_pileup_for_sample(config,sample,filtered=TRUE)
 	}
 }
-#export_pileup(config)
-
-#export_pileup <- function(config)
-#{
-#	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-#	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-#	registerDoMC() #cores=4
-#	#print(concat('workers: ',getDoParWorkers(),' (',getDoParName(),' ',getDoParVersion(),')'))
-#	foreach(i=1:length(config@samples), .combine = cbind) %dopar% {#dopar
-#		sample <- as.character(config@samples[i])
-#		print(concat('export_pileup: ',sample))
-#		#try({
-#			export_pileup_for_sample(config,sample,filtered=FALSE)
-#			export_pileup_for_sample(config,sample,filtered=TRUE)
-#		#}, silent=FALSE)
-#		sample
-#	}
-#}
+#export_pileup(config,getSamplesForSubject(config,'10464592'))
 
 ################################################
 
-count_codons <- function(config)
+count_codons <- function(config, subjects=NULL)
 {
 	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
 	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
 	registerDoMC() #cores=4
-	#print(concat('workers: ',getDoParWorkers(),' (',getDoParName(),' ',getDoParVersion(),')'))
-	foreach(i=1:length(config@subjects), .combine = cbind) %dopar% {
-		subject <- as.character(config@subjects[i])
+	if (is.null(subjects))
+		subjects <- config@subjects	
+	foreach(i=1:length(subjects), .combine = cbind) %dopar% {
+		subject <- as.character(subjects[i])
 		print(concat('count_codons_for_subject: ',subject))
 		try(count_codons_for_subject(config, subject))
 		subject
 	}
 }
-#count_codons(config)
+#count_codons(config,'10464592')
 
 #make_tables <- function(config)
 #{
@@ -509,3 +488,50 @@ make_piecharts <- function(config)
 	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/nextgen_piecharts.rnw'))
 }
 #make_piecharts(config)
+
+###############################################################
+
+#diagnostics
+
+solexa_qa <- function(config,sample)
+{
+	run_command('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
+}
+#solexa_qa(config,'KT9.plasmid__KT9')
+
+viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
+{
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	checkFileExists(bamfile)
+	
+	str <- 'java -Xmx2g -jar $PICARD_HOME/ViewSam.jar'
+	str <- concat(str,' INPUT=',bamfile)
+	str <- concat(str,' ALIGNMENT_STATUS=',alignment_status)#{Aligned, Unaligned, All}
+	str <- concat(str,' PF_STATUS=',pf_status) #{PF, NonPF, All}
+	run_command(str)
+}
+#viewBam(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
+
+consensus <- function(config, sample)
+{
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	checkFileExists(bamfile)
+	
+	str <- 'java -Xmx2g -jar $PICARD_HOME/ViewSam.jar'
+	str <- concat(str,' INPUT=',bamfile)
+	str <- concat(str,' ALIGNMENT_STATUS=',alignment_status)#{Aligned, Unaligned, All}
+	str <- concat(str,' PF_STATUS=',pf_status) #{PF, NonPF, All}
+	run_command(str)
+}
+#consensus(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
+
+consensus <- function(config,sample)
+{
+	ref <- get_ref_for_sample(sample)
+	reffile <- get_reffile(config,ref)
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')	
+	outfile <- concat(config@tmp.dir,'/',sample,'.consensus.txt')
+	run_command('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',outfile)
+	checkFileExists(outfile)
+}
+#consensus(config,'10464592.1__HCV-NS3-156')

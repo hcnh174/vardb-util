@@ -12,11 +12,6 @@ show_coverage <- function(config,stem)
 }
 
 
-solexa_qa <- function(config,sample)
-{
-	run_command('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq')
-}
-#solexa_qa(config,'KT9.plasmid')
 
 # estimates the number of reads based on the size of the file, assuming a ratio of 7757 for uncompressed fastq
 estimateReadCount <- function(mb)

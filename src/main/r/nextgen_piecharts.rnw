@@ -112,7 +112,9 @@ appendVariantTable <- function(codon.tables, subject, region)
 
 <<results=tex,echo=FALSE>>= 
 	codon.tables <<- makeVariantTables(config,'codons',cutoff=0)
-	for (goal in rownames(config@goals))
+	if (is.null(goals))
+		goals <- rownames(config@goals)
+	for (goal in goals)
 	{
 		cat('Experiment ',goal,': ',config@goals[goal,'description'], sep='')
 		subjects <- getSubjectsByGoal(config,goal)

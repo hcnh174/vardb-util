@@ -43,14 +43,19 @@ setClass("nextgenconfig",
 			counts.dir='character',
 			tmp.dir='character',
 			trim='logical',
-			filter='logical'),
+			filter='logical',
+			map.quality='character'
+	),
 	prototype(
 			config.dir='config',	
 			out.dir='out',
 			index.dir='indexes',
 			goals=data.frame(),
 			trim=TRUE,
-			filter=TRUE))
+			filter=TRUE,
+			map.quality='>30'
+	)
+)
 
 setMethod("initialize", "nextgenconfig", function(.Object)
 {	
@@ -75,7 +80,11 @@ setMethod("initialize", "nextgenconfig", function(.Object)
 	params <- loadDataFrame(concat(.Object@config.dir,'/params.txt'), idcol='name')
 	for (name in row.names(params))
 	{
-		slot(.Object,name) <- getField(params,name,'value')
+		type <- class(slot(.Object,name))
+		value <- getField(params,name,'value')
+		if (type=='logical')
+			value <- as.logical(value)
+		slot(.Object,name) <- value
 	}
 	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')

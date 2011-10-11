@@ -37,6 +37,17 @@ padChr <- function(n)
 }
 #padChr(2);padChr(20)
 
+createSubfolders <- function(config)
+{
+	for (chr in 1:22)
+	{
+		chrstr <- padChr(chr)
+		dir <- concat(config@tmp.dir,'/chr',chrstr)
+		run_command('mkdir ',dir)
+	}
+}
+#createSubfolders(config)
+
 ############################################################
 
 exportChromosome <- function(config, data, chr)
@@ -164,7 +175,7 @@ prephase_interval <- function(config, chr, start, end)
 	mapfile <- concat(ref.sub.dir,'/genetic_map_chr',chr,'_combined_b37.txt')
 	genotypefile <- concat(config@in.dir,'/gwas.chr',chrstr,'.gen')
 	strandfile <- concat(config@in.dir,'/gwas.chr',chrstr,'.hg19.strand')
-	outfile <- concat(config@tmp.dir,'/prephase.',formatInterval(chr,start,end),'.impute2')
+	outfile <- concat(config@tmp.dir,'/chr',chrstr,'/prephase.',formatInterval(chr,start,end),'.impute2')
 	
 	str <- 'impute2'
 	str <- concat(str,' -phase')
@@ -209,13 +220,14 @@ impute_interval <- function(config, chr, start, end)
 {
 	print(concat('impute_interval: ',chr,' ',start,':',end))
 	
+	chrstr <- padChr(chr)
 	mapfile <- concat(config@ref.dir,'/genetic_map_chr',chr,'_combined_b37.txt')
 	stem <- concat(config@ref.dir,'/ALL_1000G_phase1interim_jun2011_chr',chr,'_impute')
 	refhapfile <- concat(stem,'.hap.gz')
 	legendfile <- concat(stem,'.legend')
 	
-	knownhapsfile <- concat(config@tmp.dir,'/prephase.',formatInterval(chr,start,end),'.impute2')
-	outfile <- concat(config@out.dir,'/impute.',formatInterval(chr,start,end),'.impute2')
+	knownhapsfile <- concat(config@tmp.dir,'/chr',chrstr,'/prephase.',formatInterval(chr,start,end),'.impute2')
+	outfile <- concat(config@out.dir,'/chr',chrstr,'/impute.',formatInterval(chr,start,end),'.impute2')
 	
 	str <- 'impute2'
 	str <- concat(str,' -m ',mapfile)
