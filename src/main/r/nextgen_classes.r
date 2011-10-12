@@ -39,9 +39,11 @@ setClass("nextgenconfig",
 		)
 )
 
-setMethod("initialize", "nextgenconfig", function(.Object, config.dir='config')
+setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 {	
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
+	if (!file.exists(config.dir))
+		throw('config directory does not exist: ',config.dir)	
 	.Object@config.dir <- config.dir
 	.Object@runs <- loadDataFrame(concat(.Object@config.dir,'/runs.txt'), idcol='run')
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='region')
@@ -68,7 +70,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='config')
 		if (type=='logical')
 			value <- as.logical(value)
 		slot(.Object,name) <- value
-	}
+	}	
 	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
 	fastafilename <- concat(.Object@config.dir,'/refs.fasta')

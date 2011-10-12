@@ -27,7 +27,7 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 		folder <- row$folder
 		barcode <- row$barcode
 		lane <- row$lane
-		dir.from <- concat(config@illumina.dir,'/Project_',folder,'/Sample_',folder,'/')
+		dir.from <- concat('../data/',row$dataset,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
 		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
 		run_command('cp ', dir.from, filename,' ',dir.to)
 		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq')
@@ -535,3 +535,27 @@ consensus <- function(config,sample)
 	checkFileExists(outfile)
 }
 #consensus(config,'10464592.1__HCV-NS3-156')
+
+#
+#analyze_reads<- function(config)
+#{
+#	preprocess(config)
+#	trim_all(config)
+#	##remove_exact_duplicates_for_all_samples(config)
+#	map_reads(config)
+#	#merge_bams(config)
+#	##realign_indels(config,stem)
+#	#recalibrate(config,stem) #concat(stem,'.realigned'))
+#	#output_bam(config,stem,'recal')
+#	
+#	#call_variants(config,stem)
+#	#filter_variants(config,stem)
+#	#unmerge_bams(config)
+#	output_bams(config)
+#	fix_bai_files(config)
+#	filter_bams(config)
+#	export_pileup(config)
+#	count_codons(config)
+#	make_piecharts(config)
+#	#export_unmapped_reads(config,concat(stem,'.nodup'))
+#}

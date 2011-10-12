@@ -577,6 +577,22 @@ stripPath <- function(filenames)
 #stripPath('C:/workspace/vardb-util/src/main/r/tables.rnw')
 #stripPath('C:\\workspace\\vardb-util\\src\\main\\r\\tables.rnw')
 
+charAt <- function(str, index)
+{
+	return(substr(str, index, index))
+}
+#charAt('abcdefghijk',5)
+
+#returns the current subdirectory; use getwd() for the full path
+getCurDir <- function(dir=getwd())
+{
+	if (charAt(dir, nchar(dir))=='/')
+		dir <- substr(dir,1,nchar(dir)-1)
+	subdirs <- splitFields(dir,'/')
+	return(subdirs[length(subdirs)])
+}
+#getCurDir('C:/workspace/vardb-util/src/main/r/')
+
 sweaveToPdf <- function(filename, clean=TRUE)
 {
 	stem <- stripPath(filename)

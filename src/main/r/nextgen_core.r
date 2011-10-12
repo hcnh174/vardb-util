@@ -1,5 +1,7 @@
-loadConfig <- function(dir='config')
+loadConfig <- function(dir=NULL)
 {
+	if (is.null(dir))
+		dir <- concat('../config/',getCurDir())
 	config <- new('nextgenconfig',config.dir=dir)
 	try({config <- preloadCodonPositionsByRegion(config)})
 	return(config)
