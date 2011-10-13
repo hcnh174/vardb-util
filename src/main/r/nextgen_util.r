@@ -7,8 +7,8 @@ show_coverage <- function(config,stem)
 	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T DepthOfCoverage'
 	str <- concat(str,' -I ',bamfile)
 	str <- concat(str,' -R ',config@reffile)
-	run_command(str)
-	#run_command('java -jar GenomeAnalysisTK.jar -I aln.bam -R hsRef.fa -T DepthOfCoverage -L intervals.txt -U -S SILENT')
+	runCommand(str)
+	#runCommand('java -jar GenomeAnalysisTK.jar -I aln.bam -R hsRef.fa -T DepthOfCoverage -L intervals.txt -U -S SILENT')
 }
 
 
@@ -226,7 +226,7 @@ getPileupConsensusSequence <- function(config,sample)
 
 solexa_qa <- function(config,sample)
 {
-	run_command('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
+	runCommand('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
 }
 #solexa_qa(config,'KT9.plasmid__KT9')
 
@@ -239,7 +239,7 @@ viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
 	str <- concat(str,' INPUT=',bamfile)
 	str <- concat(str,' ALIGNMENT_STATUS=',alignment_status)#{Aligned, Unaligned, All}
 	str <- concat(str,' PF_STATUS=',pf_status) #{PF, NonPF, All}
-	run_command(str)
+	runCommand(str)
 }
 #viewBam(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
 
@@ -249,7 +249,7 @@ consensus <- function(config,sample)
 	reffile <- getRefFile(config,ref)
 	bamfile <- concat(config@bam.dir,'/',sample,'.bam')	
 	outfile <- concat(config@tmp.dir,'/',sample,'.consensus.txt')
-	run_command('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',outfile)
+	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',outfile)
 	checkFileExists(outfile)
 }
 #consensus(config,'10464592.1__HCV-NS3-156')

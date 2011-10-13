@@ -53,7 +53,7 @@ loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.
 #temporarily alias the old version
 #loadDataframe <- loadDataFrame
 
-run_command <- function(...)
+runCommand <- function(...)
 {
 	command <- concat(...)
 	print(command)
