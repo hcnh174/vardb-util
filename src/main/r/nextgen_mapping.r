@@ -56,7 +56,7 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 
 #############################################################
 
-trim_solexaqa <- function(config,sample)
+trimSolexaqa <- function(config,sample)
 {
 	olddir <- getwd()
 	setwd(config@fastq.dir)
@@ -68,23 +68,23 @@ trim_solexaqa <- function(config,sample)
 	run_command('rm ',sample,'.fastq.trimmed.discard')
 	setwd(olddir)
 }
-#trim_solexaqa(config,'PXB0220-0002.wk13')
+#trimSolexaqa(config,'PXB0220-0002.wk13')
 #cd out/fastq; DynamicTrim.pl PXB0220-0002.wk13.fastq
 #LengthSort.pl PXB0220-0002.wk13.fastq.trimmed
 
-trim_all <- function(config)
+trimAll <- function(config)
 {
 	for (sample in config@samples)
 	{
-		trim_solexaqa(config,sample)
-		#trim_prinseq(config,sample)
+		trimSolexaqa(config,sample)
+		#trimPrinseq(config,sample)
 	}
 }
-#trim_all(config)
+#trimAll(config)
 
 ######################################################################
 
-add_read_groups <- function(config, sample)
+addReadGroups <- function(config, sample)
 {
 	tmp.dir <- config@tmp.dir
 	samfile <- concat(tmp.dir,'/',sample,'.sam')
@@ -104,13 +104,13 @@ add_read_groups <- function(config, sample)
 	baifile <- concat(tmp.dir,'/',sample,'.bai')
 	checkFileExists(baifile)
 }
-#add_read_groups(config,'110617HBV.HBV07@HBV-RT')
+#addReadGroups(config,'110617HBV.HBV07@HBV-RT')
 
-run_bwa <- function(config, sample)#, .trimmed.fastq #, q=20
+runBwa <- function(config, sample)#, .trimmed.fastq #, q=20
 {
 	fastq.ext <- ifelse(config@trim,'.trimmed.fastq','.fastq')
-	ref <- get_ref_for_sample(sample)
-	reffile <- get_reffile(config,ref)
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
 	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
 	tmp.dir <- config@tmp.dir
 	
@@ -122,43 +122,43 @@ run_bwa <- function(config, sample)#, .trimmed.fastq #, q=20
 	run_command('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 	checkFileExists(samfile)
 	
-	add_read_groups(config,sample)
+	addReadGroups(config,sample)
 	
 	#run_command('rm ',samfile)
 	#run_command('rm ',saifile)
 }
-#run_bwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
-#run_bwa(config,'110617HBV-1.10348001.20020624__HBV-RT')
-#run_bwa(config,'110617HBV-1.10348001.20040128__HBV-RT')
-#run_bwa(config,'110617HBV-1.10348001.20040315__HBV-RT')
-#run_bwa(config,'110617HBV-1.10348001.20040804__HBV-RT')
-#run_bwa(config,'110628-1.PXB0220-0030.13__HCV-NS5A-31')
+#runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
+#runBwa(config,'110617HBV-1.10348001.20020624__HBV-RT')
+#runBwa(config,'110617HBV-1.10348001.20040128__HBV-RT')
+#runBwa(config,'110617HBV-1.10348001.20040315__HBV-RT')
+#runBwa(config,'110617HBV-1.10348001.20040804__HBV-RT')
+#runBwa(config,'110628-1.PXB0220-0030.13__HCV-NS5A-31')
 
-map_reads <- function(config, samples=NULL)
+mapReads <- function(config, samples=NULL)
 {
 	if (is.null(samples))
 		samples <- config@samples
 	for (sample in samples)
 	{
 		print(concat('run_bwa: ',sample))
-		try(run_bwa(config,sample))
+		try(runBwa(config,sample))
 	}
 }
-#map_reads(config)
-#map_reads(config, getSamplesForSubject(config,'10464592'))
+#mapReads(config)
+#mapReads(config, getSamplesForSubject(config,'10464592'))
 
 ############################################
 
 bambino <- function(config, sample)
 {
 	bamfile <- concat(config@tmp.dir,'/',sample,'.bam')
-	ref <- get_ref_for_sample(sample)
-	reffile <- get_reffile(config,ref)
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
 	run_command('java -Xmx3072m -cp $BAMBINO_HOME/bambino_bundle_1.03.jar Ace2.AceViewer -bam ',bamfile,' -fasta ',reffile)
 }
 #bambino(config,'KT9.plasmid__KT9')
 
-merge_bams_for_ref <- function(config,ref)
+mergeBamsForRef <- function(config,ref)
 {
 	tmp.dir <- config@tmp.dir
 	outfile <- concat(tmp.dir,'/merged@',ref,'.bam')
@@ -170,27 +170,27 @@ merge_bams_for_ref <- function(config,ref)
 	
 	for (sample in unique(config@runs[which(config@runs$ref==ref),'sample']))
 	{
-		ref <- get_ref_for_sample(sample)
+		ref <- getRefForSample(sample)
 		infile <- concat(tmp.dir,'/',sample,'.bam')
 		str <- concat(str,' INPUT=',infile)
 	}
 	str <- concat(str,' OUTPUT=',outfile)
 	run_command(str)
 }
-#merge_bams(config)
+#mergeBamsForRef(config,ref)
 
-merge_bams <- function(config)
+mergeBams <- function(config)
 {
 	for (ref in rownames(config@refs))
 	{
-		merge_bams_for_ref(config,ref)
+		mergeBamsForRef(config,ref)
 	}
 }
-#merge_bams(config)
+#mergeBams(config)
 
 ###################################################################
 
-analyze_covariates <- function(config,stem,suffix)
+analyzeCovariates <- function(config,stem,suffix)
 {
 	tmp.dir <- config@tmp.dir
 	bamfile <- concat(tmp.dir,'/',stem,'.bam')
@@ -221,7 +221,7 @@ analyze_covariates <- function(config,stem,suffix)
 	str <- concat(str,' -outputDir ',output.dir)
 	run_command(str)
 }
-#analyze_covariates(config,'merged','before')
+#analyzeCovariates(config,'merged','before')
 
 recalibrate <- function(config,stem) 
 {
@@ -231,7 +231,7 @@ recalibrate <- function(config,stem)
 	recalfile <- concat(tmp.dir,'/',newstem,'.csv')
 	outfile <- concat(tmp.dir,'/',newstem,'.bam')
 	
-	analyze_covariates(config,stem,'before')
+	analyzeCovariates(config,stem,'before')
 	
 	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T TableRecalibration'
 	str <- concat(str,' -l INFO')
@@ -243,12 +243,12 @@ recalibrate <- function(config,stem)
 	
 	checkFileExists(outfile)
 	
-	analyze_covariates(config,stem,'after')
+	analyzeCovariates(config,stem,'after')
 	return(newstem)
 }
 #recalibrate(config,'merged')
 
-output_bam <- function(config,sample,suffix='')
+outputBam <- function(config,sample,suffix='')
 {
 	infile <- concat(config@tmp.dir,'/',sample,suffix,'.bam')
 	outfile <- concat(config@bam.dir,'/',sample,'.bam')
@@ -261,23 +261,23 @@ output_bam <- function(config,sample,suffix='')
 	checkFileExists(outfile)
 	#run_command('samtools index ',outfile)
 }
-#output_bam(config,'merged','.realigned.recal')
+#outputBam(config,'merged','.realigned.recal')
 
-output_bams <- function(config,samples=NULL,suffix='')
+outputBams <- function(config,samples=NULL,suffix='')
 {
 	if (is.null(samples))
 		samples <- config@samples
 	for (sample in samples)
 	{
-		output_bam(config,sample,suffix)
+		outputBam(config,sample,suffix)
 	}
 }
-#output_bams(config)
-#output_bams(config,getSamplesForSubject(config,'10464592'))
+#outputBams(config)
+#outputBams(config,getSamplesForSubject(config,'10464592'))
 
 ################################################################3
 
-call_variants <- function(config,stem)
+callVariants <- function(config,stem)
 {	
 	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
 	outfile <- concat(config@vcf.dir,'/',stem,'.vcf')
@@ -294,9 +294,9 @@ call_variants <- function(config,stem)
 	
 	checkFileExists(outfile)
 }
-#call_variants(config,'merged')
+#callVariants(config,'merged')
 
-filter_variants <- function(config, stem)
+filterVariants <- function(config, stem)
 {
 	#ref <- config@ref
 	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
@@ -331,9 +331,9 @@ filter_variants <- function(config, stem)
 	run_command(str)
 	checkFileExists(outfile)
 }
-#filter_variants(config,'merged')
+#filterVariants(config,'merged')
 
-mpileup_vcf <- function(config,stem)
+mpileupVcf <- function(config,stem)
 {
 	#ref <- config@ref
 	#reffile <- concat(config@ref.dir,'/',ref,'.fasta')
@@ -345,12 +345,9 @@ mpileup_vcf <- function(config,stem)
 	run_command('bcftools view ',bcffile,' > ',vcffile)
 	checkFileExists(vcffile)
 }
-#mpileup_vcf(config,'merged')
+#mpileupVcf(config,'merged')
 
-
-#export_read_group('merged','KT9.plasmid')
-
-unmerge_bams_for_ref <- function(config,stem,readgroup)
+unmergeBamsForRef <- function(config,stem,readgroup)
 {
 	infile <- concat(config@bam.dir,'/',stem,'.bam')
 	outfile <- concat(config@bam.dir,'/',readgroup,'.bam')
@@ -358,30 +355,30 @@ unmerge_bams_for_ref <- function(config,stem,readgroup)
 	checkFileExists(outfile)
 	run_command('samtools index ',outfile)
 }
-#merge_bams(config)
+#unmergeBamsForRef(config,stem,readgroup)
 
-unmerge_bams <- function(config,stem)
+unmergeBams <- function(config,stem)
 {
 	for (ref in rownames(config@refs))
 	{
-		unmerge_bams_for_ref(config,ref)
+		unmergeBamsForRef(config,ref)
 	}
 	
 #	for (sample in config@samples)
 #	{
 #		#export_read_group(config,stem,sample)
-#		ref <- get_ref_for_sample(sample)
+#		ref <- getRefForSample(sample)
 #		sample <- concat(sample,'.',ref,'.rg') #hack!
 #		filter_bam(config,sample)
 #		##remove_duplicates(sample,ref)
 #		export_pileup(config,concat(sample,'.filtered'),ref)
 #	}
 }
-#unmerge_bams(config,'merged')
+#unmergeBams(config,'merged')
 
 ################################################################
 
-fix_bai_files <- function(config)
+fixBaiFiles <- function(config)
 {
 	for (filename in list.files(config@bam.dir, pattern='\\.bam$'))
 	{
@@ -394,11 +391,11 @@ fix_bai_files <- function(config)
 		}
 	}
 }
-#fix_bai_files(config)
+#fixBaiFiles(config)
 
 ##################################################################3
 
-filter_bam <- function(config, sample)
+filterBam <- function(config, sample)
 {
 	#bamtools filter -in out/bam/KT9.plasmid.bam -out out/bam/KT9.plasmid.filtered.bam -mapQuality ">30" 
 	infile <- concat(config@bam.dir,'/',sample,'.bam')
@@ -421,7 +418,7 @@ filter_bam <- function(config, sample)
 #	}
 #}
 
-filter_bams <- function(config, samples=NULL)
+filterBams <- function(config, samples=NULL)
 {
 	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
 	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
@@ -431,110 +428,62 @@ filter_bams <- function(config, samples=NULL)
 	foreach(i=1:length(samples), .combine = cbind) %dopar% {
 		sample <- as.character(samples[i])
 		print(concat('filter_bam: ',sample))
-		try(filter_bam(config,sample))
+		try(filterBam(config,sample))
 		sample
 	}
 }
-#filter_bams(config)
+#filterBams(config)
 
 ####################################################
 
-export_pileup_for_sample <- function(config,sample,filtered=TRUE)
+exportPileupForSample <- function(config,sample,filtered=TRUE)
 {
-	ref <- get_ref_for_sample(sample)
+	ref <- getRefForSample(sample)
 	samplename <- ifelse(filtered,concat(sample,'.filtered'), sample)
 	run_command('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
 }
-#export_pileup_for_sample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
+#exportPileupForSample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
 
-export_pileup <- function(config, samples=NULL)
+exportPileup <- function(config, samples=NULL)
 {
 	if (is.null(samples))
 		samples <- config@samples
 	for (sample in samples)
 	{
-		export_pileup_for_sample(config,sample,filtered=FALSE)
-		export_pileup_for_sample(config,sample,filtered=TRUE)
+		exportPileupForSample(config,sample,filtered=FALSE)
+		exportPileupForSample(config,sample,filtered=TRUE)
 	}
 }
-#export_pileup(config,getSamplesForSubject(config,'10464592'))
+#exportPileup(config,getSamplesForSubject(config,'10464592'))
 
 ################################################
 
-count_codons <- function(config, subjects=NULL)
+countCodons <- function(config, groups=NULL)
 {
-	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	registerDoMC() #cores=4
-	if (is.null(subjects))
-		subjects <- config@subjects	
-	foreach(i=1:length(subjects), .combine = cbind) %dopar% {
-		subject <- as.character(subjects[i])
-		print(concat('count_codons_for_subject: ',subject))
-		try(count_codons_for_subject(config, subject))
-		subject
+	#require(foreach, quietly=TRUE, warn.conflicts=FALSE)
+	#require(doMC, quietly=TRUE, warn.conflicts=FALSE)
+	#registerDoMC() #cores=4
+	if (is.null(groups))
+		groups <- config@groups	
+	#foreach(i=1:length(subjects), .combine = cbind) %dopar% {
+	for (i in 1:length(groups))
+	{
+		group <- as.character(groups[i])
+		print(concat('countCodonsForGroup: ',group))
+		try(countCodonsForGroup(config, group))
+		#group
 	}
 }
-#count_codons(config,'10464592')
+#countCodons(config,config@groups[-1]) #skip the first one
+#countCodons(config,'10464592')
 
-#make_tables <- function(config)
-#{
-#	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/tables.rnw'))
-#	#run_command('Rscript $VARDB_RUTIL_HOME/make_tables.r dir=',config@count.dir)
-#}
-
-make_piecharts <- function(config)
+makePiecharts <- function(config)
 {
 	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/nextgen_piecharts.rnw'))
 }
 #make_piecharts(config)
 
 ###############################################################
-
-#diagnostics
-
-solexa_qa <- function(config,sample)
-{
-	run_command('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
-}
-#solexa_qa(config,'KT9.plasmid__KT9')
-
-viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
-{
-	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
-	checkFileExists(bamfile)
-	
-	str <- 'java -Xmx2g -jar $PICARD_HOME/ViewSam.jar'
-	str <- concat(str,' INPUT=',bamfile)
-	str <- concat(str,' ALIGNMENT_STATUS=',alignment_status)#{Aligned, Unaligned, All}
-	str <- concat(str,' PF_STATUS=',pf_status) #{PF, NonPF, All}
-	run_command(str)
-}
-#viewBam(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
-
-consensus <- function(config, sample)
-{
-	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
-	checkFileExists(bamfile)
-	
-	str <- 'java -Xmx2g -jar $PICARD_HOME/ViewSam.jar'
-	str <- concat(str,' INPUT=',bamfile)
-	str <- concat(str,' ALIGNMENT_STATUS=',alignment_status)#{Aligned, Unaligned, All}
-	str <- concat(str,' PF_STATUS=',pf_status) #{PF, NonPF, All}
-	run_command(str)
-}
-#consensus(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
-
-consensus <- function(config,sample)
-{
-	ref <- get_ref_for_sample(sample)
-	reffile <- get_reffile(config,ref)
-	bamfile <- concat(config@bam.dir,'/',sample,'.bam')	
-	outfile <- concat(config@tmp.dir,'/',sample,'.consensus.txt')
-	run_command('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',outfile)
-	checkFileExists(outfile)
-}
-#consensus(config,'10464592.1__HCV-NS3-156')
 
 #
 #analyze_reads<- function(config)

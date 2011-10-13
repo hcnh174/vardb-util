@@ -4,28 +4,13 @@ loadPileupData <- function(config, sample)
 	filename <- concat(config@pileup.dir,'/',samplename,'.txt'); print(filename) # load the corresponding data file
 	data <- loadDataFrame(filename)
 	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
-	ref <- get_ref_for_sample(sample)
+	ref <- getRefForSample(sample)
 	startnt <- getField(config@refs,ref,'start')#startnt <- config@refs[ref,'start']	
 	data$ntnum <- data$position + startnt - 1
 	return(data)
 }
 #data <- loadPileupData(config,'11323912.1__HCV-NS3-36')
 #data <- loadPileupData(config,'KT9.plasmid__KT9')
-
-getPileupConsensusSequence <- function(config,sample)
-{
-	data <- loadPileupData(config,sample)
-	data.subset <- as.data.frame(data[,c('position','nt')])
-	xtab <- xtabs(~nt + position, data.subset)
-	sequence <- c()
-	for (col in colnames(xtab))
-	{
-		nt <- names(sort(xtab[,col], decreasing=TRUE)[1])
-		sequence <- c(sequence,nt)
-	}
-	return(tolower(joinFields(sequence,'')))
-}
-#getPileupConsensusSequence(config,'11551793.1__HCV-NS3-36')
 
 extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 {
@@ -179,71 +164,99 @@ createAminoAcidCountTable <- function(config, data, params, positions)
 .appendSampleParams <- function(counts, params)
 {
 	try({
+		counts$group <- as.character(params@group)
 		counts$subject <- as.character(params@subject)
 		counts$sample <- as.character(params@sample)
-		counts$replicate <- as.character(params@replicate)
+		counts$label <- as.character(params@label)
+		#counts$replicate <- as.character(params@replicate)
 		counts$ref <- as.character(params@ref)
 		counts$region <- as.character(params@region)
 	}, silent=FALSE)
 	cols <- names(counts)
-	cols <- c('subject','sample','replicate','ref','region',cols[1:(length(cols)-5)])
+	cols <- c('group','subject','sample','label','ref','region',cols[1:(length(cols)-6)])
 	counts <- counts[,cols]
 	return(counts)
 }
 
-count_codons_for_region <- function(config, data, params, variantdata)
+countCodonsForRegion <- function(config, data, params, variantdata)
 {
-	print(concat('count_codons_for_region: ',as.character(params@region)))
-	positions <- getCodonPositionsForRegion(config,params@region)
+	print(concat('countCodonsForRegion: ',as.character(params@region)))
+	positions <- getCodonPositionsForRegion(config,params@region,params@ref)
 	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params, positions))
 	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params, positions))
 	variantdata@aa <- rbind(variantdata@aa, createAminoAcidCountTable(config, data, params, positions))
 	return(variantdata)
 }
 #params@region <- 'NS3aa156'
-#variantdata <- count_codons_for_region(config, data, params, variantdata)
+#variantdata <- countCodonsForRegion(config, data, params, variantdata)
 
-count_codons_for_sample <- function(config, params, variantdata)
+countCodonsForSample <- function(config, params, variantdata)
 {
-	print(concat('count_codons_for_sample: ',params@sample))
+	print(concat('countCodonsForSample: ',params@sample))
 	data <- loadPileupData(config,params@sample)
-	for (region in get_regions_for_sample(config,params@sample))
+	for (region in getRegionsForSample(config,params@sample))
 	{
 		params@region <- region
-		variantdata <- count_codons_for_region(config, data, params, variantdata)
+		variantdata <- countCodonsForRegion(config, data, params, variantdata)
 	}
 	return(variantdata)
 }
-#count_codons_for_sample(config,params,variantdata)
+#countCodonsForSample(config,params,variantdata)
 
-
-count_codons_for_subject <- function(config, params)
-{
-	if (is.character(params))
-		params <- new('sampleparams', subject=params)
-	print(concat('count_codons_for_subject: ',as.character(params@subject)))
-	variantdata <- new('variantdata')
-	samples <- config@runs[which(config@runs$subject==params@subject),]
-	if (nrow(samples)==0)
-		stop(concat('cannot find any samples for subject ',params@subject))
-	for (sample in unique(samples[,'sample']))
-	{
-		params@sample <- sample
-		params@replicate <- unique(samples[which(samples$sample==sample),'replicate'])
-		if (length(params@replicate)>1)
-			throw('more than one replicate for sample: sample=',sample,', replicates=',params@replicate)
-		params@ref <- get_ref_for_sample(sample)
-		try({variantdata <- count_codons_for_sample(config, params, variantdata)}, silent=FALSE)
-	}
-	counts.dir <- concat(config@counts.dir,'/')
-	writeTable(variantdata@nt, concat(counts.dir,params@subject,'.nt.txt'), row.names=FALSE)
-	writeTable(variantdata@codons, concat(counts.dir,params@subject,'.codons.txt'), row.names=FALSE)
-	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
-	return(variantdata)
-}
+#countCodonsForSubject <- function(config, subject)
+#{
+#	#if (is.character(params))
+#	params <- new('sampleparams', subject=params)
+#	print(concat('countCodonsForSubject: ',as.character(params@subject)))
+#	variantdata <- new('variantdata')
+#	samples <- config@data[which(config@data$subject==params@subject),]
+#	if (nrow(samples)==0)
+#		stop(concat('cannot find any samples for subject ',params@subject))
+#	for (sample in unique(samples[,'sample']))
+#	{
+#		params@sample <- sample
+#		params@replicate <- unique(samples[which(samples$sample==sample),'replicate'])
+#		if (length(params@replicate)>1)
+#			throw('more than one replicate for sample: sample=',sample,', replicates=',params@replicate)
+#		params@ref <- getRefForSample(sample)
+#		try({variantdata <- countCodonsForSample(config, params, variantdata)}, silent=FALSE)
+#	}
+#	counts.dir <- concat(config@counts.dir,'/')
+#	writeTable(variantdata@nt, concat(counts.dir,params@subject,'.nt.txt'), row.names=FALSE)
+#	writeTable(variantdata@codons, concat(counts.dir,params@subject,'.codons.txt'), row.names=FALSE)
+#	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
+#	return(variantdata)
+#}
 #params <- new('sampleparams', subject='KT9', sample='KT9.plasmid__KT9', region='NS3aa156', replicate=1)
+#counts <- count_codons_for_subject(config,'PXB0220-0030')
 #counts <- count_codons_for_subject(config,'KT9')
 #counts <- count_codons_for_subject(config,'10348001')
 #counts <- count_codons_for_subject(config, '10201689')
 #counts <- count_codons_for_subject(config, '11323912')
 
+countCodonsForGroup <- function(config, group)
+{
+	params <- new('sampleparams', group=group)
+	print(concat('countCodonsForGroup: ',as.character(params@group)))
+	variantdata <- new('variantdata')
+	samples <- config@data[which(config@data$group==params@group),]
+	if (nrow(samples)==0)
+		stop(concat('cannot find any samples for group ',params@group))
+	for (sample in unique(samples[,'sample']))
+	{
+		params@sample <- sample
+		params@subject <- unique(samples[which(samples$sample==sample),'subject'])
+		params@label <- unique(samples[which(samples$sample==sample),'label'])
+		#params@replicate <- unique(samples[which(samples$sample==sample),'replicate'])
+		if (length(params@label)>1)
+			throw('more than one label for sample: sample=',sample,', labels=',params@label)
+		params@ref <- getRefForSample(sample)
+		try({variantdata <- countCodonsForSample(config, params, variantdata)}, silent=FALSE)
+	}
+	counts.dir <- concat(config@counts.dir,'/')
+	writeTable(variantdata@nt, concat(counts.dir,params@group,'.nt.txt'), row.names=FALSE)
+	writeTable(variantdata@codons, concat(counts.dir,params@group,'.codons.txt'), row.names=FALSE)
+	writeTable(variantdata@aa, concat(counts.dir,params@group,'.aa.txt'), row.names=FALSE)
+	return(variantdata)
+}
+#variantdata <- countCodonsForGroup(config,'PXB0220-0030')

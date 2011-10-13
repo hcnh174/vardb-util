@@ -18,6 +18,7 @@ library(R.oo)
 
 lattice.options(default.args = list(as.table = TRUE))
 options(contrasts=c("contr.sum","contr.poly"))
+options("width"=200)
 
 loadUtilFiles <- function(filenames)
 {

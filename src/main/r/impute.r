@@ -221,8 +221,9 @@ impute_interval <- function(config, chr, start, end)
 	print(concat('impute_interval: ',chr,' ',start,':',end))
 	
 	chrstr <- padChr(chr)
-	mapfile <- concat(config@ref.dir,'/genetic_map_chr',chr,'_combined_b37.txt')
-	stem <- concat(config@ref.dir,'/ALL_1000G_phase1interim_jun2011_chr',chr,'_impute')
+	ref.dir <- concat(config@ref.dir,'/ALL_1000G_phase1interim_jun2011_impute')
+	mapfile <- concat(ref.dir,'/genetic_map_chr',chr,'_combined_b37.txt')
+	stem <- concat(ref.dir,'/ALL_1000G_phase1interim_jun2011_chr',chr,'_impute')
 	refhapfile <- concat(stem,'.hap.gz')
 	legendfile <- concat(stem,'.legend')
 	
@@ -237,8 +238,8 @@ impute_interval <- function(config, chr, start, end)
 	str <- concat(str,' -int ',start,' ',end)
 	str <- concat(str,' -Ne ',config@Ne)
 	str <- concat(str,' -o ',outfile)
-	print(str)
-	#run_command(str)
+	#print(str)
+	run_command(str)
 }
 #impute(config, 22, 20.4e6, 20.5e6)
 
@@ -253,6 +254,7 @@ impute_chromosome <- function(config, chr)
 		impute_interval(config,chr,start,end)
 	}
 }
+#impute_chromosome(config,19)
 
 impute <- function(config)
 {

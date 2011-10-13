@@ -5,16 +5,17 @@ setClass("nextgenconfig",
 				out.dir='character',
 				ref.dir='character',
 				index.dir='character',
-				runs='data.frame',
+				data='data.frame',
 				refs='data.frame',
 				regions='data.frame',
 				treatments='data.frame',
 				titers='data.frame',
 				goals='data.frame',
-				features='data.frame',
+				genes='data.frame',
 				positions='list',
 				subjects='vector',
 				samples='vector',
+				groups='vector',
 				illumina.dir='character',
 				fastq.dir='character',
 				bam.dir='character',
@@ -45,13 +46,14 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	if (!file.exists(config.dir))
 		throw('config directory does not exist: ',config.dir)	
 	.Object@config.dir <- config.dir
-	.Object@runs <- loadDataFrame(concat(.Object@config.dir,'/runs.txt'), idcol='run')
-	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='region')
+	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')
+	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='id')
 	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
-	.Object@goals <- loadDataFrame(concat(.Object@config.dir,'/goals.txt'), idcol='goal')
-	.Object@features <- loadDataFrame(concat(.Object@config.dir,'/features.txt'), idcol='feature')
-	.Object@samples <- unique(.Object@runs$sample)
-	.Object@subjects <- unique(.Object@runs$subject)
+	.Object@goals <- loadDataFrame(concat(.Object@config.dir,'/goals.txt'), idcol='id')
+	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
+	.Object@samples <- unique(.Object@data$sample)
+	.Object@subjects <- unique(.Object@data$subject)
+	.Object@groups <- unique(.Object@data$group)
 	.Object@ref.dir <- concat(.Object@out.dir,'/ref')
 	.Object@fastq.dir <- concat(.Object@out.dir,'/fastq')
 	.Object@bam.dir <- concat(.Object@out.dir,'/bam')
@@ -99,12 +101,17 @@ setClass("variantdata",
 ##############################################################
 
 setClass("sampleparams",
-		representation(subject='character',
+		representation(
+				group='character',
+				subject='character',
 				sample='character',
-				replicate='numeric',
+				label='character',
+				#replicate='numeric',
 				ref='character',
 				region='character',
 				drop.ambig='logical',
 				nt.cutoff='numeric'),
 		prototype(drop.ambig=TRUE,
 				nt.cutoff=0))
+
+##############################################################

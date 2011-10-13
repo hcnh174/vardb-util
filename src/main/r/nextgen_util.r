@@ -119,24 +119,6 @@ plotReadDistributions <- function(filename="histograms.pdf")
 	dev.off()
 }
 
-########################################################
-
-calcOffsets <- function(config,ref)
-{
-	#ref <- 'HCV-NS3-156'
-	#sequence <- config@refs[ref,'sequence']
-}
-
-refseq <- config@refs['HCV-KT9','sequence']
-seq <- config@refs['HCV-NS3-156','sequence']
-
-library(Biostrings)
-
-psa1 <- pairwiseAlignment(pattern = refseq, subject = seq)
-startnt <- pattern(psa1)@range@start #3861
-#NS3	3420	5312
-startntrel <- startnt-3420
-#441
 
 ####################################################
 
@@ -158,37 +140,117 @@ displayCodons <- function(sequence,start=1)
 	}
 	return(t(data))
 }
-data <- displayCodons('g
-				3421 cgcctatcac agcatactcc caacagacgc ggggcttact tggctgcatc atcactagcc
-				3481 ttacgggccg ggacaagaac caggtcgagg gagaggttca aatagtctcc accgcaacac
-				3541 aaaccttcct ggcaacctgc gtcaacggcg tgtgctggac tgtctttcac ggcgccggct
-				3601 cgaagaccct agctggccca aagggtccca tcacccaaat gtacaccaat gtagaccaag
-				3661 atcttgttgg ctggcaggcg ccccctggag cgcgctccat gacgccatgc acctgcggca
-				3721 gctcggacct ctacttggtc acgagacatg ctgatgtcat cccggtgcgc cggcggggag
-				3781 acagtagggg gagcctgctc tcccccaggc ccgtctccta cctgaagggc tcttcgggtg
-				3841 gcccactgct ctgcccttcg gggcacgttg tgggcatctt ccgggccgct gtatgcaccc
-				3901 ggggggtcgc aaaagcggtg gacttcgtac ccgttgagtc tatggaaact acaatgcggt
-				3961 ctccggtctt cacagataac tcatcccccc cggccgtacc gcagacattc caagtggcac
-				4021 atctacacgc ccccactggc agcggcaaga gtactaaagt gccagctgca tacgcagccc
-				4081 aagggtacaa ggtgctcgtc ctgaacccgt ccgttgccgc caccttaggg tttggagcgt
-				4141 acatgtccaa ggcacatggt gtagacccta acatcagaac tggggtaagg accatcacca
-				4201 cgggcgcccc catcacgtac tccacctacg gcaagttcct cgccgacggt ggttgctctg
-				4261 ggggcgccta tgatatcata atatgtgatg agtgccactc aactgactcg actaccatct
-				4321 tgggcattgg cacagttctg gaccaagcgg agacggctgg agcgcgactc gtcgtgctcg
-				4381 ccaccgctac gcctccagga tcagtcaccg tgccacaccc taatattgag gaggtggccc
-				4441 tgtccaccac tggagagatc cccttctatg gcaaggccat ccccattgag gccatcaagg
-				4501 gggggaggca tctcattttc tgccattcaa aaaaaaagtg tgatgagctc gccgcaaagc
-				4561 tgtcaaacct cggaatcaac gctgtagcgt attaccgggg tctcgatgtg tccgtcatac
-				4621 caactggcgg ggacgtcgtt gtcgtggcaa cagacgcttt aatgacgggc tttaccggcg
-				4681 actttgactc agtgatcgac tgtaacacgt gtgtcaccca aacagtcgat ttcagcttgg
-				4741 atcccacctt caccattgag acgacgaccg tgccccaaga cgcggtgtcg cgctcgcagc
-				4801 ggcggggtag gactggtaga ggtaggagag gcatctacag gtttgtgact ccaggagaac
-				4861 ggccctcggg catgttcgat tcctcggtcc tgtgtgagtg ctatgacgcg ggctgtgctt
-				4921 ggtacgagct cacgcctgct gaaacctcgg ttaggttacg ggcttaccta aatacaccag
-				4981 ggttgcccgt ttgccaggac catctggagt tctgggagag cgtcttcaca ggcctcaccc
-				5041 atatagatgc ccatttccta tcccagacca agcaggcagg agataacttc ccctatctgg
-				5101 tagcatacca ggctacagtg tgcgccaggg cccaagctcc acctccatca tgggatcaaa
-				5161 tgtggaagtg tctcatacgg ctgaaaccta cactgcacgg gcagacgccc ctgctgtata
-				5221 ggctaggagc cgttcaaaat gaggtcaccc tcacacaccc tataaccaaa tacatcatgg
-				5281 catgcatgtc ggctgacctg gaggtcgtca c', start=3420)
+#data <- displayCodons('g
+#				3421 cgcctatcac agcatactcc caacagacgc ggggcttact tggctgcatc atcactagcc
+#				3481 ttacgggccg ggacaagaac caggtcgagg gagaggttca aatagtctcc accgcaacac
+#				3541 aaaccttcct ggcaacctgc gtcaacggcg tgtgctggac tgtctttcac ggcgccggct
+#				3601 cgaagaccct agctggccca aagggtccca tcacccaaat gtacaccaat gtagaccaag
+#				3661 atcttgttgg ctggcaggcg ccccctggag cgcgctccat gacgccatgc acctgcggca
+#				3721 gctcggacct ctacttggtc acgagacatg ctgatgtcat cccggtgcgc cggcggggag
+#				3781 acagtagggg gagcctgctc tcccccaggc ccgtctccta cctgaagggc tcttcgggtg
+#				3841 gcccactgct ctgcccttcg gggcacgttg tgggcatctt ccgggccgct gtatgcaccc
+#				3901 ggggggtcgc aaaagcggtg gacttcgtac ccgttgagtc tatggaaact acaatgcggt
+#				3961 ctccggtctt cacagataac tcatcccccc cggccgtacc gcagacattc caagtggcac
+#				4021 atctacacgc ccccactggc agcggcaaga gtactaaagt gccagctgca tacgcagccc
+#				4081 aagggtacaa ggtgctcgtc ctgaacccgt ccgttgccgc caccttaggg tttggagcgt
+#				4141 acatgtccaa ggcacatggt gtagacccta acatcagaac tggggtaagg accatcacca
+#				4201 cgggcgcccc catcacgtac tccacctacg gcaagttcct cgccgacggt ggttgctctg
+#				4261 ggggcgccta tgatatcata atatgtgatg agtgccactc aactgactcg actaccatct
+#				4321 tgggcattgg cacagttctg gaccaagcgg agacggctgg agcgcgactc gtcgtgctcg
+#				4381 ccaccgctac gcctccagga tcagtcaccg tgccacaccc taatattgag gaggtggccc
+#				4441 tgtccaccac tggagagatc cccttctatg gcaaggccat ccccattgag gccatcaagg
+#				4501 gggggaggca tctcattttc tgccattcaa aaaaaaagtg tgatgagctc gccgcaaagc
+#				4561 tgtcaaacct cggaatcaac gctgtagcgt attaccgggg tctcgatgtg tccgtcatac
+#				4621 caactggcgg ggacgtcgtt gtcgtggcaa cagacgcttt aatgacgggc tttaccggcg
+#				4681 actttgactc agtgatcgac tgtaacacgt gtgtcaccca aacagtcgat ttcagcttgg
+#				4741 atcccacctt caccattgag acgacgaccg tgccccaaga cgcggtgtcg cgctcgcagc
+#				4801 ggcggggtag gactggtaga ggtaggagag gcatctacag gtttgtgact ccaggagaac
+#				4861 ggccctcggg catgttcgat tcctcggtcc tgtgtgagtg ctatgacgcg ggctgtgctt
+#				4921 ggtacgagct cacgcctgct gaaacctcgg ttaggttacg ggcttaccta aatacaccag
+#				4981 ggttgcccgt ttgccaggac catctggagt tctgggagag cgtcttcaca ggcctcaccc
+#				5041 atatagatgc ccatttccta tcccagacca agcaggcagg agataacttc ccctatctgg
+#				5101 tagcatacca ggctacagtg tgcgccaggg cccaagctcc acctccatca tgggatcaaa
+#				5161 tgtggaagtg tctcatacgg ctgaaaccta cactgcacgg gcagacgccc ctgctgtata
+#				5221 ggctaggagc cgttcaaaat gaggtcaccc tcacacaccc tataaccaaa tacatcatgg
+#				5281 catgcatgtc ggctgacctg gaggtcgtca c', start=3420)
+
+		########################################################
+		
+#		refseq <- config@refs['HCV-HCJ4','sequence']
+#		seq <- config@refs['HCV-NS3-156','sequence']
+#		
+#		library(Biostrings)
+#		
+#		psa1 <- pairwiseAlignment(pattern = refseq, subject = seq, type='local')
+#		startnt <- pattern(psa1)@range@start #3861
+##NS3	3420	5312
+
+#refseq <- config@refs['HCV-KT9','sequence']
+#seq <- config@refs['HCV-KT9-NS3','sequence']
+
+findFragmentStartPosition <- function(config, refseqid, seqid)
+{
+	refseq <-  getField(config@refs,refseqid,'sequence')
+	seq <-  getField(config@refs,seqid,'sequence')
+	psa1 <- Biostrings::pairwiseAlignment(pattern = refseq, subject = seq, type='local', gapOpening = -1000000)
+	print(psa1)
+	startnt <- Biostrings::pattern(psa1)@range@start
+	#return(Biostrings::pattern(psa1)@range)
+	endnt <- startnt + nchar(seq) -1 
+	print(concat(startnt,'..',endnt))
+	return(startnt)
+}
+#findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS3') #3410..5302
+#findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS5A') #6248..7588
+
+
+getPileupConsensusSequence <- function(config,sample)
+{
+	data <- loadPileupData(config,sample)
+	data.subset <- as.data.frame(data[,c('position','nt')])
+	xtab <- xtabs(~nt + position, data.subset)
+	sequence <- c()
+	for (col in colnames(xtab))
+	{
+		nt <- names(sort(xtab[,col], decreasing=TRUE)[1])
+		sequence <- c(sequence,nt)
+	}
+	return(tolower(joinFields(sequence,'')))
+}
+#getPileupConsensusSequence(config,'PXB0220-0030.8__HCV-KT9')
+#getPileupConsensusSequence(config,'11551793.1__HCV-NS3-36')
+
+######################################################
+
+#diagnostics
+
+solexa_qa <- function(config,sample)
+{
+	run_command('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
+}
+#solexa_qa(config,'KT9.plasmid__KT9')
+
+viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
+{
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	checkFileExists(bamfile)
+	
+	str <- 'java -Xmx2g -jar $PICARD_HOME/ViewSam.jar'
+	str <- concat(str,' INPUT=',bamfile)
+	str <- concat(str,' ALIGNMENT_STATUS=',alignment_status)#{Aligned, Unaligned, All}
+	str <- concat(str,' PF_STATUS=',pf_status) #{PF, NonPF, All}
+	run_command(str)
+}
+#viewBam(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
+
+consensus <- function(config,sample)
+{
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')	
+	outfile <- concat(config@tmp.dir,'/',sample,'.consensus.txt')
+	run_command('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',outfile)
+	checkFileExists(outfile)
+}
+#consensus(config,'10464592.1__HCV-NS3-156')
 
