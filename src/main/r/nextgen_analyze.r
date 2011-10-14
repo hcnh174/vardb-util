@@ -5,15 +5,16 @@ config <- loadConfig()
 analyzeReads<- function(config)
 {
 	preprocess(config)
-	trimAll(config)
+	#trimAll(config)
 	mapReads(config)
 	outputBams(config)
-	fixBaiFiles(config)
-	filterBams(config)
+	#fixBaiFiles(config)
+	#filterBams(config)
+	#writeConsensusForBams(config)
 	exportPileup(config)
 	countCodons(config)
-	makePiecharts(config)
 	writeCodonTables(config)
+	makePiecharts(config)
 }
 
 args <- commandArgs(TRUE) # from R.utils package

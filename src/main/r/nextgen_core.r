@@ -219,8 +219,8 @@ preloadCodonPositions <- function(config)
 cleanSequence <- function(sequence)
 {
 	#library(gsubfn) 
-	sequence <- gsub ("[0-9]+", "\\1", sequence, ignore.case=T, perl=T)
-	sequence <- gsub ("\\s+", "\\1", sequence, ignore.case=T, perl=T)
+	sequence <- gsub("[0-9]+", "\\1", sequence, ignore.case=T, perl=T)
+	sequence <- gsub("\\s+", "\\1", sequence, ignore.case=T, perl=T)
 	return(sequence)
 }
 

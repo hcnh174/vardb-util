@@ -24,7 +24,9 @@ setClass("nextgenconfig",
 				pileup.dir='character',
 				tables.dir='character',
 				counts.dir='character',
+				consensus.dir='character',
 				tmp.dir='character',
+				profile='character',
 				trim='logical',
 				filter='logical',
 				map.quality='character'
@@ -34,6 +36,7 @@ setClass("nextgenconfig",
 				out.dir='out',
 				index.dir='indexes',
 				goals=data.frame(),
+				profile='default',
 				trim=TRUE,
 				filter=TRUE,
 				map.quality='>30'
@@ -44,25 +47,8 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 {	
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	if (!file.exists(config.dir))
-		throw('config directory does not exist: ',config.dir)	
+		throw('config directory does not exist: ',config.dir)
 	.Object@config.dir <- config.dir
-	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')
-	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='id')
-	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
-	.Object@goals <- loadDataFrame(concat(.Object@config.dir,'/goals.txt'), idcol='id')
-	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
-	.Object@samples <- unique(.Object@data$sample)
-	.Object@subjects <- unique(.Object@data$subject)
-	.Object@groups <- unique(.Object@data$group)
-	.Object@ref.dir <- concat(.Object@out.dir,'/ref')
-	.Object@fastq.dir <- concat(.Object@out.dir,'/fastq')
-	.Object@bam.dir <- concat(.Object@out.dir,'/bam')
-	.Object@vcf.dir <- concat(.Object@out.dir,'/vcf')
-	.Object@qc.dir <- concat(.Object@out.dir,'/qc')
-	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
-	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
-	.Object@tables.dir <- concat(.Object@out.dir,'/tables')
-	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
 	
 	params <- loadDataFrame(concat(.Object@config.dir,'/params.txt'), idcol='name')
 	for (name in row.names(params))
@@ -73,7 +59,31 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 			value <- as.logical(value)
 		slot(.Object,name) <- value
 	}	
+	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='id')
+	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
+	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
+	#try(.Object@goals <- loadDataFrame(concat(.Object@config.dir,'/goals.txt'), idcol='id'))
+	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'))#, idcol='id'
+	if (.Object@profile!='default')
+	{
+		print(concat('subsetting samples from selected profile: ',.Object@profile))
+		.Object@data <- .Object@data[which(.Object@data$profile==.Object@profile),]
+	}
+	.Object@samples <- unique(.Object@data$sample)
+	.Object@subjects <- unique(.Object@data$subject)
+	.Object@groups <- unique(.Object@data$group)
 	
+	.Object@ref.dir <- concat(.Object@out.dir,'/ref')
+	.Object@fastq.dir <- concat(.Object@out.dir,'/fastq')
+	.Object@bam.dir <- concat(.Object@out.dir,'/bam')
+	.Object@vcf.dir <- concat(.Object@out.dir,'/vcf')
+	.Object@qc.dir <- concat(.Object@out.dir,'/qc')
+	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
+	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
+	.Object@tables.dir <- concat(.Object@out.dir,'/tables')
+	.Object@consensus.dir <- concat(.Object@out.dir,'/consensus')
+	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
+
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
 	fastafilename <- concat(.Object@config.dir,'/refs.fasta')
 	data <- loadDataFrame(reffilename, idcol='ref')

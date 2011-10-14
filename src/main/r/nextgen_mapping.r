@@ -1,16 +1,17 @@
-preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables')
+preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,consensus')
 {
 	runCommand('mkdir ',config@out.dir,' -p')
 	for (subdir in splitFields(subdirs))
 	{
 		subdir <- concat(config@out.dir,'/',subdir)
-		runCommand('mkdir ',subdir,' -p; rm ',subdir,'/*')
+		#runCommand('mkdir ',subdir,' -p; rm ',subdir,'/*')
+		runCommand('mkdir ',subdir,' -p')
 	}
 	writeRefs(config)
 	
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
-	#runs <- config@runs
+	#runs <- config@data
 	runCommand('rm -r ',temp.dir,'/*')
 	for (sample in config@samples)
 	{
@@ -19,15 +20,15 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 	}
 	runCommand('')
 	
-	for (run in rownames(config@runs))
+	for (run in rownames(config@data))
 	{
-		row <-  config@runs[run,]
+		row <-  config@data[run,]
 		sample <- row$sample
 		dir.to <- concat(temp.dir,'/',sample)
 		folder <- row$folder
 		barcode <- row$barcode
 		lane <- row$lane
-		dir.from <- concat('../data/',row$dataset,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
+		dir.from <- concat('../data/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
 		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
 		runCommand('cp ', dir.from, filename,' ',dir.to)
 		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq')
@@ -168,7 +169,7 @@ mergeBamsForRef <- function(config,ref)
 	str <- concat(str,' CREATE_INDEX=true')
 	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
 	
-	for (sample in unique(config@runs[which(config@runs$ref==ref),'sample']))
+	for (sample in unique(config@data[which(config@data$ref==ref),'sample']))
 	{
 		ref <- getRefForSample(sample)
 		infile <- concat(tmp.dir,'/',sample,'.bam')
@@ -271,9 +272,33 @@ outputBams <- function(config,samples=NULL,suffix='')
 	{
 		outputBam(config,sample,suffix)
 	}
+	fixBaiFiles(config)
 }
 #outputBams(config)
 #outputBams(config,getSamplesForSubject(config,'10464592'))
+
+writeConsensusForBam <- function(config,sample)
+{
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	fastqfile <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
+	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
+	checkFileExists(fastqfile)
+	fastq2fasta(fastqfile)
+}
+#writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
+
+writeConsensusForBams <- function(config,samples=NULL)
+{
+	if (is.null(samples))
+		samples <- config@samples
+	for (sample in samples)
+	{
+		writeConsensusForBam(config,sample)
+	}
+}
+#writeConsensusForBams(config)
 
 ################################################################3
 
@@ -433,7 +458,8 @@ exportPileup <- function(config, samples=NULL)
 	for (sample in samples)
 	{
 		exportPileupForSample(config,sample,filtered=FALSE)
-		exportPileupForSample(config,sample,filtered=TRUE)
+		if (config@filter)
+			exportPileupForSample(config,sample,filtered=TRUE)
 	}
 }
 #exportPileup(config,getSamplesForSubject(config,'10464592'))

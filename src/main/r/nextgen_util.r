@@ -243,14 +243,10 @@ viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
 }
 #viewBam(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
 
-consensus <- function(config,sample)
+fastq2fasta <- function(infile)
 {
-	ref <- getRefForSample(sample)
-	reffile <- getRefFile(config,ref)
-	bamfile <- concat(config@bam.dir,'/',sample,'.bam')	
-	outfile <- concat(config@tmp.dir,'/',sample,'.consensus.txt')
-	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',outfile)
-	checkFileExists(outfile)
+	str <- 'fastq2fasta.pl'
+	str <- concat(str,' -a ',infile)
+	runCommand(str)
 }
-#consensus(config,'10464592.1__HCV-NS3-156')
-
+#fastq2fasta()
