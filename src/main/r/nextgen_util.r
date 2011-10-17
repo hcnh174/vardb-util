@@ -250,3 +250,61 @@ fastq2fasta <- function(infile)
 	runCommand(str)
 }
 #fastq2fasta()
+
+#######################################################################
+
+getRawReadCounts <- function(config)
+{
+	for (rowname in rownames(config@data))
+	{
+		row <-  config@data[rowname,]
+		dir <- concat(config@tmp.dir,'/',row$sample)
+		filename <- concat(row$folder,'_',row$barcode,'_L00',row$lane,'_R1_001.fastq')
+		kb <- getFileSize(concat(dir,'/',filename))
+		reads <- estimateReadCount(kb/1000)
+		print(concat(filename,': ',reads))
+		config@data[rowname,'reads'] <- reads
+	}
+	runcounts <- config@data[,splitFields('sample,region,reads')]
+	outfile <- concat(config@tmp.dir,'/','readcounts-runs.txt')
+	writeTable(runcounts,outfile,row.names=FALSE)
+	
+	samplecounts <- reshape::cast(runcounts, sample~., value='reads', fun.aggregate=sum)
+	outfile <- concat(config@tmp.dir,'/','readcounts-samples.txt')
+	writeTable(samplecounts,outfile,row.names=FALSE)
+	return(list(runcounts=runcounts, samplecounts=samplecounts))
+}
+#getRawReadCounts(config)
+
+getMapStats <- function(bamfile)
+{
+	checkFileExists(bamfile)
+	total <- as.numeric(system(concat('samtools flagstat ',bamfile,' | awk \'{print $1}\' | head -n 1'), intern=TRUE))
+	mapped <- as.numeric(system(concat('samtools flagstat ',bamfile,' | awk \'{print $1}\' | head -n 3 | tail -n 1'), intern=TRUE))
+	prop <- mapped/total
+	#print(concat('total=',total,', mapped=',mapped,' proportion=',prop))
+	return(list(total=total, mapped=mapped, prop=prop))
+}
+#getMapStats(concat(config@bam.dir,'/','etsuko_yamada__HCV-HCJ4.bam'))
+
+getMappingReport <- function(config)
+{
+	#runcounts <- getRawReadCounts(config)
+	#tbl <- reshape::cast(runcounts, sample~., value='reads', fun.aggregate=sum)
+	#rownames(tbl) <- tbl$sample
+	counts <- data.frame()
+	for (sample in config@samples)
+	{
+		try({
+			stats <- getMapStats( concat(config@bam.dir,'/',sample,'.bam'))
+			print(concat('mapstats for ',sample,': ',stats))
+			counts[sample,'total'] <- stats$total
+			counts[sample,'mapped'] <- stats$mapped
+			counts[sample,'prop'] <- stats$prop
+		})
+	}
+	outfile <- concat(config@tmp.dir,'/','readcounts-mapped.txt')
+	writeTable(counts,outfile,row.names=FALSE)
+	return(counts)
+}
+#getMappingReport(config)

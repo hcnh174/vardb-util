@@ -20,6 +20,11 @@ lattice.options(default.args = list(as.table = TRUE))
 options(contrasts=c("contr.sum","contr.poly"))
 options("width"=200)
 
+concat <- function(...)
+{
+	return(paste(..., sep=''))
+}
+
 loadUtilFiles <- function(filenames)
 {
 	libdir <- Sys.getenv("VARDB_RUTIL_HOME")
@@ -56,10 +61,13 @@ loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.
 runCommand <- function(...)
 {
 	command <- concat(...)
+	#tstmp <- concat('[',format(Sys.time(),'%b %d %H:%M:%S'),']')
+	timestamp()
 	print(command)
 	if (command!='')
 		system(command)
 }
+#runCommand('ls')
 
 getField <- function(data, id, col, msg=concat('cannot find col [',col,'] for row [',id,'] in dataframe'))
 {
@@ -555,11 +563,6 @@ writeTable <- function(table, filename, verbose=TRUE, row.names=TRUE, col.names=
 		print(paste('wrote table to file:',filename))
 }
 
-concat <- function(...)
-{
-	return(paste(..., sep=''))
-}
-
 createFile <- function(file)
 {
 	cat('', file=file)
@@ -570,6 +573,12 @@ appendFile <- function(file, ...)
 	print(concat(...))
 	cat(...,'\n', sep='', file=file, append=TRUE)
 }
+
+getFileSize <- function(filename)
+{
+	return(file.info(filename)$size/1000)
+}
+#getFileSize(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 
 stripPath <- function(filenames)
 {
@@ -672,6 +681,16 @@ checkFileExists <- function(filename)
 		throw(concat('file does not exist: ',filename))
 }
 #checkFileExists('test.txt')
+
+checkFilesExist <- function(...)
+{
+	filenames <- c(...)
+	for (filename in filenames)
+	{
+		checkFileExists(filename)
+	}
+}
+#checkFilesExist('abc.txt','def.txt','ghi.txt')
 
 startsWith <- function(str, target)
 {

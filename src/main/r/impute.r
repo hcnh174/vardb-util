@@ -37,16 +37,17 @@ padChr <- function(n)
 }
 #padChr(2);padChr(20)
 
-createSubfolders <- function(config)
+createSubfolders <- function(config, dir)
 {
 	for (chr in 1:22)
 	{
 		chrstr <- padChr(chr)
-		dir <- concat(config@tmp.dir,'/chr',chrstr)
-		run_command('mkdir ',dir)
+		subdir <- concat(dir,'/chr',chrstr)
+		runCommand('mkdir ',subdir)
 	}
 }
-#createSubfolders(config)
+#createSubfolders(config, config@tmp.dir)
+#createSubfolders(config, config@out.dir)
 
 ############################################################
 
@@ -109,7 +110,7 @@ liftOverChromosome <- function(config, chr, chainfile=concat(config@ref.dir,'/hg
 	str <- concat(str,' ',newbedfile)
 	str <- concat(str,' ',unmappedfile)
 	#print(str)
-	run_command(str)
+	runCommand(str)
 	
 	checkFileExists(newbedfile)	
 	data <- read.table(newbedfile, header=FALSE, sep='\t', stringsAsFactors=FALSE)
@@ -123,9 +124,9 @@ liftOverChromosome <- function(config, chr, chainfile=concat(config@ref.dir,'/hg
 	strandfile2 <- concat(config@in.dir,'/gwas.chr',chrstr,'.hg19.strand')
 	writeTable(data, strandfile2, row.names=FALSE, col.names=FALSE)
 	
-	#run_command('rm ',oldbedfile)
-	#run_command('rm ',newbedfile)
-	#run_command('rm ',unmappedfile)
+	#runCommand('rm ',oldbedfile)
+	#runCommand('rm ',newbedfile)
+	#runCommand('rm ',unmappedfile)
 }
 #liftOverChromosome(config,2)
 
@@ -177,6 +178,8 @@ prephase_interval <- function(config, chr, start, end)
 	strandfile <- concat(config@in.dir,'/gwas.chr',chrstr,'.hg19.strand')
 	outfile <- concat(config@tmp.dir,'/chr',chrstr,'/prephase.',formatInterval(chr,start,end),'.impute2')
 	
+	checkFilesExist(mapfile,genotypefile,strandfile)
+	
 	str <- 'impute2'
 	str <- concat(str,' -phase')
 	str <- concat(str,' -include_buffer_in_output')
@@ -187,7 +190,9 @@ prephase_interval <- function(config, chr, start, end)
 	str <- concat(str,' -Ne ',config@Ne)
 	str <- concat(str,' -o ',outfile)
 	#print(str)
-	run_command(str)
+	runCommand(str)
+	
+	checkFileExists(outfile)
 }
 #prephase_interval(config, 22, 20.4e6, 20.5e6)
 
@@ -230,6 +235,8 @@ impute_interval <- function(config, chr, start, end)
 	knownhapsfile <- concat(config@tmp.dir,'/chr',chrstr,'/prephase.',formatInterval(chr,start,end),'.impute2')
 	outfile <- concat(config@out.dir,'/chr',chrstr,'/impute.',formatInterval(chr,start,end),'.impute2')
 	
+	checkFilesExist(mapfile,refhapfile,legendfile,knownhapsfile)
+	
 	str <- 'impute2'
 	str <- concat(str,' -m ',mapfile)
 	str <- concat(str,' -h ',refhapfile)
@@ -239,14 +246,17 @@ impute_interval <- function(config, chr, start, end)
 	str <- concat(str,' -Ne ',config@Ne)
 	str <- concat(str,' -o ',outfile)
 	#print(str)
-	run_command(str)
+	runCommand(str)
+	
+	checkFileExists(outfile)
 }
 #impute(config, 22, 20.4e6, 20.5e6)
 
-impute_chromosome <- function(config, chr)
+impute_chromosome <- function(config, chr, partitions=NULL)
 {
 	print(concat('impute_chromosome: ',chr))
-	partitions <- partitionChromosome(config,chr)
+	if (is.null(partitions))
+		partitions <- partitionChromosome(config,chr)
 	for (rowname in rownames(partitions))
 	{
 		start <- partitions[rowname,'start']
@@ -283,9 +293,9 @@ snptest_chromosome <- function(config, phenofile, pheno, chr)
 	str <- concat(str,' -data ',infile,' ',phenofile)
 	str <- concat(str,' -o out/',pheno,'-chr',chrstr,'.out')
 	print(str)
-	#run_command(str)
+	#runCommand(str)
 	
-	#run_command("tr -s \"NA\" \""+str(n)+"\" < out/"+pheno+"-chr"+str(n)+".out > out/"+pheno+"-chr"+str(n)+".tmp")
+	#runCommand("tr -s \"NA\" \""+str(n)+"\" < out/"+pheno+"-chr"+str(n)+".out > out/"+pheno+"-chr"+str(n)+".tmp")
 }
 #snptest_chromosome(config,'patients.txt','svr',1)
 
@@ -295,16 +305,16 @@ snptest_chromosome <- function(config, phenofile, pheno, chr)
 
 concatenate_results <- function(pheno)
 {
-	run_command("cat out/"+pheno+"-chr1.tmp > out/"+pheno+".out")	
+	runCommand("cat out/"+pheno+"-chr1.tmp > out/"+pheno+".out")	
 	for (n in 2:23)
 	{
 		print(concat("concatening results for chr ",n))
 		write_chromosome_number(pheno,n)
-		run_command("tail -n +2 out/",pheno,"-chr",n,".tmp >> out/",pheno,".out")
+		runCommand("tail -n +2 out/",pheno,"-chr",n,".tmp >> out/",pheno,".out")
 	}
-	run_command("cut -f 1- --delimiter=' ' --output-delimiter='\t' out/",pheno,".out > out/",pheno,".txt")
-	#run_command("rm out/*.out")
-	#run_command("rm out/*.tmp")
+	runCommand("cut -f 1- --delimiter=' ' --output-delimiter='\t' out/",pheno,".out > out/",pheno,".txt")
+	#runCommand("rm out/*.out")
+	#runCommand("rm out/*.tmp")
 }
 
 snptest <- function(config, phenofile, pheno)
@@ -322,8 +332,8 @@ snptest <- function(config, phenofile, pheno)
 
 #snptest(phenofile,pheno)
 #concatenate_results(pheno)
-#run_command("head out/"+pheno+".txt")
-#run_command("tail out/"+pheno+".txt")
+#runCommand("head out/"+pheno+".txt")
+#runCommand("tail out/"+pheno+".txt")
 #cp out/*.txt ~/analysis/imputed
 
 # python snptest.py ./patients.txt svr

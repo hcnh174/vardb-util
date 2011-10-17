@@ -20,9 +20,9 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 	}
 	runCommand('')
 	
-	for (run in rownames(config@data))
+	for (rowname in rownames(config@data))
 	{
-		row <-  config@data[run,]
+		row <-  config@data[rowname,]
 		sample <- row$sample
 		dir.to <- concat(temp.dir,'/',sample)
 		folder <- row$folder
@@ -34,14 +34,14 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq')
 		runCommand('cp ', dir.from, filename,' ',dir.to)
 	}	
-	runCommand('')
+	#runCommand('')
 	
 	for (sample in config@samples)
 	{
 		dir.from <- concat(temp.dir,'/',sample)
 		runCommand('gunzip ',dir.from,'/*')
 	}
-	runCommand('')
+	#runCommand('')
 	
 	for (sample in config@samples)
 	{
@@ -50,10 +50,13 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 		runCommand('cat ',dir.from,'/* > ',fastqfile)
 		checkFileExists(fastqfile)
 	}
-	runCommand('')
-	runCommand('rm -r ',temp.dir,'/*')
+	
+	#config <- getRawReadCounts(config) 
+	#runCommand('')
+	#runCommand('rm -r ',temp.dir,'/*')
 }
 #preprocess(config)
+
 
 #############################################################
 

@@ -67,7 +67,9 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	if (.Object@profile!='default')
 	{
 		print(concat('subsetting samples from selected profile: ',.Object@profile))
-		.Object@data <- .Object@data[which(.Object@data$profile==.Object@profile),]
+		.Object@profile <- splitFields(.Object@profile)
+		print(.Object@profile)
+		.Object@data <- .Object@data[which(.Object@data$profile %in% .Object@profile),]
 	}
 	.Object@samples <- unique(.Object@data$sample)
 	.Object@subjects <- unique(.Object@data$subject)
