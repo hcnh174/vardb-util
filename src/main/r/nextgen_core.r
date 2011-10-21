@@ -81,6 +81,12 @@ getRefFile <- function(config, ref)
 }
 #getRefFile(config,'HBV-RT')
 
+getRefSequence <- function(config, ref)
+{
+	return(getField(config@refs,ref,'sequence'))
+}
+#getRefSequence(config,'HCV-KT9')
+
 getRegionsForSample <- function(config, sample)
 {
 	return(unique(config@data[which(config@data$sample==sample),'region']))
@@ -175,17 +181,19 @@ getCodonPositionsForGene <- function(config, gene, ref)
 
 calculateCodonPositionsForGene <- function(config, gene, ref)
 {
-	id <- config@genes[which(config@genes$gene==gene & config@genes$ref==ref),'id']
-	gene.start <- config@genes[id,'start']
-	gene.end <- config@genes[id,'end']
-	ref.start <- getField(config@refs,ref,'start')
+	#ref.start <- getField(config@refs,ref,'start')
 	refseq <- getField(config@refs,ref,'sequence')
+	mapref <- getField(config@refs,ref,'mapping')
+	row <- config@genes[which(config@genes$gene==gene & config@genes$ref==mapref),]
+	gene.start <- row$start #config@genes[id,'start']
+	gene.end <- row$end #config@genes[id,'end']	
 	sequence <- extractSequence(refseq, gene.start, gene.end)
 	positions <- splitCodons(sequence, start=gene.start)
 	return(positions)
 }
 #gene <- 'HCV-NS3'; ref <- 'HCV-KT9'
 #positions <- calculateCodonPositionsForGene(config,gene,ref)
+#positions <- calculateCodonPositionsForGene(config,'HCV-NS3','HCV-KT9')
 
 #calculateCodonPositionsForRegion(config,'NS3aa156')
 #calculateCodonPositionsForRegion(config,'NS3aa36')

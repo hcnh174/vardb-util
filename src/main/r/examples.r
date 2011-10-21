@@ -234,3 +234,8 @@ text(ur, mar, names, pos = 4)
 abline(lm(mar ~ ur))
 dev.off()
 
+
+if(.Platform$OS.type=="windows") {
+	quartz<-function() windows()
+}
+

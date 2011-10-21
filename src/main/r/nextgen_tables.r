@@ -232,7 +232,9 @@ writeCodonTable <- function(config, codon.tables, group, region)
 	tbl <- codon.tables[[group]][[region]]
 	#tbl <- applyReplicateLabels(config,tbl,subject)
 	ref <- getRefForGroup(config,group)
-	filename <- concat(config@out.dir,'/tables/table-',group,'-',region,'-',ref,'.txt')
+	identifier <- concat(group,'-',region,'-',ref)
+	filename <- concat(config@out.dir,'/tables/table-',identifier,'.txt')
+	try(colnames(tbl)[1] <-identifier)
 	writeTable(tbl,filename,row.names=FALSE)
 }
 
@@ -250,6 +252,7 @@ writeCodonTables <- function(config, groups=NULL, cutoff=2)
 		}
 	}
 }
+#writeCodonTables(config)
 #writeCodonTables(config,'G9')
 #writeCodonTables(config,'PXB0220-0030')
 

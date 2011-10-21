@@ -85,7 +85,7 @@ findBestFields <- function(data,response,sigfields,verbose=TRUE)
 	#data.sigfields <<- na.omit(data[,c(response,sigfields)])
 	data.sigfields <<- na.omit(data[,c(response,sigfields)])
 	fit <- glm(makeFormula(response,sigfields), data=data.sigfields, na.action=na.fail, family=binomial())
-	step <- stepAIC(fit, direction='both')
+	step <- MASS::stepAIC(fit, direction='both')
 	bestfields <- attr(step$terms,'term.labels')
 	if (verbose)
 	{
@@ -382,6 +382,7 @@ unfactor <- function(data)
 
 plotROC <- function(data, response, fields, fit=NULL, ...)
 {
+	require(ROCR)
 	data <- unfactor(data)
 	fields <- splitFields(fields)
 	if (is.null(fit))
@@ -550,4 +551,10 @@ glmLogisticRegression <- function(data, response, fields, usefields=NULL, filena
 	return(fit)
 }
 #fit.svr <- glmLogisticRegression(data,'svr',fields.svr)
+
+
+calculateLogistic <- function(x)
+{
+	return(exp(x)/(1 + exp(x)))
+}
 

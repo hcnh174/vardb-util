@@ -188,21 +188,44 @@ displayCodons <- function(sequence,start=1)
 #refseq <- config@refs['HCV-KT9','sequence']
 #seq <- config@refs['HCV-KT9-NS3','sequence']
 
-findFragmentStartPosition <- function(config, refseqid, seqid)
+findFragmentStartPosition <- function(refseq, seq)
 {
-	refseq <-  getField(config@refs,refseqid,'sequence')
-	seq <-  getField(config@refs,seqid,'sequence')
+	#refseq <-  getField(config@refs,refseqid,'sequence')
+	#seq <-  getField(config@refs,seqid,'sequence')
 	psa1 <- Biostrings::pairwiseAlignment(pattern = refseq, subject = seq, type='local', gapOpening = -1000000)
 	print(psa1)
 	startnt <- Biostrings::pattern(psa1)@range@start
 	#return(Biostrings::pattern(psa1)@range)
 	endnt <- startnt + nchar(seq) -1 
 	print(concat(startnt,'..',endnt))
-	return(startnt)
+	return(list(start=startnt,end=endnt))
 }
 #findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS3') #3410..5302
 #findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS5A') #6248..7588
 
+mergeFragmentWithReferenceSequence <- function(refseq, seq, sep='')
+{
+	loc <- findFragmentStartPosition(refseq,seq)
+	prefix <- tolower(substring(refseq,1,loc$start-1))
+	suffix <- tolower(substring(refseq,loc$end+1))
+	hybrid <- concat(prefix,sep,toupper(seq),sep,suffix)
+	return(hybrid)
+}
+#refseq <-  getField(config@refs,'HCV-HCJ4','sequence')
+#seq <- getField(config@refs,'HCV-KT9-NS3','sequence')
+#mergeFragmentWithReferenceSequence(refseq,seq)
+
+mergeFragmentsWithReferenceSequence <- function(refseq,seqs)
+{
+	newrefseq <- refseq
+	for (seq in seqs)
+	{
+		newrefseq <- mergeFragmentWithReferenceSequence(newrefseq,seq)
+	}
+	return(newrefseq)
+}
+
+######################################################
 
 getPileupConsensusSequence <- function(config,sample)
 {

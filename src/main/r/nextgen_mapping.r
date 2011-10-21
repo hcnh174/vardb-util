@@ -427,22 +427,35 @@ filterBam <- function(config, sample)
 	checkFileExists(outfile)
 	runCommand('samtools index ',outfile)
 }
+#
+#filterBams <- function(config, samples=NULL)
+#{
+#	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
+#	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
+#	registerDoMC()
+#	if (is.null(samples))
+#		samples <- config@samples
+#	foreach(i=1:length(samples), .combine = cbind) %dopar% {
+#		sample <- as.character(samples[i])
+#		print(concat('filter_bam: ',sample))
+#		try(filterBam(config,sample))
+#		sample
+#	}
+#}
+##filterBams(config)
 
 filterBams <- function(config, samples=NULL)
 {
-	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	registerDoMC()
 	if (is.null(samples))
 		samples <- config@samples
-	foreach(i=1:length(samples), .combine = cbind) %dopar% {
-		sample <- as.character(samples[i])
+	for (sample in samples)
+	{
 		print(concat('filter_bam: ',sample))
 		try(filterBam(config,sample))
-		sample
 	}
 }
 #filterBams(config)
+
 
 ####################################################
 

@@ -71,10 +71,23 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 		print(.Object@profile)
 		.Object@data <- .Object@data[which(.Object@data$profile %in% .Object@profile),]
 	}
+	
+	subjects <- loadDataFrame(concat(.Object@config.dir,'/subjects.txt'), idcol='id')
+	for (row in row.names(.Object@data))
+	{
+		subject <- .Object@data[row,'subject']
+		stem <- .Object@data[row,'stem']
+		ref <- subjects[subject,'ref']
+		sample <- concat(stem,'__',ref)
+		.Object@data[row,'ref'] <- ref
+		.Object@data[row,'sample'] <- sample
+		#print(sample)
+	}	
+	
 	.Object@samples <- unique(.Object@data$sample)
 	.Object@subjects <- unique(.Object@data$subject)
 	.Object@groups <- unique(.Object@data$group)
-	
+
 	.Object@ref.dir <- concat(.Object@out.dir,'/ref')
 	.Object@fastq.dir <- concat(.Object@out.dir,'/fastq')
 	.Object@bam.dir <- concat(.Object@out.dir,'/bam')
