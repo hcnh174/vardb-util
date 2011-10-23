@@ -500,6 +500,14 @@ intersectValues <- function(values1, values2)
 }
 #intersectValues('A,B,C','B,D')
 
+excludeColumns <- function(data, cols)
+{
+	cols <- splitFields(cols)
+	keep <- removeElements(colnames(data),cols)
+	return(data[,keep])
+}
+#data <- excludeColumns(data,'constant1,constant2')
+
 ######################################################3
 
 getCounts <- function(data, field, values, separator='|')
@@ -722,5 +730,15 @@ printParams <- function(...)
 	print(joinFields(arr,', '))
 }
 #printParams(region,ref)
+
+setLatticePropertyField <- function(property,field,value)
+{
+	oldprop <- trellis.par.get(property)
+	prop <- oldprop
+	prop[[field]] <- value
+	trellis.par.set(property,prop)
+	return(oldprop)
+}
+#setLatticePropertyField('strip.background','col','red')
 
 
