@@ -19,7 +19,12 @@ library(R.oo)
 lattice.options(default.args = list(as.table = TRUE))
 options(contrasts=c("contr.sum","contr.poly"))
 options("width"=200)
+options(warnPartialMatchArgs=TRUE)
+options(warnPartialMatchAttr=TRUE)
+options(warnPartialMatchDollar=TRUE)
 
+#################################################################
+		
 concat <- function(...)
 {
 	return(paste(..., sep=''))

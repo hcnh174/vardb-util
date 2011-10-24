@@ -239,3 +239,4 @@ if(.Platform$OS.type=="windows") {
 	quartz<-function() windows()
 }
 
+# results of last expression saved in .Last.value
