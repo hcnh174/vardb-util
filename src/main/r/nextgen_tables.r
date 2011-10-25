@@ -82,131 +82,13 @@ makeVariantTables <- function(config, type, group=NULL, ...)
 	return(tables)
 }
 #tables <- makeVariantTables(config, 'codons', 'PXB0220-0030')
-#tables <- makeVariantTables(config, 'codons', 'G9')
-#tables <- makeVariantTables(config, 'codons', '8538159')
-#
-#makeVariantTables <- function(config, type, subject=NULL, ...)
-#{
-#	if (is.null(subject))
-#		subjects <- config@subjects
-#	else subjects <- splitFields(subject)
-#	tables <- list()
-#	for (subject in subjects)
-#	{
-#		tables[[subject]] <- list()
-#		for (region in getRegionsForSubject(config,subject))
-#		{
-#			#try({
-#			#print(concat('subject=',subject,', region=',region))
-#			tbl <- makeVariantTable(config, type, subject, region, ...)
-#			tables[[subject]][[region]] <- tbl
-#			#}, silent=FALSE)
-#		}
-#	}
-#	return(tables)
-#}
-#tables <- makeVariantTables(config, 'codons')
-#tables <- makeVariantTables(config, 'codons', '8538159')
-#tables <- makeVariantTables(config, 'codons', '10348001')
 
 getSubjectsByGoal <- function(config, goal)
 {
 	return(unique(config@runs[which(config@runs$goal==goal),'subject']))
 }
 #getSubjectsByGoal(config,'goal1')
-#
-#makeVariantTablesByGoal <- function(config, type, goal=NULL, ...)
-#{
-#	if (is.null(goals))
-#		goals <- rownames(config@goals)
-#	else goals <- splitFields(goal)
-#	tables <- list()
-#	for (goal in goals)
-#	{
-#		for (subject in getSubjectsByGoal(config,goal))
-#		{
-#			tables[[subject]] <- list()
-#			for (region in getRegionsForSubject(config,subject))
-#			{
-#				#try({
-#				#print(concat('subject=',subject,', region=',region))
-#				tbl <- makeVariantTable(config, type, subject, region, ...)
-#				tables[[subject]][[region]] <- tbl
-#				#}, silent=FALSE)
-#			}
-#		}
-#	}
-#	return(tables)
-#}
-#tables <- makeVariantTables(config, 'codons')
-#tables <- makeVariantTables(config, 'codons', '8538159')
-#tables <- makeVariantTables(config, 'codons', '10348001')
 
-appendVariantTablesToWord <- function(tables)
-{
-	for (subject in names(tables))
-	{
-		wdHeading(level=2,concat('Subject: ',subject))
-		for (region in names(tables[[subject]]))
-		{
-			wdHeading(level=2,concat('Region: ',region))
-			tbl <- tables[[subject]][[region]]
-			tbl <- replaceNAs(tbl)
-			tbl <- format(tbl)			
-			wdTable(tbl)
-		}
-		wdPageBreak()
-	}
-}
-
-
-outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc',...)
-{
-	filename <- concat(getwd(),'/',config@out.dir,filename)
-	
-	#codon.tables <- makeCodonTables(config,subjects,...)
-	#aa.tables <- makeAminoAcidTables(config,subjects,...)
-	
-	codon.tables <- makeVariantTables(config,'codons',subjects,...)
-	aa.tables <- makeVariantTables(config,'aa',subjects,...)
-	
-	wdGet(visible=FALSE)
-	wdNewDoc(filename)
-	wdSection('Codon tables', newpage=FALSE)
-	appendVariantTablesToWord(codon.tables)
-	wdSection('Amino acid tables', newpage=TRUE)
-	appendVariantTablesToWord(aa.tables)
-	wdSave(filename)
-	wdQuit()
-}
-#outputVariantTablesToWord()
-#
-#getLabelForReplicate <- function(config, subject, replicate)
-#{
-#	value <- unique(config@runs[which(config@runs$subject==subject & config@runs$replicate==replicate),'label'])
-#	if (length(value)>1)
-#		throw('more than one label found for replicate: subject=',subject,', replicate=',replicate,': ',joinFields(value))
-#	return(value)
-#}
-##getLabelForReplicate(config,'KT9',1)
-#
-#applyReplicateLabels <- function(config, tbl, subject)
-#{
-#	cols <- c()
-#	for (col in colnames(tbl))
-#	{
-#		if (col %in% c('codon','aa'))
-#			cols <- c(cols,col)
-#		else
-#		{
-#			col <- getLabelForReplicate(config,subject,col)
-#			cols <- c(cols,col)
-#		}
-#	}
-#	colnames(tbl) <- cols
-#	return(tbl)
-#}
-##applyReplicateLabels(config, codon.tables[['PXB0220-0002']][['NS5Aaa31']],'PXB0220-0002')
 
 appendVariantTablesToLatex <- function(config,tables)
 {
@@ -230,19 +112,15 @@ appendVariantTablesToLatex <- function(config,tables)
 writeCodonTable <- function(config, codon.tables, group, region)
 {
 	tbl <- codon.tables[[group]][[region]]
-	#tbl <- applyReplicateLabels(config,tbl,subject)
 	ref <- getRefForGroup(config,group)
 	identifier <- concat(group,'-',region,'-',ref)
 	filename <- concat(config@out.dir,'/tables/table-',identifier,'.txt')
-	try(colnames(tbl)[1] <-identifier)
+	try(colnames(tbl)[1] <-identifier, silent=FALSE)
 	writeTable(tbl,filename,row.names=FALSE)
 }
 
-writeCodonTables <- function(config, groups=NULL, cutoff=2)
+writeCodonTables <- function(config, groups=config@groups, cutoff=2)
 { 
-	if (is.null(groups))
-		groups <- config@groups
-	else groups <- splitFields(groups)
 	codon.tables <- makeVariantTables(config,'codons',groups,cutoff=cutoff)
 	for (group in groups)
 	{
@@ -251,8 +129,9 @@ writeCodonTables <- function(config, groups=NULL, cutoff=2)
 			writeCodonTable(config, codon.tables, group, region)
 		}
 	}
+	return(codon.tables)
 }
-#writeCodonTables(config)
-#writeCodonTables(config,'G9')
+#codon.tables <- writeCodonTables(config)
+#writeCodonTables(config,'confirm_with_new_reagents')
 #writeCodonTables(config,'PXB0220-0030')
 

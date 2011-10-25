@@ -1,4 +1,4 @@
-preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,consensus')
+preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,consensus')
 {
 	runCommand('mkdir ',config@out.dir,' -p')
 	for (subdir in splitFields(subdirs))
@@ -11,16 +11,14 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 	
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
-	#runs <- config@data
 	runCommand('rm -r ',temp.dir,'/*')
-	for (sample in config@samples)
+	for (sample in samples)
 	{
 		dir.to <- concat(temp.dir,'/',sample)
 		runCommand('mkdir ',dir.to)
 	}
-	runCommand('')
 	
-	for (rowname in rownames(config@data))
+	for (rowname in rownames(config@data[which(config@data$sample %in% samples),]))
 	{
 		row <-  config@data[rowname,]
 		sample <- row$sample
@@ -34,16 +32,14 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq')
 		runCommand('cp ', dir.from, filename,' ',dir.to)
 	}	
-	#runCommand('')
 	
-	for (sample in config@samples)
+	for (sample in samples)
 	{
 		dir.from <- concat(temp.dir,'/',sample)
 		runCommand('gunzip ',dir.from,'/*')
 	}
-	#runCommand('')
 	
-	for (sample in config@samples)
+	for (sample in samples)
 	{
 		dir.from <- concat(temp.dir,'/',sample)
 		fastqfile <- concat(fastq.dir,'/',sample,'.fastq')
@@ -52,7 +48,6 @@ preprocess <- function(config, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileu
 	}
 	
 	#config <- getRawReadCounts(config) 
-	#runCommand('')
 	#runCommand('rm -r ',temp.dir,'/*')
 }
 #preprocess(config)
@@ -73,18 +68,15 @@ trimSolexaqa <- function(config,sample)
 	setwd(olddir)
 }
 #trimSolexaqa(config,'PXB0220-0002.wk13')
-#cd out/fastq; DynamicTrim.pl PXB0220-0002.wk13.fastq
-#LengthSort.pl PXB0220-0002.wk13.fastq.trimmed
 
-trimAll <- function(config)
+trimSamples <- function(config, samples=config@samples)
 {
-	for (sample in config@samples)
+	for (sample in samples)
 	{
 		trimSolexaqa(config,sample)
-		#trimPrinseq(config,sample)
 	}
 }
-#trimAll(config)
+#trimSamples(config)
 
 ######################################################################
 
@@ -110,7 +102,7 @@ addReadGroups <- function(config, sample)
 }
 #addReadGroups(config,'110617HBV.HBV07@HBV-RT')
 
-runBwa <- function(config, sample)#, .trimmed.fastq #, q=20
+runBwa <- function(config, sample)
 {
 	fastq.ext <- ifelse(config@trim,'.trimmed.fastq','.fastq')
 	ref <- getRefForSample(sample)
@@ -132,21 +124,15 @@ runBwa <- function(config, sample)#, .trimmed.fastq #, q=20
 	#runCommand('rm ',saifile)
 }
 #runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
-#runBwa(config,'110617HBV-1.10348001.20020624__HBV-RT')
-#runBwa(config,'110617HBV-1.10348001.20040128__HBV-RT')
-#runBwa(config,'110617HBV-1.10348001.20040315__HBV-RT')
-#runBwa(config,'110617HBV-1.10348001.20040804__HBV-RT')
-#runBwa(config,'110628-1.PXB0220-0030.13__HCV-NS5A-31')
 
-mapReads <- function(config, samples=NULL)
+mapReads <- function(config, samples=config@samples)
 {
-	if (is.null(samples))
-		samples <- config@samples
 	for (sample in samples)
 	{
 		print(concat('runBwa: ',sample))
 		try(runBwa(config,sample))
 	}
+	outputBams(config, samples)
 }
 #mapReads(config)
 #mapReads(config, getSamplesForSubject(config,'10464592'))
@@ -267,10 +253,8 @@ outputBam <- function(config,sample,suffix='')
 }
 #outputBam(config,'merged','.realigned.recal')
 
-outputBams <- function(config,samples=NULL,suffix='')
+outputBams <- function(config,samples=config@samples,suffix='')
 {
-	if (is.null(samples))
-		samples <- config@samples
 	for (sample in samples)
 	{
 		outputBam(config,sample,suffix)
@@ -292,10 +276,8 @@ writeConsensusForBam <- function(config,sample)
 }
 #writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
 
-writeConsensusForBams <- function(config,samples=NULL)
+writeConsensusForBams <- function(config,samples=config@samples)
 {
-	if (is.null(samples))
-		samples <- config@samples
 	for (sample in samples)
 	{
 		writeConsensusForBam(config,sample)
@@ -444,10 +426,8 @@ filterBam <- function(config, sample)
 #}
 ##filterBams(config)
 
-filterBams <- function(config, samples=NULL)
+filterBams <- function(config, samples=config@samples)
 {
-	if (is.null(samples))
-		samples <- config@samples
 	for (sample in samples)
 	{
 		print(concat('filter_bam: ',sample))
@@ -467,10 +447,8 @@ exportPileupForSample <- function(config,sample,filtered=TRUE)
 }
 #exportPileupForSample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
 
-exportPileup <- function(config, samples=NULL)
+exportPileup <- function(config, samples=config@samples)
 {
-	if (is.null(samples))
-		samples <- config@samples
 	for (sample in samples)
 	{
 		exportPileupForSample(config,sample,filtered=FALSE)
@@ -484,22 +462,15 @@ exportPileup <- function(config, samples=NULL)
 
 countCodons <- function(config, groups=NULL)
 {
-	#require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-	#require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-	#registerDoMC() #cores=4
 	if (is.null(groups))
 		groups <- config@groups	
-	#foreach(i=1:length(subjects), .combine = cbind) %dopar% {
-	for (i in 1:length(groups))
+	for (group in groups)
 	{
-		group <- as.character(groups[i])
 		print(concat('countCodonsForGroup: ',group))
 		try(countCodonsForGroup(config, group))
-		#group
 	}
 }
-#countCodons(config,config@groups[-1]) #skip the first one
-#countCodons(config,'10464592')
+#countCodons(config,'confirm_with_new_reagents')
 
 makePiecharts <- function(config)
 {

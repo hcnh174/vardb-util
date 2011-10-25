@@ -169,3 +169,42 @@ getVariantCounts <- function(config, subject, replicate, ranges=NULL)
 #}
 #extractRefSequence(config,'KT9',3420,5312)
 
+
+appendVariantTablesToWord <- function(tables)
+{
+	for (subject in names(tables))
+	{
+		wdHeading(level=2,concat('Subject: ',subject))
+		for (region in names(tables[[subject]]))
+		{
+			wdHeading(level=2,concat('Region: ',region))
+			tbl <- tables[[subject]][[region]]
+			tbl <- replaceNAs(tbl)
+			tbl <- format(tbl)			
+			wdTable(tbl)
+		}
+		wdPageBreak()
+	}
+}
+
+
+outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc',...)
+{
+	filename <- concat(getwd(),'/',config@out.dir,filename)
+	
+	#codon.tables <- makeCodonTables(config,subjects,...)
+	#aa.tables <- makeAminoAcidTables(config,subjects,...)
+	
+	codon.tables <- makeVariantTables(config,'codons',subjects,...)
+	aa.tables <- makeVariantTables(config,'aa',subjects,...)
+	
+	wdGet(visible=FALSE)
+	wdNewDoc(filename)
+	wdSection('Codon tables', newpage=FALSE)
+	appendVariantTablesToWord(codon.tables)
+	wdSection('Amino acid tables', newpage=TRUE)
+	appendVariantTablesToWord(aa.tables)
+	wdSave(filename)
+	wdQuit()
+}
+#outputVariantTablesToWord()

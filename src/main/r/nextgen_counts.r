@@ -196,43 +196,14 @@ countCodonsForSample <- function(config, params, variantdata)
 	data <- loadPileupData(config,params@sample)
 	for (region in getRegionsForSample(config,params@sample))
 	{
-		params@region <- region
-		variantdata <- countCodonsForRegion(config, data, params, variantdata)
+		try({
+			params@region <- region
+			variantdata <- countCodonsForRegion(config, data, params, variantdata)
+		}, silent=FALSE)
 	}
 	return(variantdata)
 }
 #countCodonsForSample(config,params,variantdata)
-
-#countCodonsForSubject <- function(config, subject)
-#{
-#	#if (is.character(params))
-#	params <- new('sampleparams', subject=params)
-#	print(concat('countCodonsForSubject: ',as.character(params@subject)))
-#	variantdata <- new('variantdata')
-#	samples <- config@data[which(config@data$subject==params@subject),]
-#	if (nrow(samples)==0)
-#		stop(concat('cannot find any samples for subject ',params@subject))
-#	for (sample in unique(samples[,'sample']))
-#	{
-#		params@sample <- sample
-#		params@replicate <- unique(samples[which(samples$sample==sample),'replicate'])
-#		if (length(params@replicate)>1)
-#			throw('more than one replicate for sample: sample=',sample,', replicates=',params@replicate)
-#		params@ref <- getRefForSample(sample)
-#		try({variantdata <- countCodonsForSample(config, params, variantdata)}, silent=FALSE)
-#	}
-#	counts.dir <- concat(config@counts.dir,'/')
-#	writeTable(variantdata@nt, concat(counts.dir,params@subject,'.nt.txt'), row.names=FALSE)
-#	writeTable(variantdata@codons, concat(counts.dir,params@subject,'.codons.txt'), row.names=FALSE)
-#	writeTable(variantdata@aa, concat(counts.dir,params@subject,'.aa.txt'), row.names=FALSE)
-#	return(variantdata)
-#}
-#params <- new('sampleparams', subject='KT9', sample='KT9.plasmid__KT9', region='NS3aa156', replicate=1)
-#counts <- count_codons_for_subject(config,'PXB0220-0030')
-#counts <- count_codons_for_subject(config,'KT9')
-#counts <- count_codons_for_subject(config,'10348001')
-#counts <- count_codons_for_subject(config, '10201689')
-#counts <- count_codons_for_subject(config, '11323912')
 
 countCodonsForGroup <- function(config, group)
 {

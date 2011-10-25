@@ -19,9 +19,9 @@ library(R.oo)
 lattice.options(default.args = list(as.table = TRUE))
 options(contrasts=c("contr.sum","contr.poly"))
 options("width"=200)
-options(warnPartialMatchArgs=TRUE)
-options(warnPartialMatchAttr=TRUE)
-options(warnPartialMatchDollar=TRUE)
+#options(warnPartialMatchArgs=TRUE)
+#options(warnPartialMatchAttr=TRUE)
+#options(warnPartialMatchDollar=TRUE)
 
 #################################################################
 		
@@ -67,7 +67,9 @@ runCommand <- function(...)
 {
 	command <- concat(...)
 	#tstmp <- concat('[',format(Sys.time(),'%b %d %H:%M:%S'),']')
-	timestamp()
+	tstmp <- concat('[',Sys.time(),']')
+	#timestamp()
+	print(tstmp)
 	print(command)
 	if (command!='')
 		system(command)

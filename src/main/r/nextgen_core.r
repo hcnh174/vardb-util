@@ -46,15 +46,6 @@ getRefForSample <- function(sample)
 }
 #getRefForSample('10348001.20040315__HBV-RT.filtered')
 
-#get_ref_for_subject <- function(config, subject, region)
-#{
-#	ref <- unique(config@data[which(config@data$subject==subject & config@data$region==region),'ref'])
-#	if (length(ref)>1)
-#		throw('multiple refs found for subject+region: ',joinFields(ref,','))
-#	return(ref)
-#}
-#get_ref_for_subject(config,'PXB0218-0007','NS3aa156')
-
 getRefForSubject <- function(config, subject)
 {
 	ref <- unique(config@data[which(config@data$subject==subject),'ref'])
@@ -63,15 +54,26 @@ getRefForSubject <- function(config, subject)
 	return(ref)
 }
 #getRefForSubject(config,'CTE247-21')
+#
+#getRefForGroup <- function(config, group)
+#{
+#	ref <- unique(config@data[which(config@data$group==group),'ref'])
+#	if (length(ref)>1)
+#		throw('multiple refs found for group+region: ',joinFields(ref,','))
+#	return(ref)
+#}
+##getRefForGroup(config,'G9')
 
 getRefForGroup <- function(config, group)
 {
-	ref <- unique(config@data[which(config@data$group==group),'ref'])
-	if (length(ref)>1)
-		throw('multiple refs found for group+region: ',joinFields(ref,','))
-	return(ref)
+	refs <- unique(config@data[which(config@data$group==group),'ref'])
+	#print(refs)
+	mapref <- unique(config@refs[which(config@refs$ref %in% refs),'mapping'])
+	if (length(mapref)>1)
+		throw('multiple mapping refs found for group+region: ',joinFields(mapref,','))
+	return(mapref)
 }
-#getRefForGroup(config,'G9')
+#getRefForGroup(config,'NS3_NS5A_inhibitors')
 
 getRefFile <- function(config, ref)
 {
