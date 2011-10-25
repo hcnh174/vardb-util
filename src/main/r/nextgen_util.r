@@ -331,3 +331,13 @@ getMappingReport <- function(config)
 	return(counts)
 }
 #getMappingReport(config)
+
+bambino <- function(config, sample)
+{
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	runCommand('java -Xmx3072m -cp $BAMBINO_HOME/bambino_bundle_1.03.jar Ace2.AceViewer -bam ',bamfile,' -fasta ',reffile)
+}
+#bambino(config,'KT9.plasmid__KT9')
+

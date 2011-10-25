@@ -139,15 +139,6 @@ mapReads <- function(config, samples=config@samples)
 
 ############################################
 
-bambino <- function(config, sample)
-{
-	bamfile <- concat(config@tmp.dir,'/',sample,'.bam')
-	ref <- getRefForSample(sample)
-	reffile <- getRefFile(config,ref)
-	runCommand('java -Xmx3072m -cp $BAMBINO_HOME/bambino_bundle_1.03.jar Ace2.AceViewer -bam ',bamfile,' -fasta ',reffile)
-}
-#bambino(config,'KT9.plasmid__KT9')
-
 mergeBamsForRef <- function(config,ref)
 {
 	tmp.dir <- config@tmp.dir
@@ -460,17 +451,24 @@ exportPileup <- function(config, samples=config@samples)
 
 ################################################
 
-countCodons <- function(config, groups=NULL)
+countCodons <- function(config, samples=config@samples)
 {
-	if (is.null(groups))
-		groups <- config@groups	
-	for (group in groups)
+	for (sample in config@samples)
 	{
-		print(concat('countCodonsForGroup: ',group))
-		try(countCodonsForGroup(config, group))
+		countCodonsForSample(config,sample)
 	}
 }
-#countCodons(config,'confirm_with_new_reagents')
+#countCodons(config)
+
+#countCodons <- function(config, groups=config@groups)
+#{	
+#	for (group in groups)
+#	{
+#		print(concat('countCodonsForGroup: ',group))
+#		try(countCodonsForGroup(config, group))
+#	}
+#}
+##countCodons(config,'confirm_with_new_reagents')
 
 makePiecharts <- function(config)
 {
@@ -479,6 +477,27 @@ makePiecharts <- function(config)
 #makePiecharts(config)
 
 ###############################################################
+
+analyzeReadsForSample <- function(config,sample)
+{
+	preprocess(config,sample)
+	trimSamples(config,sample)
+	mapReads(config,sample)
+	filterBams(config,sample)
+	writeConsensusForBams(config,sample)
+	exportPileup(config,sample)
+	countCodons(config,sample)
+}
+#analyzeReadsForSample(config,'KT9.random__HCV-KT9')
+
+analyzeReadsForGroup <- function(config,group)
+{
+	samples <- getSamplesForGroup(config,group)
+	analyzeReadsForSample(config,samples)
+	writeCodonTables(config,group)
+}
+#analyzeReadsForGroup(config,'KT9')
+
 
 #
 #analyzeReads<- function(config)

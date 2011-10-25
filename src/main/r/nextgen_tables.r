@@ -1,14 +1,36 @@
+#getCodonCountSubset <- function(config, group, region, filetype, start, end=start, cutoff=0)
+#{
+#	filename <- concat(config@counts.dir,'/',group,'.',filetype,'.txt')
+#	data <- loadDataFrame(filename)
+#	data.subset <- data[which(data$region==region & data$aanum>=start & data$aanum<=end & data$count>=cutoff),]
+#	#data.subset$replicate <- factor(data.subset$replicate)
+#	data.subset$label <- factor(data.subset$label)
+#	data.subset$aanum <- factor(data.subset$aanum)
+#	return(data.subset)
+#}
+##getCodonCountSubset(config,'G9','NS3aa36','codons',36)
+
 getCodonCountSubset <- function(config, group, region, filetype, start, end=start, cutoff=0)
 {
-	filename <- concat(config@counts.dir,'/',group,'.',filetype,'.txt')
-	data <- loadDataFrame(filename)
+	samples <- getSamplesForGroup(config,group)
+	data <- NULL
+	for (sample in samples)
+	{
+		filename <- getCodonCountFilename(config,sample,filetype)
+		data.sample <- loadDataFrame(filename)
+		print(head(data.sample))
+		if (is.null(data))
+			data <- data.sample
+		else data <- rbind(data,data.sample)
+	}
+	print(head(data))
 	data.subset <- data[which(data$region==region & data$aanum>=start & data$aanum<=end & data$count>=cutoff),]
-	#data.subset$replicate <- factor(data.subset$replicate)
+	print(head(data.subset))
 	data.subset$label <- factor(data.subset$label)
 	data.subset$aanum <- factor(data.subset$aanum)
 	return(data.subset)
 }
-#getCodonCountSubset(config,'G9','NS3aa36','codons',36)
+#getCodonCountSubset(config,'KT9','NS3aa36','codons')
 
 makeVariantTable <- function(config, type, group, region, cutoff=0)
 {
@@ -55,11 +77,6 @@ makeVariantTable <- function(config, type, group, region, cutoff=0)
 	return(counts)
 }
 #makeVariantTable(config,'aa','G9','NS3aa36')
-#makeVariantTable(config,'aa','KT9','NS3aa156')
-#makeVariantTable(config,'aa','KT9','NS3aa156')
-#makeVariantTable(config,'codons','KT9','NS3aa156')
-#makeVariantTable(config,'codons','8538159','NS3-156-R@NS3aa156')
-
 
 makeVariantTables <- function(config, type, group=NULL, ...)
 {

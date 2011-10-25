@@ -116,27 +116,28 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	.Object
 })
 
+#perform checks
+#if (length(params@label)>1)
+#throw('more than one label for sample: sample=',sample,', labels=',params@label)
+
 ##############################################################
 
 setClass("variantdata",
-		representation(nt="data.frame",
-			codons="data.frame",
-			aa="data.frame"))
+	representation(nt="data.frame",
+		codons="data.frame",
+		aa="data.frame"))
 
 ##############################################################
 
 setClass("sampleparams",
-		representation(
-				group='character',
-				subject='character',
-				sample='character',
-				label='character',
-				#replicate='numeric',
-				ref='character',
-				region='character',
-				drop.ambig='logical',
-				nt.cutoff='numeric'),
-		prototype(drop.ambig=TRUE,
-				nt.cutoff=0))
+	representation(
+		group='character',
+		subject='character',
+		sample='character',
+		label='character',
+		ref='character',
+		region='character'
+	)
+)
 
 ##############################################################

@@ -31,6 +31,13 @@ getSamplesForSubject <- function(config, subject)
 }
 #getSamplesForSubject(config,'10348001')
 
+getSamplesForGroup <- function(config, group)
+{
+	samples <- unique(config@data[which(config@data$group==group),'sample'])
+	return(samples)
+}
+#getSamplesForGroup(config,'KT9')
+
 getReplicatesForSubject <- function(config, subject)
 {
 	replicates <- config@samples[which(config@samples$subject==subject),c('replicate')]	
