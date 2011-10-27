@@ -27,3 +27,7 @@ analyzeReads(config)
 
 #Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r out=out
 
+for (group in removeElements(config@groups,'KT9'))
+{
+	analyzeReadsForGroup(config,group)
+}

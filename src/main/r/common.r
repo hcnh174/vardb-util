@@ -63,6 +63,12 @@ loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.
 #temporarily alias the old version
 #loadDataframe <- loadDataFrame
 
+appendLog <- function(str, logfile='commands.log')
+{
+	str <- concat(str,'\n')
+	cat(str,file=logfile,append=TRUE)
+}
+
 runCommand <- function(...)
 {
 	command <- concat(...)
@@ -72,7 +78,10 @@ runCommand <- function(...)
 	print(tstmp)
 	print(command)
 	if (command!='')
+	{
 		system(command)
+		appendLog(command)
+	}
 }
 #runCommand('ls')
 

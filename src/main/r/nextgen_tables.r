@@ -131,7 +131,7 @@ writeCodonTable <- function(config, codon.tables, group, region)
 	tbl <- codon.tables[[group]][[region]]
 	ref <- getRefForGroup(config,group)
 	identifier <- concat(group,'-',region,'-',ref)
-	filename <- concat(config@out.dir,'/tables/table-',identifier,'.txt')
+	filename <- concat(config@tables.dir,'/table-',identifier,'.txt')
 	try(colnames(tbl)[1] <-identifier, silent=FALSE)
 	writeTable(tbl,filename,row.names=FALSE)
 }
@@ -151,4 +151,8 @@ writeCodonTables <- function(config, groups=config@groups, cutoff=2)
 #codon.tables <- writeCodonTables(config)
 #writeCodonTables(config,'confirm_with_new_reagents')
 #writeCodonTables(config,'PXB0220-0030')
+
+#################################################################
+
+#require(XLConnect)
 

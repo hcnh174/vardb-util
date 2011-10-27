@@ -63,7 +63,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
 	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
 	#try(.Object@goals <- loadDataFrame(concat(.Object@config.dir,'/goals.txt'), idcol='id'))
-	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'))#, idcol='id'
+	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')#
 	if (.Object@profile!='default')
 	{
 		print(concat('subsetting samples from selected profile: ',.Object@profile))
@@ -76,7 +76,19 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	for (row in row.names(.Object@data))
 	{
 		subject <- .Object@data[row,'subject']
-		stem <- .Object@data[row,'stem']
+		col <- .Object@data[row,'column']
+		stem <- subject
+		if (is.na(col) | col=='')
+		{
+			col <- subject
+			.Object@data[row,'column'] <- col
+		}
+		else 
+		{
+			stem <- concat(subject,'.',col)
+		}
+		
+		.Object@data[row,'stem'] <- stem
 		ref <- subjects[subject,'ref']
 		sample <- concat(stem,'__',ref)
 		.Object@data[row,'ref'] <- ref

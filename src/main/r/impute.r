@@ -261,7 +261,7 @@ impute_chromosome <- function(config, chr, partitions=NULL)
 	{
 		start <- partitions[rowname,'start']
 		end <- partitions[rowname,'end']
-		impute_interval(config,chr,start,end)
+		try(impute_interval(config,chr,start,end))
 	}
 }
 #impute_chromosome(config,19)
@@ -271,7 +271,7 @@ impute <- function(config)
 	print('prephase')
 	for (chr in 1:23)
 	{		
-		impute_chromosome(config,chr)
+		try(impute_chromosome(config,chr))
 	}
 }
 #impute(config)

@@ -476,6 +476,19 @@ makePiecharts <- function(config)
 }
 #makePiecharts(config)
 
+concatTablesByGroup <- function(config, groups=config@groups)
+{
+	for (group in groups)
+	{
+		infiles <- concat(config@tables.dir,'/table-',group,'*.txt')
+		outfile <- concat(config@tables.dir,'/group-',group,'.txt')
+		#runCommand('cat ',infiles,' > ',outfile)
+		runCommand('tail -n +1 ',infiles,' > ',outfile)
+	}
+}
+#concatTablesByGroup(config)
+#concatTablesByGroup(config,'PXB0219-0011')
+
 ###############################################################
 
 analyzeReadsForSample <- function(config,sample)
