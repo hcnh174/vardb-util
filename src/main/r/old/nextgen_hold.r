@@ -208,3 +208,9 @@ outputVariantTablesToWord <- function(subjects=NULL, filename='tables.doc',...)
 	wdQuit()
 }
 #outputVariantTablesToWord()
+
+getSubjectsByGoal <- function(config, goal)
+{
+	return(unique(config@runs[which(config@runs$goal==goal),'subject']))
+}
+#getSubjectsByGoal(config,'goal1')

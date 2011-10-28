@@ -7,6 +7,54 @@ loadConfig <- function(dir=NULL)
 	return(config)
 }
 
+readFastaFile <- function(filename)
+{
+	print(filename)
+	seqs <- read.fasta(file=filename, as.string=TRUE, seqtyp='DNA', forceDNAtolower=TRUE)
+	data <- list()
+	for (id in names(seqs))
+	{
+		newid <- strsplit(id,'\\|')[[1]][1]
+		data[[newid]] <- trim(seqs[[id]][1])
+	}
+	return(data)
+}
+#readFastaFile('../config/merged/fragments.fasta')
+
+# reads multiple fasta files and returns results in a single list
+readFastaFiles <- function(dir, pattern='*.fasta')
+{
+	filenames <- list.files(dir,pattern)
+	print(filenames)
+	data <- list()
+	for (filename in filenames)
+	{
+		data.file <- readFastaFile(concat(dir,'/',filename))
+		print(head(data.file))
+		data <- append(data, data.file)
+	}
+	return(data)
+}
+#readFastaFiles('../config/merged','^refs.*\\.fasta')
+
+
+writeFastaFile <- function(filename, seqs, ids=names(seqs))
+{
+	if (class(seqs)=='character')
+	{
+		seq <- seqs
+		seqs <- list()
+		seqs[[ids]] <- seq
+	}
+	for (id in names(seqs))
+	{
+		seqs[[id]] <- s2c(seqs[[id]])
+	}
+	write.fasta(seqs, ids, file.out=filename)
+}
+#writeFastaFile('','aaaccccgggttt','HCV1')
+#seqs <- list(); seqs[['HCV1']] <- 'aaaccccgggttt'; writeFastaFile('',seqs)
+
 writeRefs <- function(config)
 {
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
@@ -37,6 +85,13 @@ getSamplesForGroup <- function(config, group)
 	return(samples)
 }
 #getSamplesForGroup(config,'KT9')
+
+getSamplesForSubGroup <- function(config, group, subgroup)
+{
+	samples <- unique(config@data[which(config@data$group==group & config@data$table==subgroup),'sample'])
+	return(samples)
+}
+#getSamplesForSubGroup(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy')
 
 getReplicatesForSubject <- function(config, subject)
 {
@@ -114,6 +169,17 @@ getRegionsForGroup <- function(config, group)
 }
 #getRegionsForGroup(config,'G9')
 
+getRegionsForSubGroup <- function(config, group, subgroup)
+{
+	return(unique(config@data[which(config@data$group==group & config@data$table==subgroup),'region']))
+}
+#getRegionsForSubGroup(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy')
+
+getTablesForGroup <- function(config, group)
+{
+	return(unique(config@data[which(config@data$group==group),'table']))
+}
+#getTablesForGroup(config,'BMS-790052_BMS-650032')
 
 #############################################################################
 

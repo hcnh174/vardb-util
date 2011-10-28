@@ -14,7 +14,8 @@ config <- loadConfig()
 	exportPileup(config)
 	countCodons(config)
 	writeCodonTables(config)
-	makePiecharts(config)
+	concatTablesByGroup(config)
+	#makePiecharts(config)
 #}
 
 args <- commandArgs(TRUE) # from R.utils package
@@ -31,3 +32,15 @@ for (group in removeElements(config@groups,'KT9'))
 {
 	analyzeReadsForGroup(config,group)
 }
+
+analyzeReadsForGroup(config,'BMS-790052_BMS-650032')
+analyzeReadsForGroup(config,'BMS-790052_MP-4242')
+analyzeReadsForGroup(config,'hcv_infection')
+analyzeReadsForGroup(config,'MP-424')
+analyzeReadsForGroup(config,'NS3_V36A_mutation_maintained')
+analyzeReadsForGroup(config,'NS5A_L31V_mutation_maintained')
+analyzeReadsForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
+
+#KT9
+#confirm_plasmid_with_new_reagents
+#HBV_nucleoside_analogues

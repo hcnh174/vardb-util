@@ -215,15 +215,64 @@ mergeFragmentWithReferenceSequence <- function(refseq, seq, sep='')
 #seq <- getField(config@refs,'HCV-KT9-NS3','sequence')
 #mergeFragmentWithReferenceSequence(refseq,seq)
 
-mergeFragmentsWithReferenceSequence <- function(refseq,seqs)
+#mergeFragmentsWithReferenceSequence <- function(refseq,seqs)
+#{
+#	newrefseq <- refseq
+#	for (seq in seqs)
+#	{
+#		newrefseq <- mergeFragmentWithReferenceSequence(newrefseq,seq)
+#	}
+#	return(newrefseq)
+#}
+
+#createHybridReferenceSequences <- function(refid, filename='../config/merged/fragments.fasta', outfile='../config/merged/hybrid.fasta')
+#{
+#	refseq <-  getRefSequence(config,refid)
+#	seqs <- readFastaFile(filename)
+#	data <- list()
+#	for (id in names(seqs))
+#	{
+#		seq <- seqs[[id]]
+#		newrefseq <- mergeFragmentWithReferenceSequence(refseq,seq)
+#		newid <- concat(refid,'-',id)
+#		data[[newid]] <- s2c(newrefseq)
+#	}
+#	try(write.fasta(data, names(data), file.out=outfile))
+#	return(data)
+#}
+##data <- createHybridReferenceSequences('HCV-KT9')
+
+getSharedNameForFragment <- function(refid,id)
 {
-	newrefseq <- refseq
-	for (seq in seqs)
-	{
-		newrefseq <- mergeFragmentWithReferenceSequence(newrefseq,seq)
-	}
-	return(newrefseq)
+	sharedid <- strsplit(id,'__', fixed=TRUE)[[1]][1]
+	return(concat(refid,'_',sharedid))
 }
+#getSharedNameForFragment('HCV-KT9','CTE247-21__NS3-156')
+
+createHybridReferenceSequences <- function(refid, filename='../config/merged/fragments.fasta', outfile='../config/merged/hybrid.fasta')
+{
+	refseq <-  getRefSequence(config,refid)
+	seqs <- readFastaFile(filename)
+	data <- list()
+	# extract the shared id for each fragment (part before the separator)
+	for (id in names(seqs))
+	{
+		sharedid <- getSharedNameForFragment(refid,id)
+		#set the initial ref sequence for each one - overwrites if all ready present
+		data[[sharedid]] <- refseq
+	}	
+	for (id in names(seqs))
+	{
+		seq <- seqs[[id]]
+		sharedid <- getSharedNameForFragment(refid,id)
+		refseq <- data[[sharedid]]
+		# if there are multiple fragments sharing the same prefix, then they will be updated sequentially
+		data[[sharedid]] <- mergeFragmentWithReferenceSequence(refseq,seq)
+	}
+	writeFastaFile(outfile,data)
+	return(data)
+}
+#createHybridReferenceSequences('HCV-HCJ4')
 
 ######################################################
 
@@ -246,12 +295,6 @@ getPileupConsensusSequence <- function(config,sample)
 ######################################################
 
 #diagnostics
-
-solexa_qa <- function(config,sample)
-{
-	runCommand('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
-}
-#solexa_qa(config,'KT9.plasmid__KT9')
 
 viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
 {

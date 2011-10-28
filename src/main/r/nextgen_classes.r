@@ -32,7 +32,6 @@ setClass("nextgenconfig",
 				map.quality='character'
 		),
 		prototype(
-				#config.dir='config',	
 				out.dir='out',
 				index.dir='indexes',
 				goals=data.frame(),
@@ -62,7 +61,6 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='id')
 	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
 	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
-	#try(.Object@goals <- loadDataFrame(concat(.Object@config.dir,'/goals.txt'), idcol='id'))
 	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')#
 	if (.Object@profile!='default')
 	{
@@ -110,22 +108,32 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	.Object@tables.dir <- concat(.Object@out.dir,'/tables')
 	.Object@consensus.dir <- concat(.Object@out.dir,'/consensus')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
-
+	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
-	fastafilename <- concat(.Object@config.dir,'/refs.fasta')
 	data <- loadDataFrame(reffilename, idcol='ref')
-	sequences <- read.fasta(file = fastafilename, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
-	#remove everything after the | in the sequence ID
-	ids <- names(sequences)
-	ids <- sapply(ids,function(value){return(strsplit(value,'\\|')[[1]][1])}, USE.NAMES=FALSE)
-	names(sequences) <- ids
+	sequences <- readFastaFiles(.Object@config.dir,'^refs.*\\.fasta')
 	for (id in names(sequences))
 	{
-		seq <- sequences[[id]][1]
-		data[id,'sequence'] <- seq
+		data[id,'sequence'] <- sequences[[id]]
 	}
 	.Object@refs <- data
-	.Object
+	return(.Object)
+
+#	reffilename <- concat(.Object@config.dir,'/refs.txt')
+#	fastafilename <- concat(.Object@config.dir,'/refs.fasta')
+#	data <- loadDataFrame(reffilename, idcol='ref')
+#	sequences <- read.fasta(file = fastafilename, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
+#	#remove everything after the | in the sequence ID
+#	ids <- names(sequences)
+#	ids <- sapply(ids,function(value){return(strsplit(value,'\\|')[[1]][1])}, USE.NAMES=FALSE)
+#	names(sequences) <- ids
+#	for (id in names(sequences))
+#	{
+#		seq <- sequences[[id]][1]
+#		data[id,'sequence'] <- seq
+#	}
+#	.Object@refs <- data
+#	.Object
 })
 
 #perform checks

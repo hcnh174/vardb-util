@@ -11,7 +11,7 @@ preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tm
 	
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
-	runCommand('rm -r ',temp.dir,'/*')
+	#runCommand('rm -r ',temp.dir,'/*')
 	for (sample in samples)
 	{
 		dir.to <- concat(temp.dir,'/',sample)
@@ -54,6 +54,12 @@ preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tm
 
 
 #############################################################
+
+solexa_qa <- function(config,sample)
+{
+	runCommand('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
+}
+#solexa_qa(config,'KT9.plasmid__KT9')
 
 trimSolexaqa <- function(config,sample)
 {

@@ -10,15 +10,37 @@
 #}
 ##getCodonCountSubset(config,'G9','NS3aa36','codons',36)
 
-getCodonCountSubset <- function(config, group, region, filetype, start, end=start, cutoff=0)
+#getCodonCountSubset <- function(config, group, region, filetype, start, end=start, cutoff=0)
+#{
+#	samples <- getSamplesForGroup(config,group)
+#	data <- NULL
+#	for (sample in samples)
+#	{
+#		filename <- getCodonCountFilename(config,sample,filetype)
+#		data.sample <- loadDataFrame(filename)
+#		print(head(data.sample))
+#		if (is.null(data))
+#			data <- data.sample
+#		else data <- rbind(data,data.sample)
+#	}
+#	print(head(data))
+#	data.subset <- data[which(data$region==region & data$aanum>=start & data$aanum<=end & data$count>=cutoff),]
+#	print(head(data.subset))
+#	data.subset$label <- factor(data.subset$label)
+#	data.subset$aanum <- factor(data.subset$aanum)
+#	return(data.subset)
+#}
+##getCodonCountSubset(config,'KT9','NS3aa36','codons')
+
+getCodonCountSubset <- function(config, group, subgroup, region, filetype, start, end=start, cutoff=0)
 {
-	samples <- getSamplesForGroup(config,group)
+	samples <- getSamplesForSubGroup(config,group,subgroup)
 	data <- NULL
 	for (sample in samples)
 	{
 		filename <- getCodonCountFilename(config,sample,filetype)
 		data.sample <- loadDataFrame(filename)
-		print(head(data.sample))
+		#print(head(data.sample))
 		if (is.null(data))
 			data <- data.sample
 		else data <- rbind(data,data.sample)
@@ -30,9 +52,57 @@ getCodonCountSubset <- function(config, group, region, filetype, start, end=star
 	data.subset$aanum <- factor(data.subset$aanum)
 	return(data.subset)
 }
-#getCodonCountSubset(config,'KT9','NS3aa36','codons')
+#getCodonCountSubset(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy','NS3aa36','codons',)
 
-makeVariantTable <- function(config, type, group, region, cutoff=0)
+
+#makeVariantTable <- function(config, type, group, region, cutoff=0)
+#{
+#	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
+#	gene <- config@regions[region,'gene']
+#	aanum <- as.integer(config@regions[region,'focus'])
+#	ref <- getRefForGroup(config,group)
+#	positions <- getCodonPositionsForGene(config,gene,ref)
+#	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
+#	data.subset <- getCodonCountSubset(config,group,region,type,aanum,cutoff=cutoff)
+#	if (type=='codons')
+#		frmla <- as.formula(codon ~ label)
+#	else frmla <- as.formula(aa ~ label)
+#	counts <- cast(data.subset, frmla, value='count', fun.aggregate=function(x) return(x[1])); counts
+#	counts <- counts[order(counts[,2], decreasing=TRUE),]
+#	row.names(counts) <- seq(nrow(counts))
+#	# add an asterisk to indicate the reference codon
+#	if (type=='codons')
+#	{
+#		if (length(which(counts$codon==refcodon))==0)
+#		{
+#			row <- counts[1,]
+#			row[,'codon'] <- refcodon
+#			row[,-1] <- NA
+#			counts <- rbind(counts,row)
+#		}
+#		counts$aa <- sapply(counts$codon,translateCodon)
+#		counts[which(counts$codon==refcodon),'codon'] <- concat(refcodon,'*')
+#		cols <- c(1,length(colnames(counts)),2:(length(colnames(counts))-1))
+#		counts <- counts[,cols]
+#	}
+#	if (type=='aa')
+#	{
+#		refaa <- translateCodon(refcodon)
+#		if (length(which(counts$aa==refaa))==0)
+#		{
+#			row <- counts[1,]
+#			row[,'aa'] <- refaa
+#			row[,-1] <- NA
+#			counts <- rbind(counts,row)
+#		}
+#		counts[which(counts$aa==refaa),'aa'] <- concat(refaa,'*')		
+#	}
+#	return(counts)
+#}
+##makeVariantTable(config,'aa','G9','NS3aa36')
+
+
+makeVariantTable <- function(config, type, group, subgroup, region, cutoff=0)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
 	gene <- config@regions[region,'gene']
@@ -40,7 +110,7 @@ makeVariantTable <- function(config, type, group, region, cutoff=0)
 	ref <- getRefForGroup(config,group)
 	positions <- getCodonPositionsForGene(config,gene,ref)
 	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
-	data.subset <- getCodonCountSubset(config,group,region,type,aanum,cutoff=cutoff)
+	data.subset <- getCodonCountSubset(config,group,subgroup,region,type,aanum,cutoff=cutoff)
 	if (type=='codons')
 		frmla <- as.formula(codon ~ label)
 	else frmla <- as.formula(aa ~ label)
@@ -76,36 +146,52 @@ makeVariantTable <- function(config, type, group, region, cutoff=0)
 	}
 	return(counts)
 }
-#makeVariantTable(config,'aa','G9','NS3aa36')
+#makeVariantTable(config,'aa','BMS-790052_BMS-650032','undetectable_in_absence_of_therapy','NS3aa36')
 
-makeVariantTables <- function(config, type, group=NULL, ...)
+#makeVariantTables <- function(config, type, group=NULL, ...)
+#{
+#	if (is.null(group))
+#		groups <- config@groups
+#	else groups <- splitFields(group)
+#	tables <- list()
+#	for (group in groups)
+#	{
+#		tables[[group]] <- list()
+#		for (region in getRegionsForGroup(config,group))
+#		{
+#			try({
+#			print(concat('group=',group,', region=',region))
+#			tbl <- makeVariantTable(config, type, group, region, ...)
+#			tables[[group]][[region]] <- tbl
+#			}, silent=FALSE)
+#		}
+#	}
+#	return(tables)
+#}
+##tables <- makeVariantTables(config, 'codons', 'PXB0220-0030')
+
+makeVariantTables <- function(config, type, groups=config@groups, ...)
 {
-	if (is.null(group))
-		groups <- config@groups
-	else groups <- splitFields(group)
 	tables <- list()
 	for (group in groups)
 	{
 		tables[[group]] <- list()
-		for (region in getRegionsForGroup(config,group))
+		for (subgroup in getTablesForGroup(config,group))
 		{
-			try({
-			print(concat('group=',group,', region=',region))
-			tbl <- makeVariantTable(config, type, group, region, ...)
-			tables[[group]][[region]] <- tbl
-			}, silent=FALSE)
+			tables[[group]][[subgroup]] <- list()
+			for (region in getRegionsForSubGroup(config,group,subgroup))
+			{
+				try({
+					print(concat('group=',group,', subgroup=',subgroup,', region=',region))
+					tbl <- makeVariantTable(config, type, group, subgroup, region, ...)
+					tables[[group]][[subgroup]][[region]] <- tbl
+				}, silent=FALSE)
+			}
 		}
 	}
 	return(tables)
 }
-#tables <- makeVariantTables(config, 'codons', 'PXB0220-0030')
-
-getSubjectsByGoal <- function(config, goal)
-{
-	return(unique(config@runs[which(config@runs$goal==goal),'subject']))
-}
-#getSubjectsByGoal(config,'goal1')
-
+#tables <- makeVariantTables(config, 'codons', 'BMS-790052_BMS-650032')
 
 appendVariantTablesToLatex <- function(config,tables)
 {
@@ -126,11 +212,11 @@ appendVariantTablesToLatex <- function(config,tables)
 
 ###############################################
 
-writeCodonTable <- function(config, codon.tables, group, region)
+writeCodonTable <- function(config, codon.tables, group, subgroup, region)
 {
-	tbl <- codon.tables[[group]][[region]]
+	tbl <- codon.tables[[group]][[subgroup]][[region]]
 	ref <- getRefForGroup(config,group)
-	identifier <- concat(group,'-',region,'-',ref)
+	identifier <- concat(group,'-',subgroup,'-',region,'-',ref)
 	filename <- concat(config@tables.dir,'/table-',identifier,'.txt')
 	try(colnames(tbl)[1] <-identifier, silent=FALSE)
 	writeTable(tbl,filename,row.names=FALSE)
@@ -141,9 +227,12 @@ writeCodonTables <- function(config, groups=config@groups, cutoff=2)
 	codon.tables <- makeVariantTables(config,'codons',groups,cutoff=cutoff)
 	for (group in groups)
 	{
-		for (region in getRegionsForGroup(config,group))
+		for (subgroup in getTablesForGroup(config,group))
 		{
-			writeCodonTable(config, codon.tables, group, region)
+			for (region in getRegionsForSubGroup(config,group,subgroup))
+			{
+				writeCodonTable(config, codon.tables, group, subgroup, region)
+			}
 		}
 	}
 	return(codon.tables)
