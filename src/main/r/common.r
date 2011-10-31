@@ -627,6 +627,17 @@ getCurDir <- function(dir=getwd())
 }
 #getCurDir('C:/workspace/vardb-util/src/main/r/')
 
+getFileExtension <- function (filenames) 
+{
+	filenames <- as.character(filenames)
+	n <- length(filenames)
+	if (length(grep("\\.", filenames)) < n) 
+		return(filenames)
+	ext <- sub("(.*)\\.(.*)$", "\\2", filenames)
+	return(ext)
+}
+#getFileExtension('L_CTTGTA_L007_R1_001.fastq.gz')
+
 sweaveToPdf <- function(filename, clean=TRUE)
 {
 	stem <- stripPath(filename)

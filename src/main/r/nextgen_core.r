@@ -9,6 +9,7 @@ loadConfig <- function(dir=NULL)
 
 readFastaFile <- function(filename)
 {
+	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	print(filename)
 	seqs <- read.fasta(file=filename, as.string=TRUE, seqtyp='DNA', forceDNAtolower=TRUE)
 	data <- list()
@@ -25,12 +26,12 @@ readFastaFile <- function(filename)
 readFastaFiles <- function(dir, pattern='*.fasta')
 {
 	filenames <- list.files(dir,pattern)
-	print(filenames)
+	#print(filenames)
 	data <- list()
 	for (filename in filenames)
 	{
 		data.file <- readFastaFile(concat(dir,'/',filename))
-		print(head(data.file))
+		#print(head(data.file))
 		data <- append(data, data.file)
 	}
 	return(data)
@@ -180,6 +181,12 @@ getTablesForGroup <- function(config, group)
 	return(unique(config@data[which(config@data$group==group),'table']))
 }
 #getTablesForGroup(config,'BMS-790052_BMS-650032')
+
+getStemsForSamples <- function(config, samples)
+{
+	return(unique(config@data[which(config@data$sample %in% samples),'stem']))
+}
+#getStemsForSamples(config, config@samples)
 
 #############################################################################
 

@@ -11,43 +11,51 @@ preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tm
 	
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
-	#runCommand('rm -r ',temp.dir,'/*')
-	for (sample in samples)
+	sort.dir <- concat(config@tmp.dir,'/sort')
+	runCommand('mkdir ',sort.dir,' -p')
+	runCommand('rm -r ',sort.dir,'/*')
+	
+	stems <- getStemsForSamples(config,samples)
+	#stems <-unique(config@data[which(config@data$sample %in% samples),'stem'])
+	for (stem in stems)
 	{
-		dir.to <- concat(temp.dir,'/',sample)
+		dir.to <- concat(sort.dir,'/',stem)
 		runCommand('mkdir ',dir.to)
 	}
 	
-	for (rowname in rownames(config@data[which(config@data$sample %in% samples),]))
+	for (rowname in rownames(config@data[which(config@data$stem %in% stems),]))
 	{
 		row <-  config@data[rowname,]
-		sample <- row$sample
-		dir.to <- concat(temp.dir,'/',sample)
 		folder <- row$folder
 		barcode <- row$barcode
 		lane <- row$lane
 		dir.from <- concat('../data/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
-		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq.gz')
-		runCommand('cp ', dir.from, filename,' ',dir.to)
-		filename <- concat(folder,'_',barcode,'_L00',lane,'_R1_*.fastq')
-		runCommand('cp ', dir.from, filename,' ',dir.to)
-	}	
+		dir.to <- concat(sort.dir,'/',row$stem)
+		pattern <- concat('^',folder,'_',barcode,'_L00',lane,'_R1_.*\\.fastq.*')
+		for (filename in list.files(dir.from,pattern))
+		{
+			ext <- ifelse(getFileExtension(filename)=='gz','.fastq.gz','.fastq')
+			newfilename <- concat(dir.to,'/',stem,'.',row$region,'.',rowname,ext)
+			#print(concat('cp ', dir.from, filename,' ',newfilename))
+			runCommand('cp ', dir.from, filename,' ',newfilename)
+		}
+	}
 	
-	for (sample in samples)
+	for (stem in stems)
 	{
-		dir.from <- concat(temp.dir,'/',sample)
+		dir.from <- concat(sort.dir,'/',stem)
 		runCommand('gunzip ',dir.from,'/*')
 	}
 	
-	for (sample in samples)
+	for (stem in stems)
 	{
-		dir.from <- concat(temp.dir,'/',sample)
-		fastqfile <- concat(fastq.dir,'/',sample,'.fastq')
+		dir.from <- concat(sort.dir,'/',stem)
+		fastqfile <- concat(fastq.dir,'/',stem,'.fastq')
 		runCommand('cat ',dir.from,'/* > ',fastqfile)
 		checkFileExists(fastqfile)
 	}
 	
-	#config <- getRawReadCounts(config) 
+	#config <- getRawReadCounts(config)
 	#runCommand('rm -r ',temp.dir,'/*')
 }
 #preprocess(config)
@@ -55,31 +63,31 @@ preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tm
 
 #############################################################
 
-solexa_qa <- function(config,sample)
+solexaqa <- function(config,stem)
 {
-	runCommand('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',sample,'.fastq -sanger')
+	runCommand('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',stem,'.fastq -sanger')
 }
 #solexa_qa(config,'KT9.plasmid__KT9')
 
-trimSolexaqa <- function(config,sample)
+trimSolexaqa <- function(config,stem)
 {
 	olddir <- getwd()
 	setwd(config@fastq.dir)
-	runCommand('DynamicTrim.pl ',sample,'.fastq',' -phredcutoff 30')
-	runCommand('LengthSort.pl ',sample,'.fastq.trimmed',' -length 36')
-	checkFileExists(concat(sample,'.fastq.trimmed.single'))
-	runCommand('mv ',sample,'.fastq.trimmed.single',' ',sample,'.trimmed.fastq')
-	runCommand('rm ',sample,'.fastq.trimmed')
-	runCommand('rm ',sample,'.fastq.trimmed.discard')
+	runCommand('DynamicTrim.pl ',stem,'.fastq',' -phredcutoff 30')
+	runCommand('LengthSort.pl ',stem,'.fastq.trimmed',' -length 36')
+	checkFileExists(concat(stem,'.fastq.trimmed.single'))
+	runCommand('mv ',stem,'.fastq.trimmed.single',' ',stem,'.trimmed.fastq')
+	runCommand('rm ',stem,'.fastq.trimmed')
+	runCommand('rm ',stem,'.fastq.trimmed.discard')
 	setwd(olddir)
 }
 #trimSolexaqa(config,'PXB0220-0002.wk13')
 
 trimSamples <- function(config, samples=config@samples)
 {
-	for (sample in samples)
+	for (stem in getStemsForSamples(config,samples))
 	{
-		trimSolexaqa(config,sample)
+		trimSolexaqa(config,stem)
 	}
 }
 #trimSamples(config)
@@ -110,10 +118,11 @@ addReadGroups <- function(config, sample)
 
 runBwa <- function(config, sample)
 {
+	stem <- getStemsForSamples(config,sample)
 	fastq.ext <- ifelse(config@trim,'.trimmed.fastq','.fastq')
 	ref <- getRefForSample(sample)
 	reffile <- getRefFile(config,ref)
-	fqfile <- concat(config@fastq.dir,'/',sample,fastq.ext)
+	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
 	tmp.dir <- config@tmp.dir
 	
 	samfile <- concat(tmp.dir,'/',sample,'.sam')
@@ -499,8 +508,6 @@ concatTablesByGroup <- function(config, groups=config@groups)
 
 analyzeReadsForSample <- function(config,sample)
 {
-	preprocess(config,sample)
-	trimSamples(config,sample)
 	mapReads(config,sample)
 	filterBams(config,sample)
 	writeConsensusForBams(config,sample)
