@@ -40,7 +40,7 @@ Usage: perl script.pl options
 getopts('i:o:c:v:');
 die $usage unless ($opt_i);
 
-my ($infile, $inset, $verb);
+my ($infile, $outfile, $inset, $verb);
 $infile	= $opt_i if $opt_i;
 $outfile	= $opt_o if $opt_o;
 $inset	= $opt_c ? $opt_c : 0;
@@ -49,7 +49,7 @@ $verb	= $opt_v ? $opt_v : "F";
 ##### ##### ##### ##### #####
 # Globals.
 
-my ($temp, $in, $out, $outfile);
+my ($temp, $in, $out);
 my @temp;
 
 ##### ##### ##### ##### #####
@@ -64,7 +64,7 @@ my @temp;
 
 # Open input and output files.
 open( $in, "<",  $infile)  or die "Can't open $infile: $!";
-open( $out, ">",  $outfile.".fa")  or die "Can't open $outfile.fa: $!";
+open( $out, ">",  $outfile)  or die "Can't open $outfile: $!";
 
 while (<$in>){
   chomp($temp[0] = $_);		# First line is an id.

@@ -116,12 +116,13 @@ addReadGroups <- function(config, sample)
 }
 #addReadGroups(config,'110617HBV.HBV07@HBV-RT')
 
-runBwa <- function(config, sample)
+runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim)
 {
+	print(ref)
 	stem <- getStemsForSamples(config,sample)
-	fastq.ext <- ifelse(config@trim,'.trimmed.fastq','.fastq')
-	ref <- getRefForSample(sample)
+	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
 	reffile <- getRefFile(config,ref)
+	print(reffile)
 	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
 	tmp.dir <- config@tmp.dir
 	
@@ -278,7 +279,7 @@ writeConsensusForBam <- function(config,sample)
 	fastqfile <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
 	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
 	checkFileExists(fastqfile)
-	fastq2fasta(fastqfile)
+	#fastq2fasta(fastqfile)
 }
 #writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
 
@@ -468,7 +469,7 @@ exportPileup <- function(config, samples=config@samples)
 
 countCodons <- function(config, samples=config@samples)
 {
-	for (sample in config@samples)
+	for (sample in samples)
 	{
 		countCodonsForSample(config,sample)
 	}
@@ -506,6 +507,7 @@ concatTablesByGroup <- function(config, groups=config@groups)
 
 ###############################################################
 
+## HACK!!
 analyzeReadsForSample <- function(config,sample)
 {
 	mapReads(config,sample)
@@ -521,11 +523,11 @@ analyzeReadsForGroup <- function(config,group)
 	samples <- getSamplesForGroup(config,group)
 	analyzeReadsForSample(config,samples)
 	writeCodonTables(config,group)
+	concatTablesByGroup(config,group)
 }
+#analyzeReadsForGroup(config,'MP-424')
 #analyzeReadsForGroup(config,'KT9')
 
-
-#
 #analyzeReads<- function(config)
 #{
 #	preprocess(config)

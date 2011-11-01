@@ -30,6 +30,22 @@ concat <- function(...)
 	return(paste(..., sep=''))
 }
 
+#http://jermdemo.blogspot.com/2011/10/making-rs-paste-act-more-like-concat.html
+concat <- function(..., sep='', collapse=NULL)
+{
+	strings<-list(...)
+	#catch NULLs, NAs
+	if (all(unlist(plyr::llply(strings,length))>0) &&	all(!is.na(unlist(strings))))
+	{
+		do.call("paste", c(strings, list(sep = sep, collapse = collapse)))
+	}
+	else
+	{
+		NULL
+	}
+}
+#concat('abc','def','ghi')
+
 loadUtilFiles <- function(filenames)
 {
 	libdir <- Sys.getenv("VARDB_RUTIL_HOME")

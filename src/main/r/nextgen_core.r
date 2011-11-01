@@ -7,6 +7,17 @@ loadConfig <- function(dir=NULL)
 	return(config)
 }
 
+fastq2fasta <- function(infile,outfile=NULL)
+{
+	if (is.null(outfile))
+		outfile <- concat(stripExtension(infile),'.fasta')
+	str <- '$VARDB_RUTIL_HOME/fastq2fasta.pl'
+	str <- concat(str,' -i ',infile)
+	str <- concat(str,' -o ',outfile)
+	runCommand(str)
+}
+#fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
+
 readFastaFile <- function(filename)
 {
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)

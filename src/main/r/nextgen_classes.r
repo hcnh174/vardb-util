@@ -137,8 +137,8 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 })
 
 #perform checks
-#if (length(params@label)>1)
-#throw('more than one label for sample: sample=',sample,', labels=',params@label)
+#if (length(params@column)>1)
+#throw('more than one column for sample: sample=',sample,', columns=',params@column)
 
 ##############################################################
 
@@ -154,7 +154,7 @@ setClass("sampleparams",
 		group='character',
 		subject='character',
 		sample='character',
-		label='character',
+		column='character',
 		ref='character',
 		region='character'
 	)

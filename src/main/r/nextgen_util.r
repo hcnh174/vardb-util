@@ -402,14 +402,6 @@ viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
 }
 #viewBam(config,'10464592.1__HCV-NS3-156', alignment_status='Unaligned')
 
-fastq2fasta <- function(infile)#,outfile)
-{
-	str <- 'fastq2fasta.pl'
-	str <- concat(str,' -a ',infile)
-	runCommand(str)
-}
-#fastq2fasta()
-
 #######################################################################
 
 getRawReadCounts <- function(config)

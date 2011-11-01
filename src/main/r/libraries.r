@@ -1,5 +1,6 @@
 #repos <- 'http://cran.md.tsukuba.ac.jp'
 
+install.packages('plyr')
 install.packages('rms')
 install.packages('car')
 install.packages('MASS')
