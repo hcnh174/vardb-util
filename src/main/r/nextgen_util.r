@@ -1,16 +1,5 @@
 #diagnostics
 
-show_coverage <- function(config,stem)
-{
-	#tmp.dir <- config@tmp.dir
-	bamfile <- concat(config@tmp.dir,'/',stem,'.bam')
-	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T DepthOfCoverage'
-	str <- concat(str,' -I ',bamfile)
-	str <- concat(str,' -R ',config@reffile)
-	runCommand(str)
-	#runCommand('java -jar GenomeAnalysisTK.jar -I aln.bam -R hsRef.fa -T DepthOfCoverage -L intervals.txt -U -S SILENT')
-}
-
 
 
 # estimates the number of reads based on the size of the file, assuming a ratio of 7757 for uncompressed fastq
@@ -19,7 +8,6 @@ estimateReadCount <- function(mb)
 	return(round(mb*7757))
 }
 #estimateReadCount(112.5)
-
 
 estimateSequencingError <- function(config, subject, ranges=NULL)#, refsample='KT9', refreplicate='plasmid')
 {
@@ -80,45 +68,79 @@ estimateSequencingError <- function(config, subject, ranges=NULL)#, refsample='K
 }
 #counts <- estimateSequencingError(config,'PXB0218-0007','3490-4100')#'6300-6800'
 
+#
+#plotReadDistributions <- function(filename="histograms.pdf")
+#{
+#	pdf(filename)
+#	#par(mfrow=c(2,2))
+#	#par(ask=TRUE)
+#	for (smpl in rownames(samples))
+#	{
+#		try({
+#			ref <- samples[smpl,'ref']
+#			filename <- concat('variants/',smpl,'.',ref,'.txt')
+#			data <- loadDataFrame(filename)
+#			table <- createNtCountTable(data, cutoff=0)
+#			runs.subset <- subset(runs, sample==smpl)
+#			#par(mfrow=c(1,nrow(runs.subset)))
+#			par(mfrow=c(2,nrow(runs.subset)))
+#			for (run in rownames(runs.subset))
+#			{
+#				region <- runs.subset[run,'region']
+#				start <- regions[region,'start']
+#				end <- regions[region,'end']
+#				xmin <- min(start)-10
+#				xmax <- max(end) + 10
+#				ymax <- max(table$total)+10
+#				xlab <- concat('position (',xmin,'-',xmax,')')
+#				#main <- concat(smpl,': ',run,': ',region,': ',start,':',end)
+#				plot(top1 ~ as.numeric(position), table, ylim=c(0,ymax), xlim=c(xmin,xmax), type='h',
+#						xlab=xlab, ylab='read coverage', main=run, sub=region)
+#				plot(top1 ~ as.numeric(position), table, ylim=c(0,500), xlim=c(xmin,xmax), type='h',
+#						xlab=xlab, ylab='read coverage', main=run, sub=region)
+#			}
+#			#par(mfrow=c(1,1))
+#		}, silent=FALSE)
+#	}
+#	#par(ask=FALSE)
+#	par(mfrow=c(1,1))
+#	dev.off()
+#}
 
-plotReadDistributions <- function(filename="histograms.pdf")
+
+plotReadDistributions <- function(config, outfile="histograms.pdf")
 {
-	pdf(filename)
-	#par(mfrow=c(2,2))
-	#par(ask=TRUE)
-	for (smpl in rownames(samples))
+	pdf(outfile)
+	for (sample in rownames(config@samples))
 	{
 		try({
-					ref <- samples[smpl,'ref']
-					filename <- concat('variants/',smpl,'.',ref,'.txt')
-					data <- loadDataFrame(filename)
-					table <- createNtCountTable(data, cutoff=0)
-					runs.subset <- subset(runs, sample==smpl)
-					#par(mfrow=c(1,nrow(runs.subset)))
-					par(mfrow=c(2,nrow(runs.subset)))
-					for (run in rownames(runs.subset))
-					{
-						region <- runs.subset[run,'region']
-						start <- regions[region,'start']
-						end <- regions[region,'end']
-						xmin <- min(start)-10
-						xmax <- max(end) + 10
-						ymax <- max(table$total)+10
-						xlab <- concat('position (',xmin,'-',xmax,')')
-						#main <- concat(smpl,': ',run,': ',region,': ',start,':',end)
-						plot(top1 ~ as.numeric(position), table, ylim=c(0,ymax), xlim=c(xmin,xmax), type='h',
-								xlab=xlab, ylab='read coverage', main=run, sub=region)
-						plot(top1 ~ as.numeric(position), table, ylim=c(0,500), xlim=c(xmin,xmax), type='h',
-								xlab=xlab, ylab='read coverage', main=run, sub=region)
-					}
-					#par(mfrow=c(1,1))
-				}, silent=FALSE)
+			filename <- concat(config@pileup.dir,'/',sample,'.txt')
+			data <- loadDataFrame(filename)
+			table <- createNtCountTable(data, cutoff=0)
+			runs.subset <- subset(runs, sample==smpl)
+			par(mfrow=c(2,nrow(runs.subset)))
+			for (run in rownames(runs.subset))
+			{
+				region <- runs.subset[run,'region']
+				start <- regions[region,'start']
+				end <- regions[region,'end']
+				xmin <- min(start)-10
+				xmax <- max(end) + 10
+				ymax <- max(table$total)+10
+				xlab <- concat('position (',xmin,'-',xmax,')')
+				#main <- concat(smpl,': ',run,': ',region,': ',start,':',end)
+				plot(top1 ~ as.numeric(position), table, ylim=c(0,ymax), xlim=c(xmin,xmax), type='h',
+						xlab=xlab, ylab='read coverage', main=run, sub=region)
+				plot(top1 ~ as.numeric(position), table, ylim=c(0,500), xlim=c(xmin,xmax), type='h',
+						xlab=xlab, ylab='read coverage', main=run, sub=region)
+			}
+			#par(mfrow=c(1,1))
+		}, silent=FALSE)
 	}
-	#par(ask=FALSE)
 	par(mfrow=c(1,1))
 	dev.off()
 }
-
+#plotReadDistributions(config)
 
 ####################################################
 
@@ -140,232 +162,7 @@ displayCodons <- function(sequence,start=1)
 	}
 	return(t(data))
 }
-#data <- displayCodons('g
-#				3421 cgcctatcac agcatactcc caacagacgc ggggcttact tggctgcatc atcactagcc
-#				3481 ttacgggccg ggacaagaac caggtcgagg gagaggttca aatagtctcc accgcaacac
-#				3541 aaaccttcct ggcaacctgc gtcaacggcg tgtgctggac tgtctttcac ggcgccggct
-#				3601 cgaagaccct agctggccca aagggtccca tcacccaaat gtacaccaat gtagaccaag
-#				3661 atcttgttgg ctggcaggcg ccccctggag cgcgctccat gacgccatgc acctgcggca
-#				3721 gctcggacct ctacttggtc acgagacatg ctgatgtcat cccggtgcgc cggcggggag
-#				3781 acagtagggg gagcctgctc tcccccaggc ccgtctccta cctgaagggc tcttcgggtg
-#				3841 gcccactgct ctgcccttcg gggcacgttg tgggcatctt ccgggccgct gtatgcaccc
-#				3901 ggggggtcgc aaaagcggtg gacttcgtac ccgttgagtc tatggaaact acaatgcggt
-#				3961 ctccggtctt cacagataac tcatcccccc cggccgtacc gcagacattc caagtggcac
-#				4021 atctacacgc ccccactggc agcggcaaga gtactaaagt gccagctgca tacgcagccc
-#				4081 aagggtacaa ggtgctcgtc ctgaacccgt ccgttgccgc caccttaggg tttggagcgt
-#				4141 acatgtccaa ggcacatggt gtagacccta acatcagaac tggggtaagg accatcacca
-#				4201 cgggcgcccc catcacgtac tccacctacg gcaagttcct cgccgacggt ggttgctctg
-#				4261 ggggcgccta tgatatcata atatgtgatg agtgccactc aactgactcg actaccatct
-#				4321 tgggcattgg cacagttctg gaccaagcgg agacggctgg agcgcgactc gtcgtgctcg
-#				4381 ccaccgctac gcctccagga tcagtcaccg tgccacaccc taatattgag gaggtggccc
-#				4441 tgtccaccac tggagagatc cccttctatg gcaaggccat ccccattgag gccatcaagg
-#				4501 gggggaggca tctcattttc tgccattcaa aaaaaaagtg tgatgagctc gccgcaaagc
-#				4561 tgtcaaacct cggaatcaac gctgtagcgt attaccgggg tctcgatgtg tccgtcatac
-#				4621 caactggcgg ggacgtcgtt gtcgtggcaa cagacgcttt aatgacgggc tttaccggcg
-#				4681 actttgactc agtgatcgac tgtaacacgt gtgtcaccca aacagtcgat ttcagcttgg
-#				4741 atcccacctt caccattgag acgacgaccg tgccccaaga cgcggtgtcg cgctcgcagc
-#				4801 ggcggggtag gactggtaga ggtaggagag gcatctacag gtttgtgact ccaggagaac
-#				4861 ggccctcggg catgttcgat tcctcggtcc tgtgtgagtg ctatgacgcg ggctgtgctt
-#				4921 ggtacgagct cacgcctgct gaaacctcgg ttaggttacg ggcttaccta aatacaccag
-#				4981 ggttgcccgt ttgccaggac catctggagt tctgggagag cgtcttcaca ggcctcaccc
-#				5041 atatagatgc ccatttccta tcccagacca agcaggcagg agataacttc ccctatctgg
-#				5101 tagcatacca ggctacagtg tgcgccaggg cccaagctcc acctccatca tgggatcaaa
-#				5161 tgtggaagtg tctcatacgg ctgaaaccta cactgcacgg gcagacgccc ctgctgtata
-#				5221 ggctaggagc cgttcaaaat gaggtcaccc tcacacaccc tataaccaaa tacatcatgg
-#				5281 catgcatgtc ggctgacctg gaggtcgtca c', start=3420)
-
-		########################################################
-		
-#		refseq <- config@refs['HCV-HCJ4','sequence']
-#		seq <- config@refs['HCV-NS3-156','sequence']
-#		
-#		library(Biostrings)
-#		
-#		psa1 <- pairwiseAlignment(pattern = refseq, subject = seq, type='local')
-#		startnt <- pattern(psa1)@range@start #3861
-##NS3	3420	5312
-
-#refseq <- config@refs['HCV-KT9','sequence']
-#seq <- config@refs['HCV-KT9-NS3','sequence']
-
-findFragmentStartPosition <- function(refseq, seq)
-{
-	#refseq <-  getField(config@refs,refseqid,'sequence')
-	#seq <-  getField(config@refs,seqid,'sequence')
-	psa1 <- Biostrings::pairwiseAlignment(pattern = refseq, subject = seq, type='local', gapOpening = -1000000)
-	print(psa1)
-	startnt <- Biostrings::pattern(psa1)@range@start
-	#return(Biostrings::pattern(psa1)@range)
-	endnt <- startnt + nchar(seq) -1 
-	print(concat(startnt,'..',endnt))
-	return(list(start=startnt,end=endnt))
-}
-#findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS3') #3410..5302
-#findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS5A') #6248..7588
-
-#findFragmentStartPositions <- function(refseq, suffix, filename='../config/merged/fragments.fasta')
-#{
-#	seqs <- readFastaFile(filename)
-#	starts <- c()
-#	# extract the shared id for each fragment (part before the separator)
-#	for (id in names(seqs))
-#	{
-#		suff <- strsplit(id,'__', fixed=TRUE)[[1]][2]
-#		if (suff != suffix)
-#			next
-#		pos <- findFragmentStartPosition(refseq, seqs[[id]])
-#		starts <- c(starts,pos$start)
-#	}
-#	return(starts)
-#}
-##refseq <-  getRefSequence(config,'HCV-HCJ4'); starts <- findFragmentStartPositions(refseq,'NS3-36')
-
-findFragmentStartPositions <- function(refseq, suffix, filename='../config/merged/fragments.fasta', outfile='../config/merged/fragments.txt')
-{
-	seqs <- readFastaFile(filename)
-	starts <- data.frame()
-	for (id in names(seqs))
-	{
-		region <- strsplit(id,'__', fixed=TRUE)[[1]][2]
-		pos <- findFragmentStartPosition(refseq, seqs[[id]])
-		starts[id,'id'] <- id
-		starts[id,'region'] <- region
-		starts[id,'start'] <- pos$start
-	}
-	writeTable(starts,outfile,row.names=FALSE)
-	return(starts)
-}
-#refseq <-  getRefSequence(config,'HCV-HCJ4'); starts <- findFragmentStartPositions(refseq,'NS3-36')
-#
-#findBestFragmentStartPositions <- function(refseq, filename='../config/merged/fragments.fasta', startsfile='../config/merged/fragments.txt')
-#{
-#	seqs <- readFastaFile(filename)
-#	starts <- loadDataFrame(startsfile, idcol='id')
-#	for (region in names(starts))
-#	{
-#		print(table(starts[[region]]))
-#		start <- as.numeric(names(sort(table(starts[[region]]), decreasing=TRUE)[1]))
-#		print(start)
-#		samplelen <- 60
-#		print(tolower(substring(refseq,start,start+samplelen)))
-#		for (id in names(seqs))
-#		{ 
-#			if (region == strsplit(id,'__', fixed=TRUE)[[1]][2])
-#			{
-#				print(tolower(substring(seqs[[id]],1,samplelen)))
-#			}
-#		}
-#	}
-#	return(starts)
-#}
-##refse
-#
-
-findBestFragmentStartPositions <- function(refseq, filename='../config/merged/fragments.fasta', startsfile='../config/merged/fragments.txt')
-{
-	seqs <- readFastaFile(filename)
-	data <- loadDataFrame(startsfile, idcol='id')
-	data <- data[order(data$region,data$start),]
-	for (region in unique(data$region))
-	{
-		print(region)
-		rows <- data[which(data$region==region),]
-		starts <- rows$start
-		beststart <- as.numeric(names(sort(table(starts), decreasing=TRUE)[1]))
-		samplelen <- 60
-		for (id in rownames(rows))
-		{
-			start <- rows[id,'start']
-			print(concat(id,': ',start))
-			print(tolower(substring(refseq,start,start+samplelen-1)))
-			print(tolower(substring(seqs[[id]],1,samplelen)))
-		}
-	}
-	return(starts)
-}
-#refseq <-  getRefSequence(config,'HCV-HCJ4'); starts <- findBestFragmentStartPositions(refseq)
-
-getSharedNameForFragment <- function(refid,id)
-{
-	sharedid <- strsplit(id,'__', fixed=TRUE)[[1]][1]
-	return(concat(refid,'_',sharedid))
-}
-#getSharedNameForFragment('HCV-KT9','CTE247-21__NS3-156')
-
-#mergeFragmentWithReferenceSequence <- function(refseq, seq, sep='')
-#{
-#	loc <- findFragmentStartPosition(refseq,seq)
-#	prefix <- tolower(substring(refseq,1,loc$start-1))
-#	suffix <- tolower(substring(refseq,loc$end+1))
-#	hybrid <- concat(prefix,sep,toupper(seq),sep,suffix)
-#	return(hybrid)
-#}
-
-mergeFragmentWithReferenceSequence <- function(refseq, seq, start, sep='')
-{
-	prefix <- tolower(substring(refseq,1,start-1))
-	suffix <- tolower(substring(refseq,start+nchar(seq)))
-	hybrid <- concat(prefix,sep,toupper(seq),sep,suffix)
-	return(hybrid)
-}
-#refseq <-  getField(config@refs,'HCV-HCJ4','sequence')
-#seq <- getField(config@refs,'HCV-KT9-NS3','sequence')
-#mergeFragmentWithReferenceSequence(refseq,seq)
-#mergeFragmentWithReferenceSequence('aabbbcccc','BBB',3)
-
-createHybridReferenceSequences <- function(refid, filename='../config/merged/fragments.fasta', startsfile='../config/merged/fragments.txt',
-	outfile='../config/merged/hybrid.fasta')
-{
-	refseq <-  getRefSequence(config,refid)
-	seqs <- readFastaFile(filename)
-	data <- list()
-	# extract the shared id for each fragment (part before the separator)
-	for (id in names(seqs))
-	{
-		sharedid <- getSharedNameForFragment(refid,id)
-		#set the initial ref sequence for each one - overwrites if all ready present
-		data[[sharedid]] <- refseq
-	}
-	startdata <- loadDataFrame(startsfile, idcol='id')
-	for (id in names(seqs))
-	{
-		seq <- seqs[[id]]
-		sharedid <- getSharedNameForFragment(refid,id)
-		refseq <- data[[sharedid]]
-		start <- startdata[id,'start']
-		# if there are multiple fragments sharing the same prefix, then they will be updated sequentially
-		data[[sharedid]] <- mergeFragmentWithReferenceSequence(refseq,seq,start)
-	}
-	writeFastaFile(outfile,data)
-	return(data)
-}
-#createHybridReferenceSequences('HCV-HCJ4')
-#
-#
-#createHybridReferenceSequences <- function(refid, filename='../config/merged/fragments.fasta', outfile='../config/merged/hybrid.fasta')
-#{
-#	refseq <-  getRefSequence(config,refid)
-#	seqs <- readFastaFile(filename)
-#	data <- list()
-#	# extract the shared id for each fragment (part before the separator)
-#	for (id in names(seqs))
-#	{
-#		sharedid <- getSharedNameForFragment(refid,id)
-#		#set the initial ref sequence for each one - overwrites if all ready present
-#		data[[sharedid]] <- refseq
-#	}
-#	for (id in names(seqs))
-#	{
-#		seq <- seqs[[id]]
-#		sharedid <- getSharedNameForFragment(refid,id)
-#		refseq <- data[[sharedid]]
-#		# if there are multiple fragments sharing the same prefix, then they will be updated sequentially
-#		data[[sharedid]] <- mergeFragmentWithReferenceSequence(refseq,seq)
-#	}
-#	writeFastaFile(outfile,data)
-#	return(data)
-#}
-##createHybridReferenceSequences('HCV-HCJ4')
+#data <- displayCodons('gcgcctatcac agcatactcc caacagacgc ggggcttact tggctgcatc atcactagcc', start=3420)
 
 ######################################################
 

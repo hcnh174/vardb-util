@@ -1,4 +1,4 @@
-preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,consensus')
+preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,consensus,coverage')
 {
 	runCommand('mkdir ',config@out.dir,' -p')
 	for (subdir in splitFields(subdirs))
@@ -283,11 +283,27 @@ writeConsensusForBam <- function(config,sample)
 }
 #writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
 
+writeCoverageForBam <- function(config,sample)
+{
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	outfilebase <- concat(config@coverage.dir,'/',sample)
+	
+	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T DepthOfCoverage'
+	str <- concat(str,' -I ',bamfile)
+	str <- concat(str,' -o ',outfilebase)
+	str <- concat(str,' -R ',reffile)
+	runCommand(str)
+}
+#writeCoverageForBam(config,'PXB0220-0002.wk09__HCV-KT9')
+
 writeConsensusForBams <- function(config,samples=config@samples)
 {
 	for (sample in samples)
 	{
 		writeConsensusForBam(config,sample)
+		writeCoverageForBam(config,sample)
 	}
 }
 #writeConsensusForBams(config)
@@ -476,16 +492,6 @@ countCodons <- function(config, samples=config@samples)
 }
 #countCodons(config)
 
-#countCodons <- function(config, groups=config@groups)
-#{	
-#	for (group in groups)
-#	{
-#		print(concat('countCodonsForGroup: ',group))
-#		try(countCodonsForGroup(config, group))
-#	}
-#}
-##countCodons(config,'confirm_with_new_reagents')
-
 makePiecharts <- function(config)
 {
 	sweaveToPdf(concat(Sys.getenv("VARDB_RUTIL_HOME"),'/nextgen_piecharts.rnw'))
@@ -507,7 +513,6 @@ concatTablesByGroup <- function(config, groups=config@groups)
 
 ###############################################################
 
-## HACK!!
 analyzeReadsForSample <- function(config,sample)
 {
 	mapReads(config,sample)

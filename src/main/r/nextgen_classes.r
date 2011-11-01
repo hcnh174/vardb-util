@@ -25,6 +25,7 @@ setClass("nextgenconfig",
 				tables.dir='character',
 				counts.dir='character',
 				consensus.dir='character',
+				coverage.dir='character',
 				tmp.dir='character',
 				profile='character',
 				trim='logical',
@@ -107,6 +108,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
 	.Object@tables.dir <- concat(.Object@out.dir,'/tables')
 	.Object@consensus.dir <- concat(.Object@out.dir,'/consensus')
+	.Object@coverage.dir <- concat(.Object@out.dir,'/coverage')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
 	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
@@ -118,27 +120,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	}
 	.Object@refs <- data
 	return(.Object)
-
-#	reffilename <- concat(.Object@config.dir,'/refs.txt')
-#	fastafilename <- concat(.Object@config.dir,'/refs.fasta')
-#	data <- loadDataFrame(reffilename, idcol='ref')
-#	sequences <- read.fasta(file = fastafilename, as.string = TRUE, seqtype = "DNA", forceDNAtolower=TRUE)
-#	#remove everything after the | in the sequence ID
-#	ids <- names(sequences)
-#	ids <- sapply(ids,function(value){return(strsplit(value,'\\|')[[1]][1])}, USE.NAMES=FALSE)
-#	names(sequences) <- ids
-#	for (id in names(sequences))
-#	{
-#		seq <- sequences[[id]][1]
-#		data[id,'sequence'] <- seq
-#	}
-#	.Object@refs <- data
-#	.Object
 })
-
-#perform checks
-#if (length(params@column)>1)
-#throw('more than one column for sample: sample=',sample,', columns=',params@column)
 
 ##############################################################
 
