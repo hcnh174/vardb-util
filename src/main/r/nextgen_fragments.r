@@ -14,23 +14,6 @@ findFragmentStartPosition <- function(refseq, seq)
 #findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS3') #3410..5302
 #findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS5A') #6248..7588
 
-#findFragmentStartPositions <- function(refseq, suffix, filename='../config/merged/fragments.fasta')
-#{
-#	seqs <- readFastaFile(filename)
-#	starts <- c()
-#	# extract the shared id for each fragment (part before the separator)
-#	for (id in names(seqs))
-#	{
-#		suff <- strsplit(id,'__', fixed=TRUE)[[1]][2]
-#		if (suff != suffix)
-#			next
-#		pos <- findFragmentStartPosition(refseq, seqs[[id]])
-#		starts <- c(starts,pos$start)
-#	}
-#	return(starts)
-#}
-##refseq <-  getRefSequence(config,'HCV-HCJ4'); starts <- findFragmentStartPositions(refseq,'NS3-36')
-
 findFragmentStartPositions <- function(refseq, suffix, filename='../config/merged/fragments.fasta', outfile='../config/merged/fragments.txt')
 {
 	seqs <- readFastaFile(filename)
@@ -43,34 +26,11 @@ findFragmentStartPositions <- function(refseq, suffix, filename='../config/merge
 		starts[id,'region'] <- region
 		starts[id,'start'] <- pos$start
 	}
+	makeBackupFile(outfile)
 	writeTable(starts,outfile,row.names=FALSE)
 	return(starts)
 }
 #refseq <-  getRefSequence(config,'HCV-HCJ4'); starts <- findFragmentStartPositions(refseq,'NS3-36')
-#
-#findBestFragmentStartPositions <- function(refseq, filename='../config/merged/fragments.fasta', startsfile='../config/merged/fragments.txt')
-#{
-#	seqs <- readFastaFile(filename)
-#	starts <- loadDataFrame(startsfile, idcol='id')
-#	for (region in names(starts))
-#	{
-#		print(table(starts[[region]]))
-#		start <- as.numeric(names(sort(table(starts[[region]]), decreasing=TRUE)[1]))
-#		print(start)
-#		samplelen <- 60
-#		print(tolower(substring(refseq,start,start+samplelen)))
-#		for (id in names(seqs))
-#		{ 
-#			if (region == strsplit(id,'__', fixed=TRUE)[[1]][2])
-#			{
-#				print(tolower(substring(seqs[[id]],1,samplelen)))
-#			}
-#		}
-#	}
-#	return(starts)
-#}
-##refse
-#
 
 findBestFragmentStartPositions <- function(refseq, filename='../config/merged/fragments.fasta', startsfile='../config/merged/fragments.txt')
 {

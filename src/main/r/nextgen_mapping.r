@@ -116,6 +116,21 @@ addReadGroups <- function(config, sample)
 }
 #addReadGroups(config,'110617HBV.HBV07@HBV-RT')
 
+bwa <- function(fqfile, reffile, outdir)
+{
+	sample <- stripPath(fqfile)
+	sample <- stripExtension(sample)
+	
+	samfile <- concat(outdir,'/',sample,'.sam')
+	saifile <- concat(outdir,'/',sample,'.sai')
+	
+	runCommand('bwa index ',reffile)
+	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
+	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
+	checkFileExists(samfile)
+}
+#bwa('fastq/test.fastq','ref/hcv.fasta','tmp')
+
 runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim)
 {
 	print(ref)

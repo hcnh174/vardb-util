@@ -246,6 +246,7 @@ getMappingReport <- function(config)
 		try({
 			stats <- getMapStats( concat(config@bam.dir,'/',sample,'.bam'))
 			print(concat('mapstats for ',sample,': ',stats))
+			counts[sample,'sample'] <- sample
 			counts[sample,'total'] <- stats$total
 			counts[sample,'mapped'] <- stats$mapped
 			counts[sample,'prop'] <- stats$prop

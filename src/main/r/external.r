@@ -10,20 +10,6 @@ packages <- function(x)
 }
 #packages(Hmisc)
 
-# copied directly from limma removeExt function
-stripExtension <- function (filenames) 
-{
-	filenames <- as.character(filenames)
-	n <- length(filenames)
-	if (length(grep("\\.", filenames)) < n) 
-		return(filenames)
-	ext <- sub("(.*)\\.(.*)$", "\\2", filenames)
-	if (all(ext[1] == ext)) 
-		return(sub("(.*)\\.(.*)$", "\\1", filenames))
-	else return(filenames)
-}
-#stripExtension('tables.Rnw')
-
 
 #http://r.789695.n4.nabble.com/Lattice-histogram-with-vertical-lines-td876969.html
 #only works with lattice plots

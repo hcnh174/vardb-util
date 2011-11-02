@@ -784,4 +784,33 @@ setLatticePropertyField <- function(property,field,value)
 }
 #setLatticePropertyField('strip.background','col','red')
 
+makeBackupFile <- function(filename)
+{
+	if (file.exists(filename))
+	{
+		bakfilename <- concat(filename,'.bak')
+		file.rename(filename,bakfilename)
+		print(bakfilename)
+	}		
+}
 
+# copied directly from limma removeExt function
+stripExtension <- function (filenames) 
+{
+	filenames <- as.character(filenames)
+	n <- length(filenames)
+	if (length(grep("\\.", filenames)) < n) 
+		return(filenames)
+	ext <- sub("(.*)\\.(.*)$", "\\2", filenames)
+	if (all(ext[1] == ext)) 
+		return(sub("(.*)\\.(.*)$", "\\1", filenames))
+	else return(filenames)
+}
+#stripExtension('tables.Rnw')
+
+changeExtension <- function(filename, newext)
+{
+	stem <- stripExtension(filename)
+	return(concat(stem,'.',newext))
+}
+#changeExtension('test.fastq','bam')
