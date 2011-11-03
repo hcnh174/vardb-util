@@ -1,6 +1,8 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments')
 config <- loadConfig()
+#setCurDir('nextgen/merged')
+#config <- loadConfig(dir='.')
 
 #analyzeReads<- function(config)
 #{

@@ -72,11 +72,18 @@ getSharedNameForFragment <- function(refid,id)
 #	return(hybrid)
 #}
 
+#mergeFragmentWithReferenceSequence <- function(refseq, seq, start, sep='')
+#{
+#	prefix <- tolower(substring(refseq,1,start-1))
+#	suffix <- tolower(substring(refseq,start+nchar(seq)))
+#	hybrid <- concat(prefix,sep,toupper(seq),sep,suffix)
+#	return(hybrid)
+#}
 mergeFragmentWithReferenceSequence <- function(refseq, seq, start, sep='')
 {
-	prefix <- tolower(substring(refseq,1,start-1))
-	suffix <- tolower(substring(refseq,start+nchar(seq)))
-	hybrid <- concat(prefix,sep,toupper(seq),sep,suffix)
+	prefix <- substring(refseq,1,start-1)
+	suffix <- substring(refseq,start+nchar(seq))
+	hybrid <- concat(prefix,sep,seq,sep,suffix)
 	return(hybrid)
 }
 #refseq <-  getField(config@refs,'HCV-HCJ4','sequence')
@@ -84,35 +91,42 @@ mergeFragmentWithReferenceSequence <- function(refseq, seq, start, sep='')
 #mergeFragmentWithReferenceSequence(refseq,seq)
 #mergeFragmentWithReferenceSequence('aabbbcccc','BBB',3)
 
-createHybridReferenceSequences <- function(refid, filename='../config/merged/fragments.fasta', startsfile='../config/merged/fragments.txt',
+createHybridReferenceSequences <- function(config, refid, fragments.dir='../config/merged', startsfile='../config/merged/fragments.txt',
 		outfile='../config/merged/hybrid.fasta')
 {
-	refseq <-  getRefSequence(config,refid)
-	seqs <- readFastaFile(filename)
+	origrefseq <-  tolower(getRefSequence(config,refid))
+	seqs <- readFastaFiles(fragments.dir,'^fragments.*\\.fasta')
 	data <- list()
 	# extract the shared id for each fragment (part before the separator)
 	for (id in names(seqs))
 	{
 		sharedid <- getSharedNameForFragment(refid,id)
 		#set the initial ref sequence for each one - overwrites if all ready present
-		data[[sharedid]] <- refseq
+		data[[sharedid]] <- origrefseq
 	}
 	startdata <- loadDataFrame(startsfile, idcol='id')
 	for (id in names(seqs))
 	{
-		seq <- seqs[[id]]
+		seq <- toupper(seqs[[id]])
 		sharedid <- getSharedNameForFragment(refid,id)
 		refseq <- data[[sharedid]]
 		start <- startdata[id,'start']
 		# if there are multiple fragments sharing the same prefix, then they will be updated sequentially
-		data[[sharedid]] <- mergeFragmentWithReferenceSequence(refseq,seq,start)
+		hybrid <- mergeFragmentWithReferenceSequence(refseq,seq,start)
+		data[[sharedid]] <- hybrid
+#		if (sharedid=='HCV-HCJ4_changeme')
+#		{
+#			print(concat('fragment id: ',id,', shared id: ',sharedid,', start: ',start))
+#			print(refseq)
+#			print(hybrid)
+#		}
 	}
 	writeFastaFile(outfile,data)
 	return(data)
 }
-#createHybridReferenceSequences('HCV-HCJ4')
-#
-#
+#data <- createHybridReferenceSequences(config, refid='HCV-HCJ4', fragments.dir='.', startsfile='fragments.txt', outfile='hybrid.fasta')
+
+
 #createHybridReferenceSequences <- function(refid, filename='../config/merged/fragments.fasta', outfile='../config/merged/hybrid.fasta')
 #{
 #	refseq <-  getRefSequence(config,refid)

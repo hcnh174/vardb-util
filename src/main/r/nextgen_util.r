@@ -267,3 +267,25 @@ bambino <- function(config, sample)
 }
 #bambino(config,'KT9.plasmid__KT9')
 
+#########################################################################
+
+loadConsensusFiles <- function(config, samples=config@samples)
+{
+	# read each fasta file
+	seqs <- list()
+	for (sample in samples)
+	{
+		filename <- concat(config@consensus.dir,'/',sample,'.consensus.fasta')
+		seq <- readFastaFile(filename)
+		seqs[[sample]] <- seq[[1]] #assume there is only one sequence and ignore the name
+	}
+	return(seqs)
+}
+#loadConsensusFiles(config)
+
+makeConsensusFasta <- function(config, samples=config@sample)
+{
+	seqs <- loadConsensFiles(config,samples)
+	writeFastaFile(config@tmp.dir,'/consensus.fasta')
+}
+#makeConsensusFasta(config)
