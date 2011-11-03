@@ -141,13 +141,15 @@ runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim
 	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
 	tmp.dir <- config@tmp.dir
 	
-	samfile <- concat(tmp.dir,'/',sample,'.sam')
-	saifile <- concat(tmp.dir,'/',sample,'.sai')
+	bwa(fqfile,reffile,config@tmp.dir)
 	
-	runCommand('bwa index ',reffile)
-	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
-	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
-	checkFileExists(samfile)
+#	samfile <- concat(tmp.dir,'/',sample,'.sam')
+#	saifile <- concat(tmp.dir,'/',sample,'.sai')
+#	
+#	runCommand('bwa index ',reffile)
+#	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
+#	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
+#	checkFileExists(samfile)
 	
 	addReadGroups(config,sample)
 	
@@ -155,6 +157,32 @@ runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim
 	#runCommand('rm ',saifile)
 }
 #runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
+
+#
+#runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim)
+#{
+#	print(ref)
+#	stem <- getStemsForSamples(config,sample)
+#	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
+#	reffile <- getRefFile(config,ref)
+#	print(reffile)
+#	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
+#	tmp.dir <- config@tmp.dir
+#	
+#	samfile <- concat(tmp.dir,'/',sample,'.sam')
+#	saifile <- concat(tmp.dir,'/',sample,'.sai')
+#	
+#	runCommand('bwa index ',reffile)
+#	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
+#	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
+#	checkFileExists(samfile)
+#	
+#	addReadGroups(config,sample)
+#	
+#	#runCommand('rm ',samfile)
+#	#runCommand('rm ',saifile)
+#}
+##runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
 
 mapReads <- function(config, samples=config@samples)
 {
