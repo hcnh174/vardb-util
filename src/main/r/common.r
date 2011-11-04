@@ -814,3 +814,25 @@ changeExtension <- function(filename, newext)
 	return(concat(stem,'.',newext))
 }
 #changeExtension('test.fastq','bam')
+
+######################################################
+
+makeRow <- function(data, vals=NULL)
+{
+	row <- data[1,]
+	row[,-1] <- NA
+	for (col in names(vals))
+	{
+		row[,col] <- vals[[col]]
+	}	
+	return(row)
+}
+#makeRow(counts, list(codon='ABC'))
+
+addRow <- function(data, vals=NULL)
+{
+	row <- makeRow(data,vals)
+	data <- rbind(data,row)
+	return(data)
+}
+addRow(counts, list(codon='ABC'))

@@ -320,9 +320,9 @@ writeConsensusForBam <- function(config,sample)
 	reffile <- getRefFile(config,ref)
 	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
 	fastqfile <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
-	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
+	#runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
 	checkFileExists(fastqfile)
-	#fastq2fasta(fastqfile)
+	fastq2fasta(fastqfile)
 }
 #writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
 
@@ -345,8 +345,8 @@ writeConsensusForBams <- function(config,samples=config@samples)
 {
 	for (sample in samples)
 	{
-		writeConsensusForBam(config,sample)
-		writeCoverageForBam(config,sample)
+		try(writeConsensusForBam(config,sample))
+		#writeCoverageForBam(config,sample)
 	}
 }
 #writeConsensusForBams(config)

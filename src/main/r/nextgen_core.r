@@ -18,15 +18,33 @@ loadConfig <- function(dir=NULL)
 #}
 ##fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
 
+#fastq2fasta <- function(infile,outfile=NULL)
+#{
+#	if (is.null(outfile))
+#		outfile <- concat(stripExtension(infile),'.fasta')	
+#	str <- 'fastq_to_fasta'
+#	str <- concat(str,' -n')#keep sequences with unknown (N) nucleotides.
+#	str <- concat(str,' -v')#Verbose - report number of sequences.
+#	str <- concat(str,' -i ',infile)
+#	str <- concat(str,' -o ',outfile)
+#	runCommand(str)
+#}
+##fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
+
+#fastq2fasta <- function(infile,outfile=NULL)
+#{
+#	if (is.null(outfile))
+#		outfile <- concat(stripExtension(infile),'.fasta')	
+#	str <- concat("cat ",infile," | perl -e '$i=0;while(<>){if(/^\@/&&$i==0){s/^\@/\>/;print;}elsif($i==1){print;$i=-3}$i++;}' > ",outfile)
+#	runCommand(str)
+#}
+##fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
+
 fastq2fasta <- function(infile,outfile=NULL)
 {
 	if (is.null(outfile))
 		outfile <- concat(stripExtension(infile),'.fasta')	
-	str <- 'fastq_to_fasta'
-	str <- concat(str,' -n')#keep sequences with unknown (N) nucleotides.
-	str <- concat(str,' -v')#Verbose - report number of sequences.
-	str <- concat(str,' -i ',infile)
-	str <- concat(str,' -o ',outfile)
+	str <- concat('prinseq-lite.pl -fastq ',infile,' -out_format 1 -out_good ',outfile)
 	runCommand(str)
 }
 #fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
@@ -214,18 +232,38 @@ getStemsForSamples <- function(config, samples)
 
 #############################################################################
 
+#getCodonPositionsForRegion <- function(config, region, ref)
+#{
+#	gene <- getField(config@regions,region,'gene')
+#	region.start <- getField(config@regions,region,'start')
+#	region.end <- getField(config@regions,region,'end')
+#	region.focus <- getField(config@regions,region,'focus')
+#	positions <- getCodonPositionsForGene(config,gene,ref)
+#	positions <- positions[which(positions$codon>=region.start & positions$codon<=region.end),]
+#	positions$focus <- ifelse(positions$codon==region.focus,'*','')
+#	return(positions)
+#}
+##getCodonPositionsForRegion(config,'NS3aa156','HCV-KT9')
+
 getCodonPositionsForRegion <- function(config, region, ref)
 {
 	gene <- getField(config@regions,region,'gene')
 	region.start <- getField(config@regions,region,'start')
 	region.end <- getField(config@regions,region,'end')
-	region.focus <- getField(config@regions,region,'focus')
+	region.focus <- splitFields(getField(config@regions,region,'focus'))
 	positions <- getCodonPositionsForGene(config,gene,ref)
 	positions <- positions[which(positions$codon>=region.start & positions$codon<=region.end),]
-	positions$focus <- ifelse(positions$codon==region.focus,'*','')
+	positions$focus <- ifelse(positions$codon %in% region.focus,'*','')
 	return(positions)
 }
 #getCodonPositionsForRegion(config,'NS3aa156','HCV-KT9')
+
+getFociForRegion <- function(config, region)
+{
+	return(splitFields(getField(config@regions,region,'focus')))
+}
+#getFociForRegion(config,'NS3aa156')
+
 
 #getCodonPositionsForRegion <- function(config, region)
 #{

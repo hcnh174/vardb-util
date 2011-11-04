@@ -269,23 +269,37 @@ bambino <- function(config, sample)
 
 #########################################################################
 
+loadConsensusFile <- function(config, sample)
+{
+	filename <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
+	lines <- readLines(filename)
+	str <- ''
+	for (line in lines[-1])
+	{
+		if (substring(line,1,1)=='+')
+			break
+		#print(line)
+		str <- concat(str,line)
+	}
+	return(str)
+}
+#loadConsensusFile(config,'CTE247-21__HCV-KT9')
+
 loadConsensusFiles <- function(config, samples=config@samples)
 {
 	# read each fasta file
 	seqs <- list()
 	for (sample in samples)
 	{
-		filename <- concat(config@consensus.dir,'/',sample,'.consensus.fasta')
-		seq <- readFastaFile(filename)
-		seqs[[sample]] <- seq[[1]] #assume there is only one sequence and ignore the name
+		try(seqs[[sample]] <- loadConsensusFile(config,sample))
 	}
 	return(seqs)
 }
 #loadConsensusFiles(config)
 
-makeConsensusFasta <- function(config, samples=config@sample)
+makeConsensusFasta <- function(config, samples=config@samples)
 {
-	seqs <- loadConsensFiles(config,samples)
-	writeFastaFile(config@tmp.dir,'/consensus.fasta')
+	seqs <- loadConsensusFiles(config,samples)
+	writeFastaFile(concat(config@tmp.dir,'/consensus.fasta'),seqs)
 }
 #makeConsensusFasta(config)
