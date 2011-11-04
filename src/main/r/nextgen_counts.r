@@ -9,7 +9,6 @@ loadPileupData <- function(config, sample)
 	data$ntnum <- data$position + startnt - 1
 	return(data)
 }
-#data <- loadPileupData(config,'11323912.1__HCV-NS3-36')
 #data <- loadPileupData(config,'KT9.plasmid__KT9')
 
 extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
@@ -53,9 +52,6 @@ getCodonCounts <- function(data, ntnum)
 	codons <- extractCodonData(data,ntnum, FALSE)
 	if (length(codons)==0)
 		return(counts)
-	#print(codons)
-	#aanum <- positions[which(positions$ntnum==ntnum),'codon']
-	#print(paste('ntnum=',ntnum,'numcodons=',length(codons)))
 	freqs <- sort(xtabs(as.data.frame(codons)), decreasing=TRUE)
 	total <- sum(freqs)		
 	rank <- 1
@@ -78,7 +74,6 @@ getAaCounts <- function(data, ntnum)
 	codons <- extractCodonData(data,ntnum,FALSE)
 	if (length(codons)==0)
 		return(counts)
-	#aanum <- positions[which(positions$ntnum==ntnum),'codon']
 	aa <- sapply(codons,translateCodon)
 	freqs <- sort(xtabs(as.data.frame(aa)), decreasing=TRUE)
 	total <- sum(freqs)
@@ -188,49 +183,6 @@ countCodonsForRegion <- function(config, data, params, variantdata)
 }
 #params@region <- 'NS3aa156'
 #variantdata <- countCodonsForRegion(config, data, params, variantdata)
-#
-
-#countCodonsForSample <- function(config, params, variantdata)
-#{
-#	print(concat('countCodonsForSample: ',params@sample))
-#	data <- loadPileupData(config,params@sample)
-#	for (region in getRegionsForSample(config,params@sample))
-#	{
-#		try({
-#			params@region <- region
-#			variantdata <- countCodonsForRegion(config, data, params, variantdata)
-#		}, silent=FALSE)
-#	}
-#	return(variantdata)
-#}
-##countCodonsForSample(config,params,variantdata)
-#
-#countCodonsForGroup <- function(config, group)
-#{
-#	params <- new('sampleparams', group=group)
-#	print(concat('countCodonsForGroup: ',as.character(params@group)))
-#	variantdata <- new('variantdata')
-#	samples <- config@data[which(config@data$group==params@group),]
-#	if (nrow(samples)==0)
-#		stop(concat('cannot find any samples for group ',params@group))
-#	for (sample in unique(samples[,'sample']))
-#	{
-#		params@sample <- sample
-#		params@subject <- unique(samples[which(samples$sample==sample),'subject'])
-#		params@column <- unique(samples[which(samples$sample==sample),'column'])
-#		#params@replicate <- unique(samples[which(samples$sample==sample),'replicate'])
-#		if (length(params@column)>1)
-#			throw('more than one column for sample: sample=',sample,', columns=',params@column)
-#		params@ref <- getRefForSample(sample)
-#		try({variantdata <- countCodonsForSample(config, params, variantdata)}, silent=FALSE)
-#	}
-#	counts.dir <- concat(config@counts.dir,'/')
-#	writeTable(variantdata@nt, concat(counts.dir,params@group,'.nt.txt'), row.names=FALSE)
-#	writeTable(variantdata@codons, concat(counts.dir,params@group,'.codons.txt'), row.names=FALSE)
-#	writeTable(variantdata@aa, concat(counts.dir,params@group,'.aa.txt'), row.names=FALSE)
-#	return(variantdata)
-#}
-##variantdata <- countCodonsForGroup(config,'PXB0220-0030')
 
 getCodonCountFilename <- function(config, sample, type)
 {
@@ -262,30 +214,3 @@ countCodonsForSample <- function(config, sample)
 }
 #countCodonsForSample(config,'KT9.random__HCV-KT9')
 
-
-
-#countCodonsForGroup <- function(config, group)
-#{
-#	params <- new('sampleparams', group=group)
-#	print(concat('countCodonsForGroup: ',as.character(params@group)))
-#	variantdata <- new('variantdata')
-#	samples <- config@data[which(config@data$group==params@group),]
-#	if (nrow(samples)==0)
-#		stop(concat('cannot find any samples for group ',params@group))
-#	for (sample in unique(samples[,'sample']))
-#	{
-#		params@sample <- sample
-#		params@subject <- unique(samples[which(samples$sample==sample),'subject'])
-#		params@column <- unique(samples[which(samples$sample==sample),'column'])
-#		if (length(params@column)>1)
-#			throw('more than one column for sample: sample=',sample,', columns=',params@column)
-#		params@ref <- getRefForSample(sample)
-#		try({variantdata <- countCodonsForSample(config, params, variantdata)}, silent=FALSE)
-#	}
-#	counts.dir <- concat(config@counts.dir,'/')
-#	writeTable(variantdata@nt, concat(counts.dir,params@group,'.nt.txt'), row.names=FALSE)
-#	writeTable(variantdata@codons, concat(counts.dir,params@group,'.codons.txt'), row.names=FALSE)
-#	writeTable(variantdata@aa, concat(counts.dir,params@group,'.aa.txt'), row.names=FALSE)
-#	return(variantdata)
-#}
-##variantdata <- countCodonsForGroup(config,'PXB0220-0030')

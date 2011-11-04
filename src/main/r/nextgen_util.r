@@ -1,7 +1,3 @@
-#diagnostics
-
-
-
 # estimates the number of reads based on the size of the file, assuming a ratio of 7757 for uncompressed fastq
 estimateReadCount <- function(mb)
 {
@@ -67,46 +63,6 @@ estimateSequencingError <- function(config, subject, ranges=NULL)#, refsample='K
 	return(counts)
 }
 #counts <- estimateSequencingError(config,'PXB0218-0007','3490-4100')#'6300-6800'
-
-#
-#plotReadDistributions <- function(filename="histograms.pdf")
-#{
-#	pdf(filename)
-#	#par(mfrow=c(2,2))
-#	#par(ask=TRUE)
-#	for (smpl in rownames(samples))
-#	{
-#		try({
-#			ref <- samples[smpl,'ref']
-#			filename <- concat('variants/',smpl,'.',ref,'.txt')
-#			data <- loadDataFrame(filename)
-#			table <- createNtCountTable(data, cutoff=0)
-#			runs.subset <- subset(runs, sample==smpl)
-#			#par(mfrow=c(1,nrow(runs.subset)))
-#			par(mfrow=c(2,nrow(runs.subset)))
-#			for (run in rownames(runs.subset))
-#			{
-#				region <- runs.subset[run,'region']
-#				start <- regions[region,'start']
-#				end <- regions[region,'end']
-#				xmin <- min(start)-10
-#				xmax <- max(end) + 10
-#				ymax <- max(table$total)+10
-#				xlab <- concat('position (',xmin,'-',xmax,')')
-#				#main <- concat(smpl,': ',run,': ',region,': ',start,':',end)
-#				plot(top1 ~ as.numeric(position), table, ylim=c(0,ymax), xlim=c(xmin,xmax), type='h',
-#						xlab=xlab, ylab='read coverage', main=run, sub=region)
-#				plot(top1 ~ as.numeric(position), table, ylim=c(0,500), xlim=c(xmin,xmax), type='h',
-#						xlab=xlab, ylab='read coverage', main=run, sub=region)
-#			}
-#			#par(mfrow=c(1,1))
-#		}, silent=FALSE)
-#	}
-#	#par(ask=FALSE)
-#	par(mfrow=c(1,1))
-#	dev.off()
-#}
-
 
 plotReadDistributions <- function(config, outfile="histograms.pdf")
 {

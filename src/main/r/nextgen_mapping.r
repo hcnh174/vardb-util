@@ -142,47 +142,10 @@ runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim
 	tmp.dir <- config@tmp.dir
 	
 	bwa(fqfile,reffile,config@tmp.dir)
-	
-#	samfile <- concat(tmp.dir,'/',sample,'.sam')
-#	saifile <- concat(tmp.dir,'/',sample,'.sai')
-#	
-#	runCommand('bwa index ',reffile)
-#	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
-#	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
-#	checkFileExists(samfile)
-	
+
 	addReadGroups(config,sample)
-	
-	#runCommand('rm ',samfile)
-	#runCommand('rm ',saifile)
 }
 #runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
-
-#
-#runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim)
-#{
-#	print(ref)
-#	stem <- getStemsForSamples(config,sample)
-#	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
-#	reffile <- getRefFile(config,ref)
-#	print(reffile)
-#	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
-#	tmp.dir <- config@tmp.dir
-#	
-#	samfile <- concat(tmp.dir,'/',sample,'.sam')
-#	saifile <- concat(tmp.dir,'/',sample,'.sai')
-#	
-#	runCommand('bwa index ',reffile)
-#	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
-#	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
-#	checkFileExists(samfile)
-#	
-#	addReadGroups(config,sample)
-#	
-#	#runCommand('rm ',samfile)
-#	#runCommand('rm ',saifile)
-#}
-##runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
 
 mapReads <- function(config, samples=config@samples)
 {
@@ -475,22 +438,6 @@ filterBam <- function(config, sample)
 	checkFileExists(outfile)
 	runCommand('samtools index ',outfile)
 }
-#
-#filterBams <- function(config, samples=NULL)
-#{
-#	require(foreach, quietly=TRUE, warn.conflicts=FALSE)
-#	require(doMC, quietly=TRUE, warn.conflicts=FALSE)
-#	registerDoMC()
-#	if (is.null(samples))
-#		samples <- config@samples
-#	foreach(i=1:length(samples), .combine = cbind) %dopar% {
-#		sample <- as.character(samples[i])
-#		print(concat('filter_bam: ',sample))
-#		try(filterBam(config,sample))
-#		sample
-#	}
-#}
-##filterBams(config)
 
 filterBams <- function(config, samples=config@samples)
 {

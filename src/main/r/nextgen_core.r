@@ -7,38 +7,18 @@ loadConfig <- function(dir=NULL)
 	return(config)
 }
 
-#fastq2fasta <- function(infile,outfile=NULL)
-#{
-#	if (is.null(outfile))
-#		outfile <- concat(stripExtension(infile),'.fasta')
-#	str <- '$VARDB_RUTIL_HOME/fastq2fasta.pl'
-#	str <- concat(str,' -i ',infile)
-#	str <- concat(str,' -o ',outfile)
-#	runCommand(str)
-#}
-##fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
-
-#fastq2fasta <- function(infile,outfile=NULL)
-#{
-#	if (is.null(outfile))
-#		outfile <- concat(stripExtension(infile),'.fasta')	
-#	str <- 'fastq_to_fasta'
-#	str <- concat(str,' -n')#keep sequences with unknown (N) nucleotides.
-#	str <- concat(str,' -v')#Verbose - report number of sequences.
-#	str <- concat(str,' -i ',infile)
-#	str <- concat(str,' -o ',outfile)
-#	runCommand(str)
-#}
-##fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
-
-#fastq2fasta <- function(infile,outfile=NULL)
-#{
-#	if (is.null(outfile))
-#		outfile <- concat(stripExtension(infile),'.fasta')	
-#	str <- concat("cat ",infile," | perl -e '$i=0;while(<>){if(/^\@/&&$i==0){s/^\@/\>/;print;}elsif($i==1){print;$i=-3}$i++;}' > ",outfile)
-#	runCommand(str)
-#}
-##fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
+fastqToFasta <- function(infile,outfile=NULL)
+{
+	if (is.null(outfile))
+		outfile <- concat(stripExtension(infile),'.fasta')	
+	str <- 'fastq_to_fasta'
+	str <- concat(str,' -n')#keep sequences with unknown (N) nucleotides.
+	str <- concat(str,' -v')#Verbose - report number of sequences.
+	str <- concat(str,' -i ',infile)
+	str <- concat(str,' -o ',outfile)
+	runCommand(str)
+}
+#fastqToFasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
 
 fastq2fasta <- function(infile,outfile=NULL)
 {
@@ -159,15 +139,6 @@ getRefForSubject <- function(config, subject)
 	return(ref)
 }
 #getRefForSubject(config,'CTE247-21')
-#
-#getRefForGroup <- function(config, group)
-#{
-#	ref <- unique(config@data[which(config@data$group==group),'ref'])
-#	if (length(ref)>1)
-#		throw('multiple refs found for group+region: ',joinFields(ref,','))
-#	return(ref)
-#}
-##getRefForGroup(config,'G9')
 
 getRefForGroup <- function(config, group)
 {
@@ -232,19 +203,6 @@ getStemsForSamples <- function(config, samples)
 
 #############################################################################
 
-#getCodonPositionsForRegion <- function(config, region, ref)
-#{
-#	gene <- getField(config@regions,region,'gene')
-#	region.start <- getField(config@regions,region,'start')
-#	region.end <- getField(config@regions,region,'end')
-#	region.focus <- getField(config@regions,region,'focus')
-#	positions <- getCodonPositionsForGene(config,gene,ref)
-#	positions <- positions[which(positions$codon>=region.start & positions$codon<=region.end),]
-#	positions$focus <- ifelse(positions$codon==region.focus,'*','')
-#	return(positions)
-#}
-##getCodonPositionsForRegion(config,'NS3aa156','HCV-KT9')
-
 getCodonPositionsForRegion <- function(config, region, ref)
 {
 	gene <- getField(config@regions,region,'gene')
@@ -264,54 +222,6 @@ getFociForRegion <- function(config, region)
 }
 #getFociForRegion(config,'NS3aa156')
 
-
-#getCodonPositionsForRegion <- function(config, region)
-#{
-#	#first check if it is cached in the config
-#	positions <- config@positions[[region]]
-#	if (is.null(positions))
-#		positions <- calculateCodonPositionsForRegion(config,region)
-#	return(positions)
-#}
-#getCodonPositionsForRegion(config,'NS3aa156')
-
-#calculateCodonPositionsForGene <- function(config, gene)
-#{
-#	feature <- getField(config@regions,region,'feature')
-#	ref <- getField(config@regions,region,'ref')
-#	ref.start <- getField(config@refs,ref,'start')
-#	feature.start <- getField(config@features,feature,'start')
-#	feature.end <- getField(config@features,feature,'end')
-#	region.start <- getField(config@regions,region,'startaa')
-#	region.end <- getField(config@regions,region,'endaa')
-#	region.focus <- getField(config@regions,region,'focusaa')	
-#	sequence <- getField(config@refs,ref,'sequence')
-#	
-#	startntrel <- ref.start-feature.start
-#	printParams(feature,ref,ref.start,feature.start,feature.end,startntrel,region.start,region.end,region.focus)
-#	
-#	codon <- (startntrel-(startntrel%%3))/3 + 1	
-#	if ((startntrel)%%3!=0) # if the startntrel is in the middle of a codon, increment the codon number by 1
-#		codon <- codon + 1
-#	positions <- data.frame()
-#	for (index in 1:nchar(sequence))
-#	{
-#		relpos <- startntrel + index - 1
-#		if (relpos%%3!=0)
-#			next
-#		ntnum <- feature.start+((codon-1)*3)
-#		if (index+2>nchar(sequence))
-#			break
-#		refcodon <- extractSequence(sequence, index, index+2)
-#		refaa <- translateCodon(refcodon)
-#		positions <- rbind(positions, data.frame(codon=codon, ntnum=ntnum, refcodon=refcodon, refaa=refaa))#position,relpos=relpos, 
-#		codon <- codon + 1
-#	}
-#	positions <- positions[which(positions$codon>=region.start & positions$codon<=region.end),]
-#	positions$focus <- ifelse(positions$codon==region.focus,'*','')
-#	return(positions)
-#}
-#
 
 getCodonPositionsForGene <- function(config, gene, ref)
 {
@@ -335,25 +245,8 @@ calculateCodonPositionsForGene <- function(config, gene, ref)
 	positions <- splitCodons(sequence, start=gene.start)
 	return(positions)
 }
-#gene <- 'HCV-NS3'; ref <- 'HCV-KT9'
-#positions <- calculateCodonPositionsForGene(config,gene,ref)
 #positions <- calculateCodonPositionsForGene(config,'HCV-NS3','HCV-KT9')
 
-#calculateCodonPositionsForRegion(config,'NS3aa156')
-#calculateCodonPositionsForRegion(config,'NS3aa36')
-#calculateCodonPositionsForRegion(config,'HBVRT')
-#calculateCodonPositionsForRegion(config,'NS3aa156R')
-#calculateCodonPositionsForRegion(config,'NS5Aaa31')
-#calculateCodonPositionsForRegion(config,'NS5Aaa93')
-
-#preloadCodonPositions <- function(config)
-#{
-#	for (region in unique(config@data$region))
-#	{
-#		config@positions[[region]] <- calculateCodonPositionsForRegion(config,region)
-#	}
-#	return(config)
-#}
 preloadCodonPositions <- function(config)
 {
 	for (id in config@genes$id)
@@ -405,34 +298,6 @@ extractSequence <- function(sequence, start, end, pad=FALSE)
 	return(c2s(sequence[start:end]))
 }
 #extractSequence(refs['KT9','sequence'],3420,5312)
-
-
-#
-#extractSequence <- function(sequence, start, end, pad=TRUE)
-#{
-#	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
-#	offset <- 0
-#	if (start<1)
-#	{
-#		if (pad)
-#		{
-#			offset <- abs(start)+1
-#			start <- 1
-#		}
-#		else throw('start position is less than 1: ',start)
-#	}
-#	if (end<1)
-#	{
-#		throw('end position is less than 1: ',start)
-#	}
-#	#if (end>nchar(sequence))
-#	#	end <- nchar(sequence)
-#	sequence <- s2c(sequence)
-#	sequence <- c2s(sequence[start:end])
-#	sequence <- concat(paste(rep('_',offset),collapse=''),sequence)
-#	return(sequence)
-#}
-#extractSequence('gcgcctatcacagcatactcccaa',1,3)
 
 extractCodon <- function(sequence, codon)
 {
@@ -487,7 +352,6 @@ plotTiter <- function(config, subject)
 	}
 	
 	# plot the sampling dates as points
-	#config@samples[which(config@samples$subject==subject),]
 	replicates <- config@data[which(config@data$subject==subject),'replicate']
 	for (week in replicates)
 	{
