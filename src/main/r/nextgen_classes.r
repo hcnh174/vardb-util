@@ -27,6 +27,7 @@ setClass("nextgenconfig",
 				consensus.dir='character',
 				coverage.dir='character',
 				tmp.dir='character',
+				check.dir='character',
 				profile='character',
 				trim='logical',
 				filter='logical',
@@ -110,6 +111,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	.Object@consensus.dir <- concat(.Object@out.dir,'/consensus')
 	.Object@coverage.dir <- concat(.Object@out.dir,'/coverage')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')
+	.Object@check.dir <- concat(.Object@out.dir,'/check')
 	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
 	data <- loadDataFrame(reffilename, idcol='ref')

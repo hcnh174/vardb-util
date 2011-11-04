@@ -191,16 +191,13 @@ getMapStats <- function(bamfile)
 }
 #getMapStats(concat(config@bam.dir,'/','etsuko_yamada__HCV-HCJ4.bam'))
 
-getMappingReport <- function(config)
+getMappingReport <- function(config, bam.dir=config@bam.dir, samples=config@samples, outfile=concat(config@tmp.dir,'/','readcounts-mapped.txt'))
 {
-	#runcounts <- getRawReadCounts(config)
-	#tbl <- reshape::cast(runcounts, sample~., value='reads', fun.aggregate=sum)
-	#rownames(tbl) <- tbl$sample
 	counts <- data.frame()
-	for (sample in config@samples)
+	for (sample in samples)
 	{
 		try({
-			stats <- getMapStats( concat(config@bam.dir,'/',sample,'.bam'))
+			stats <- getMapStats(concat(bam.dir,'/',sample,'.bam'))
 			print(concat('mapstats for ',sample,': ',stats))
 			counts[sample,'sample'] <- sample
 			counts[sample,'total'] <- stats$total
@@ -208,7 +205,7 @@ getMappingReport <- function(config)
 			counts[sample,'prop'] <- stats$prop
 		})
 	}
-	outfile <- concat(config@tmp.dir,'/','readcounts-mapped.txt')
+	#outfile <- concat(out.dir,'/','readcounts-mapped.txt')
 	writeTable(counts,outfile,row.names=FALSE)
 	return(counts)
 }
@@ -259,3 +256,75 @@ makeConsensusFasta <- function(config, samples=config@samples)
 	writeFastaFile(concat(config@tmp.dir,'/consensus.fasta'),seqs)
 }
 #makeConsensusFasta(config)
+
+###############################################################################
+
+
+extractSampleFile <- function(config,id)
+{
+	tmp.dir <- concat(config@check.dir,'/tmp')
+	fastq.dir <- concat(config@check.dir,'/fastq')
+	row <-  config@data[id,]
+	folder <- row$folder
+	barcode <- row$barcode
+	lane <- row$lane
+	dir.from <- concat('../data/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
+	pattern <- concat('^',folder,'_',barcode,'_L00',lane,'_R1_.*\\.fastq.*')
+	for (filename in list.files(dir.from,pattern))
+	{
+		ext <- ifelse(getFileExtension(filename)=='gz','.fastq.gz','.fastq')
+		newfilename <- concat(tmp.dir,'/',id,ext)
+		runCommand('cp ', dir.from, filename,' ',newfilename)
+	}
+	runCommand('gunzip ',tmp.dir,'/*')
+
+	dir.from <- concat(tmp.dir,'/',id)
+	fastqfile <- concat(fastq.dir,'/',id,'.fastq')
+	runCommand('cat ',tmp.dir,'/* > ',fastqfile)
+	checkFileExists(fastqfile)
+	
+	runCommand('rm -r ',tmp.dir,'/*')
+}
+#extractSampleFile(config, 'nextgen4-3D')
+
+
+checkSampleMapping <- function(config, id, refs)
+{
+	#check a specific sample using several metrics
+	dir <- config@check.dir
+	tmp.dir <- concat(dir,'/tmp')
+	fastq.dir <- concat(dir,'/fastq')
+	bam.dir <- concat(dir,'/bam')
+	makeSubDirs(dir,'tmp,fastq,bam')
+	extractSampleFile(config,id)
+	trimSolexaqa(config,id,fastq.dir)
+	fqfile <- concat(fastq.dir,'/',id,'.fastq')
+	fqtrfile <- concat(fastq.dir,'/',id,'.trimmed.fastq')
+	samples <- c()
+	for (ref in splitFields(refs))
+	{
+		for (sample in c(concat(id,'__',ref),concat(id,'.trimmed','__',ref)))
+		{
+			samples <- c(samples,sample)
+			reffile <- getRefFile(config,ref)			
+			bwa(fqfile, reffile, bam.dir, outstem=sample)
+			filterBam(config, sample, bam.dir=bam.dir)
+			sample.filtered <- concat(sample,'.filtered')
+			samples <- c(samples, sample.filtered)
+			writeConsensusForBam(config, sample, bam.dir=bam.dir, out.dir=dir)
+			writeConsensusForBam(config, sample.filtered, bam.dir=bam.dir, out.dir=dir)
+		}
+	}
+	runCommand('rm -r ',bam.dir,'/*.sam')
+	runCommand('rm -r ',bam.dir,'/*.sai')
+	fixBaiFiles(config,bam.dir)
+	print(samples)
+	outfile <- concat(dir,'/','readcounts-',id,'.txt')
+	report <- getMappingReport(config, bam.dir=bam.dir, samples,  outfile=outfile)
+	return(report)
+}
+#checkSampleMapping(config,'nextgen4-3D','HCV-KT9,HCV-HCJ4')
+checkSampleMapping(config,'nextgen4-3B','HCV-KT9,HCV-HCJ4')#NS5Aaa31
+checkSampleMapping(config,'nextgen4-5H','HCV-KT9,HCV-HCJ4')#NS5Aaa93
+
+

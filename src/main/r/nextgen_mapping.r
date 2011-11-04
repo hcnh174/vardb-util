@@ -1,12 +1,13 @@
 preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,consensus,coverage')
 {
-	runCommand('mkdir ',config@out.dir,' -p')
-	for (subdir in splitFields(subdirs))
-	{
-		subdir <- concat(config@out.dir,'/',subdir)
-		#runCommand('mkdir ',subdir,' -p; rm ',subdir,'/*')
-		runCommand('mkdir ',subdir,' -p')
-	}
+#	runCommand('mkdir ',config@out.dir,' -p')
+#	for (subdir in splitFields(subdirs))
+#	{
+#		subdir <- concat(config@out.dir,'/',subdir)
+#		#runCommand('mkdir ',subdir,' -p; rm ',subdir,'/*')
+#		runCommand('mkdir ',subdir,' -p')
+#	}
+	makeSubDirs(config@out.dir,subdirs)
 	writeRefs(config)
 	
 	fastq.dir <- config@fastq.dir
@@ -69,10 +70,10 @@ solexaqa <- function(config,stem)
 }
 #solexa_qa(config,'KT9.plasmid__KT9')
 
-trimSolexaqa <- function(config,stem)
+trimSolexaqa <- function(config,stem, fastq.dir=config@fastq.dir)
 {
 	olddir <- getwd()
-	setwd(config@fastq.dir)
+	setwd(fastq.dir)
 	runCommand('DynamicTrim.pl ',stem,'.fastq',' -phredcutoff 30')
 	runCommand('LengthSort.pl ',stem,'.fastq.trimmed',' -length 36')
 	checkFileExists(concat(stem,'.fastq.trimmed.single'))
@@ -94,9 +95,9 @@ trimSamples <- function(config, samples=config@samples)
 
 ######################################################################
 
-addReadGroups <- function(config, sample)
+addReadGroups <- function(config, sample, tmp.dir=config@tmp.dir)
 {
-	tmp.dir <- config@tmp.dir
+	#tmp.dir <- config@tmp.dir
 	samfile <- concat(tmp.dir,'/',sample,'.sam')
 	bamfile <- concat(tmp.dir,'/',sample,'.bam')
 	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
@@ -113,21 +114,26 @@ addReadGroups <- function(config, sample)
 	checkFileExists(bamfile)
 	baifile <- concat(tmp.dir,'/',sample,'.bai')
 	checkFileExists(baifile)
+	return(bamfile)
 }
 #addReadGroups(config,'110617HBV.HBV07@HBV-RT')
 
-bwa <- function(fqfile, reffile, outdir)
+bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 {
 	sample <- stripPath(fqfile)
 	sample <- stripExtension(sample)
+	if (is.null(outstem)) outstem=sample
 	
-	samfile <- concat(outdir,'/',sample,'.sam')
-	saifile <- concat(outdir,'/',sample,'.sai')
+	samfile <- concat(outdir,'/',outstem,'.sam')
+	saifile <- concat(outdir,'/',outstem,'.sai')
 	
 	runCommand('bwa index ',reffile)
 	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
 	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 	checkFileExists(samfile)
+	
+	bamfile <- addReadGroups(config,outstem,outdir)
+	return(bamfile)
 }
 #bwa('fastq/test.fastq','ref/hcv.fasta','tmp')
 
@@ -142,8 +148,7 @@ runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim
 	tmp.dir <- config@tmp.dir
 	
 	bwa(fqfile,reffile,config@tmp.dir)
-
-	addReadGroups(config,sample)
+	#addReadGroups(config,sample)	
 }
 #runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
 
@@ -277,13 +282,13 @@ outputBams <- function(config,samples=config@samples,suffix='')
 #outputBams(config)
 #outputBams(config,getSamplesForSubject(config,'10464592'))
 
-writeConsensusForBam <- function(config,sample)
+writeConsensusForBam <- function(config,sample,bam.dir=config@bam.dir, out.dir=config@consensus.dir)
 {
 	ref <- getRefForSample(sample)
 	reffile <- getRefFile(config,ref)
-	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
-	fastqfile <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
-	#runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
+	bamfile <- concat(bam.dir,'/',sample,'.bam')
+	fastqfile <- concat(out.dir,'/',sample,'.consensus.fastq')
+	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
 	checkFileExists(fastqfile)
 	fastq2fasta(fastqfile)
 }
@@ -407,15 +412,15 @@ unmergeBams <- function(config,stem)
 
 ################################################################
 
-fixBaiFiles <- function(config)
+fixBaiFiles <- function(config, bam.dir=config@bam.dir)
 {
-	for (filename in list.files(config@bam.dir, pattern='\\.bam$'))
+	for (filename in list.files(bam.dir, pattern='\\.bam$'))
 	{
 		stem <- stripExtension(filename)
-		baifile <- concat(config@bam.dir,'/',stem,'.bam.bai')
+		baifile <- concat(bam.dir,'/',stem,'.bam.bai')
 		if (!file.exists(baifile))
 		{
-			oldbaifile <- concat(config@bam.dir,'/',stem,'.bai')
+			oldbaifile <- concat(bam.dir,'/',stem,'.bai')
 			runCommand('mv "',oldbaifile,'" "',baifile,'"')
 		}
 	}
@@ -424,19 +429,20 @@ fixBaiFiles <- function(config)
 
 ##################################################################3
 
-filterBam <- function(config, sample)
+filterBam <- function(config, sample, bam.dir=config@bam.dir, map.quality=config@map.quality)
 {
 	#bamtools filter -in out/bam/KT9.plasmid.bam -out out/bam/KT9.plasmid.filtered.bam -mapQuality ">30" 
-	infile <- concat(config@bam.dir,'/',sample,'.bam')
-	outfile <- concat(config@bam.dir,'/',sample,'.filtered.bam')
+	infile <- concat(bam.dir,'/',sample,'.bam')
+	outfile <- concat(bam.dir,'/',sample,'.filtered.bam')
 	checkFileExists(infile)
 	str <- 'bamtools filter'
 	str <- concat(str,' -in ',infile)
 	str <- concat(str,' -out ',outfile)
-	str <- concat(str,' -mapQuality "',config@map.quality,'"')
+	str <- concat(str,' -mapQuality "',map.quality,'"')
 	runCommand(str)
 	checkFileExists(outfile)
 	runCommand('samtools index ',outfile)
+	return(outfile)
 }
 
 filterBams <- function(config, samples=config@samples)

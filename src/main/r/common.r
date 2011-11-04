@@ -96,10 +96,15 @@ runCommand <- function(...)
 	if (command!='')
 	{
 		system(command)
-		appendLog(command)
+		#appendLog(command)
 	}
 }
 #runCommand('ls')
+
+testCommand <- function(...)
+{
+	print(concat(...))
+}
 
 getField <- function(data, id, col, msg=concat('cannot find col [',col,'] for row [',id,'] in dataframe'))
 {
@@ -835,4 +840,15 @@ addRow <- function(data, vals=NULL)
 	data <- rbind(data,row)
 	return(data)
 }
-addRow(counts, list(codon='ABC'))
+#addRow(counts, list(codon='ABC'))
+
+makeSubDirs <- function(dir, subdirs)
+{
+	runCommand('mkdir ',dir,' -p')
+	for (subdir in splitFields(subdirs))
+	{
+		subdir <- concat(dir,'/',subdir)
+		runCommand('mkdir ',subdir,' -p')
+	}
+}
+
