@@ -48,6 +48,8 @@ readFastaFile <- function(filename)
 readFastaFiles <- function(dir, pattern='*.fasta')
 {
 	filenames <- list.files(dir,pattern)
+	if (length(filenames)==0)
+		throw('could not find any fasta files in directory: ',dir)
 	#print(filenames)
 	data <- list()
 	for (filename in filenames)

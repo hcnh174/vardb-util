@@ -287,8 +287,9 @@ extractSampleFile <- function(config,id)
 }
 #extractSampleFile(config, 'nextgen4-3D')
 
+############################################################
 
-checkSampleMapping <- function(config, id, refs)
+checkSampleMappingForRun <- function(config, id, refs)
 {
 	#check a specific sample using several metrics
 	dir <- config@check.dir
@@ -303,28 +304,35 @@ checkSampleMapping <- function(config, id, refs)
 	samples <- c()
 	for (ref in splitFields(refs))
 	{
-		for (sample in c(concat(id,'__',ref),concat(id,'.trimmed','__',ref)))
+		for (sample in c(concat(id,'__',ref)))#,concat(id,'.trimmed','__',ref)))
 		{
 			samples <- c(samples,sample)
 			reffile <- getRefFile(config,ref)			
 			bwa(fqfile, reffile, bam.dir, outstem=sample)
-			filterBam(config, sample, bam.dir=bam.dir)
-			sample.filtered <- concat(sample,'.filtered')
-			samples <- c(samples, sample.filtered)
 			writeConsensusForBam(config, sample, bam.dir=bam.dir, out.dir=dir)
-			writeConsensusForBam(config, sample.filtered, bam.dir=bam.dir, out.dir=dir)
 		}
 	}
 	runCommand('rm -r ',bam.dir,'/*.sam')
 	runCommand('rm -r ',bam.dir,'/*.sai')
 	fixBaiFiles(config,bam.dir)
 	print(samples)
-	outfile <- concat(dir,'/','readcounts-',id,'.txt')
+	return(samples)
+}
+
+checkSampleMappingForSubject <- function(config, subject, refs)
+{
+	samples <- c()
+	for (id in config@data[which(config@data$subject==subject),'id'])
+	{
+		try({
+			smpls <- checkSampleMappingForRun(config,id,refs)
+			samples <- c(samples,smpls)
+		})
+	}
+	dir <- config@check.dir
+	bam.dir <- concat(dir,'/bam')
+	outfile <- concat(dir,'/','readcounts-',subject,'.txt')
 	report <- getMappingReport(config, bam.dir=bam.dir, samples,  outfile=outfile)
 	return(report)
 }
-#checkSampleMapping(config,'nextgen4-3D','HCV-KT9,HCV-HCJ4')
-checkSampleMapping(config,'nextgen4-3B','HCV-KT9,HCV-HCJ4')#NS5Aaa31
-checkSampleMapping(config,'nextgen4-5H','HCV-KT9,HCV-HCJ4')#NS5Aaa93
-
 

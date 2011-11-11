@@ -115,7 +115,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	
 	reffilename <- concat(.Object@config.dir,'/refs.txt')
 	data <- loadDataFrame(reffilename, idcol='ref')
-	sequences <- readFastaFiles(.Object@config.dir,'^refs.*\\.fasta')
+	sequences <- readFastaFiles(.Object@config.dir,'^refs.*\\.fasta$')
 	for (id in names(sequences))
 	{
 		data[id,'sequence'] <- sequences[[id]]
