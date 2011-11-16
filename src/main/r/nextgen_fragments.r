@@ -14,8 +14,9 @@ findFragmentStartPosition <- function(refseq, seq)
 #findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS3') #3410..5302
 #findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS5A') #6248..7588
 
-findFragmentStartPositions <- function(refseq, suffix, filename='../config/merged/fragments.fasta', outfile='../config/merged/fragments-temp.txt')
+findFragmentStartPositions <- function(config, refid, region, filename=concat(config@config.dir,'/fragments-',region,'.fasta'), outfile=concat(config@config.dir,'/tmp/fragments-',refid,'-',region,'.txt'))
 {
+	refseq <-  getRefSequence(config,refid)
 	seqs <- readFastaFile(filename)
 	starts <- data.frame()
 	for (id in names(seqs))
@@ -30,10 +31,14 @@ findFragmentStartPositions <- function(refseq, suffix, filename='../config/merge
 	writeTable(starts,outfile,row.names=FALSE)
 	return(starts)
 }
-#refseq <-  getRefSequence(config,'HCV-HCJ4'); starts <- findFragmentStartPositions(refseq,'NS5A-31', filename='../config/merged/fragments-NS5A-31.fasta')
+#findFragmentStartPositions(config,'HCV-HCJ4','NS5A-93')
 
-findBestFragmentStartPositions <- function(refseq, filename='../config/merged/fragments.fasta', startsfile='../config/merged/fragments-temp.txt')
+findBestFragmentStartPositions <- function(config, refid, region, 
+		filename=concat(config@config.dir,'/fragments-',region,'.fasta'), 
+		startsfile=concat(config@config.dir,'/tmp/fragments-',refid,'-',region,'.txt'),
+		cutoff=0.4)
 {
+	refseq <-  getRefSequence(config,refid)
 	seqs <- readFastaFile(filename)
 	data <- loadDataFrame(startsfile, idcol='id')
 	data <- data[order(data$region,data$start),]
@@ -48,13 +53,33 @@ findBestFragmentStartPositions <- function(refseq, filename='../config/merged/fr
 		{
 			start <- rows[id,'start']
 			print(concat(id,': ',start))
-			print(tolower(substring(refseq,start,start+samplelen-1)))
-			print(tolower(substring(seqs[[id]],1,samplelen)))
+			seq1 <- tolower(substring(refseq,start,start+samplelen-1))
+			seq2 <- tolower(substring(seqs[[id]],1,samplelen))
+			mismatches <- MiscPsycho::stringMatch(seq1, seq2, normalize = 'no')
+			freq <- mismatches/nchar(seq2)
+			if (freq > cutoff)
+			{
+				#aln <- Biostrings::pairwiseAlignment(seq1,seq2,type='local')#gapOpening = -1000000)#,)#,
+				#offset <- aln@subject@range@start
+				#newstart <- start+offset
+				#data[id,'oldstart'] <- start
+				#data[id,'start'] <- newstart
+				print('')
+				#print(aln)
+				print(seq1)
+				print(seq2)
+				print(concat(freq,' [',mismatches,'/',nchar(seq2),']'))
+				#print(concat('offset=',offset,', oldstart=',start,', newstart=',newstart))
+				print('')
+				print('###########################################################')
+				print('')
+			}
 		}
 	}
+	#writeTable(data,startsfile,row.names=FALSE)
 	return(starts)
 }
-#refseq <-  getRefSequence(config,'HCV-HCJ4'); starts <- findBestFragmentStartPositions(refseq, filename='../config/merged/fragments-NS5A-31.fasta')
+#findBestFragmentStartPositions(config,'HCV-KT9','NS3-36')
 
 getSharedNameForFragment <- function(refid,id)
 {
@@ -74,8 +99,10 @@ mergeFragmentWithReferenceSequence <- function(refseq, seq, start, sep='')
 #seq <- getField(config@refs,'HCV-KT9-NS3','sequence')
 #mergeFragmentWithReferenceSequence(refseq,seq)
 
-createHybridReferenceSequences <- function(config, refid, fragments.dir='../config/merged', startsfile='../config/merged/fragments.txt',
-		outfile='../config/merged/hybrid.fasta')
+createHybridReferenceSequences <- function(config, refid,
+	fragments.dir=concat(config@config.dir,'/fragments'),
+	startsfile=concat(fragments.dir,'/fragments-',refid,'.txt'), #concat(config@config.dir,'/fragments/fragments-',refid,'.txt'),
+	outfile=concat(config@config.dir,'/tmp/hybrid-',refid,'.fasta'))
 {
 	origrefseq <-  tolower(getRefSequence(config,refid))
 	seqs <- readFastaFiles(fragments.dir,'^fragments.*\\.fasta')

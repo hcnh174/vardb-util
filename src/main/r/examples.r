@@ -240,3 +240,9 @@ if(.Platform$OS.type=="windows") {
 }
 
 # results of last expression saved in .Last.value
+
+#http://r.789695.n4.nabble.com/Stack-trace-td4021537.html
+traceback() #gets you a stack trace at the last error
+options(warn=2) #makes warnings into errors
+options(error=recover) #starts the post-mortem debugger at any error, allowing you to inspect the stack interactively.
+options(warning.expression=quote(recover())) #starts the same debugger at each warning.

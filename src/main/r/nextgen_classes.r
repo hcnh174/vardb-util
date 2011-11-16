@@ -2,6 +2,7 @@
 setClass("nextgenconfig",
 		representation(			
 				config.dir='character',
+				data.dir='character',
 				out.dir='character',
 				ref.dir='character',
 				index.dir='character',
@@ -15,14 +16,14 @@ setClass("nextgenconfig",
 				positions='list',
 				subjects='vector',
 				samples='vector',
-				groups='vector',
-				illumina.dir='character',
+				groups='vector',				
 				fastq.dir='character',
 				bam.dir='character',
 				vcf.dir='character',
 				qc.dir='character',
 				pileup.dir='character',
 				tables.dir='character',
+				charts.dir='character',
 				counts.dir='character',
 				consensus.dir='character',
 				coverage.dir='character',
@@ -44,12 +45,16 @@ setClass("nextgenconfig",
 		)
 )
 
-setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
+setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.dir='~/nextgen/data')
 {	
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	if (!file.exists(config.dir))
 		throw('config directory does not exist: ',config.dir)
 	.Object@config.dir <- config.dir
+	
+	if (!file.exists(data.dir))
+		throw('data directory does not exist: ',data.dir)
+	.Object@data.dir <- data.dir
 	
 	params <- loadDataFrame(concat(.Object@config.dir,'/params.txt'), idcol='name')
 	for (name in row.names(params))
@@ -108,6 +113,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.')
 	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
 	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
 	.Object@tables.dir <- concat(.Object@out.dir,'/tables')
+	.Object@charts.dir <- concat(.Object@out.dir,'/charts')
 	.Object@consensus.dir <- concat(.Object@out.dir,'/consensus')
 	.Object@coverage.dir <- concat(.Object@out.dir,'/coverage')
 	.Object@tmp.dir <- concat(.Object@out.dir,'/tmp')

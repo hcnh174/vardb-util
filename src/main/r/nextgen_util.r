@@ -268,7 +268,7 @@ extractSampleFile <- function(config,id)
 	folder <- row$folder
 	barcode <- row$barcode
 	lane <- row$lane
-	dir.from <- concat('../data/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
+	dir.from <- concat(config@data.dir,'/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
 	pattern <- concat('^',folder,'_',barcode,'_L00',lane,'_R1_.*\\.fastq.*')
 	for (filename in list.files(dir.from,pattern))
 	{
@@ -295,8 +295,7 @@ checkSampleMappingForRun <- function(config, id, refs)
 	dir <- config@check.dir
 	tmp.dir <- concat(dir,'/tmp')
 	fastq.dir <- concat(dir,'/fastq')
-	bam.dir <- concat(dir,'/bam')
-	makeSubDirs(dir,'tmp,fastq,bam')
+	bam.dir <- concat(dir,'/bam')	
 	extractSampleFile(config,id)
 	trimSolexaqa(config,id,fastq.dir)
 	fqfile <- concat(fastq.dir,'/',id,'.fastq')
@@ -304,8 +303,15 @@ checkSampleMappingForRun <- function(config, id, refs)
 	samples <- c()
 	for (ref in splitFields(refs))
 	{
+		if (is.na(config@refs[ref,'start']))
+		{
+			print(concat('skipping nonexistent ref: ',ref))
+			next
+		}
+		print(ref)
 		for (sample in c(concat(id,'__',ref)))#,concat(id,'.trimmed','__',ref)))
 		{
+			print(sample)
 			samples <- c(samples,sample)
 			reffile <- getRefFile(config,ref)			
 			bwa(fqfile, reffile, bam.dir, outstem=sample)
@@ -321,6 +327,9 @@ checkSampleMappingForRun <- function(config, id, refs)
 
 checkSampleMappingForSubject <- function(config, subject, refs)
 {
+	makeSubDirs(config@check.dir,'tmp,fastq,bam')
+	#writeRefs(config)
+	
 	samples <- c()
 	for (id in config@data[which(config@data$subject==subject),'id'])
 	{
@@ -335,4 +344,37 @@ checkSampleMappingForSubject <- function(config, subject, refs)
 	report <- getMappingReport(config, bam.dir=bam.dir, samples,  outfile=outfile)
 	return(report)
 }
+
+###############################################
+
+displayConfig <- function()
+{
+	data <- loadDataFrame('merged/data.txt', idcol='id')
+	readcounts <- loadDataFrame('merged/readcounts.txt', idcol='id')
+	indent <- '  '
+	for (group in unique(data$group))
+	{
+		print(concat('group: ',group))
+		grouprows <- data[which(data$group==group),]
+		for (subgroup in unique(grouprows$table))
+		{
+			print(concat(indent,'subgroup: ',subgroup))
+			subgrouprows <- grouprows[which(grouprows$table==subgroup),]
+			for (replicate in unique(subgrouprows$column))
+			{
+				replicaterows <- subgrouprows[which(subgrouprows$column==replicate),]
+				stem <- unique(replicaterows$stem)
+				print(stem)
+				counts <- readcounts[which(readcounts$id==stem),]
+				print(concat(indent,indent,'replicate: ',replicate,', counts=',counts$mapped,'/',counts$total,' (',counts$prop,')'))				
+				for (run in unique(replicaterows$id))
+				{
+					row <- replicaterows[which(replicaterows$id==run),]
+					print(concat(indent,indent,indent,'run: ',run,', region=',row$region))
+				}
+			}
+		}
+	}
+}
+#displayConfig()
 

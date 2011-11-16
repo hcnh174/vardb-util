@@ -1,4 +1,4 @@
-preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,consensus,coverage')
+preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,charts,consensus,coverage')
 {
 #	runCommand('mkdir ',config@out.dir,' -p')
 #	for (subdir in splitFields(subdirs))
@@ -30,7 +30,8 @@ preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tm
 		folder <- row$folder
 		barcode <- row$barcode
 		lane <- row$lane
-		dir.from <- concat('../data/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
+		#dir.from <- concat('../data/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
+		dir.from <- concat(config@data.dir,'/',row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
 		dir.to <- concat(sort.dir,'/',row$stem)
 		pattern <- concat('^',folder,'_',barcode,'_L00',lane,'_R1_.*\\.fastq.*')
 		for (filename in list.files(dir.from,pattern))
@@ -127,7 +128,8 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	samfile <- concat(outdir,'/',outstem,'.sam')
 	saifile <- concat(outdir,'/',outstem,'.sai')
 	
-	runCommand('bwa index ',reffile)
+	if (!file.exists(concat(reffile,'.amb')))
+		runCommand('bwa index ',reffile)
 	runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
 	runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 	checkFileExists(samfile)
@@ -147,9 +149,11 @@ runBwa <- function(config, sample, ref=getRefForSample(sample), trim=config@trim
 	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
 	tmp.dir <- config@tmp.dir
 	
-	bwa(fqfile,reffile,config@tmp.dir)
+	outstem <- concat(stem,'__',ref)
+	bwa(fqfile,reffile,config@tmp.dir,outstem)
 	#addReadGroups(config,sample)	
 }
+#runBwa(config,getSamplesForGroup(config,'MP-424')[1])
 #runBwa(config,'110617HBV-1.10348001.20020530__HBV-RT')
 
 mapReads <- function(config, samples=config@samples)
@@ -162,6 +166,7 @@ mapReads <- function(config, samples=config@samples)
 	outputBams(config, samples)
 }
 #mapReads(config)
+#mapReads(config, getSamplesForGroup(config,'MP-424'))
 #mapReads(config, getSamplesForSubject(config,'10464592'))
 
 ############################################
@@ -271,7 +276,7 @@ outputBam <- function(config,sample,suffix='')
 }
 #outputBam(config,'merged','.realigned.recal')
 
-outputBams <- function(config,samples=config@samples,suffix='')
+outputBams <- function(config,samples=config@samples,suffix='') #ifelse(config@trim,'.trimmed',''))
 {
 	for (sample in samples)
 	{
@@ -280,6 +285,7 @@ outputBams <- function(config,samples=config@samples,suffix='')
 	fixBaiFiles(config)
 }
 #outputBams(config)
+#outputBams(config,getSamplesForGroup(config,'MP-424'))
 #outputBams(config,getSamplesForSubject(config,'10464592'))
 
 writeConsensusForBam <- function(config,sample,bam.dir=config@bam.dir, out.dir=config@consensus.dir)
@@ -290,7 +296,7 @@ writeConsensusForBam <- function(config,sample,bam.dir=config@bam.dir, out.dir=c
 	fastqfile <- concat(out.dir,'/',sample,'.consensus.fastq')
 	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
 	checkFileExists(fastqfile)
-	fastq2fasta(fastqfile)
+	#fastq2fasta(fastqfile)
 }
 #writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
 
@@ -512,7 +518,7 @@ concatTablesByGroup <- function(config, groups=config@groups)
 analyzeReadsForSample <- function(config,sample)
 {
 	mapReads(config,sample)
-	filterBams(config,sample)
+	if (config@filter) filterBams(config,sample)
 	writeConsensusForBams(config,sample)
 	exportPileup(config,sample)
 	countCodons(config,sample)
@@ -525,8 +531,10 @@ analyzeReadsForGroup <- function(config,group)
 	analyzeReadsForSample(config,samples)
 	writeCodonTables(config,group)
 	concatTablesByGroup(config,group)
+	makeAminoAcidBarcharts(config,group)
 }
 #analyzeReadsForGroup(config,'MP-424')
+#analyzeReadsForGroup(config,'hcv_infection')
 #analyzeReadsForGroup(config,'KT9')
 
 #analyzeReads<- function(config)

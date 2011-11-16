@@ -659,6 +659,11 @@ getFileExtension <- function (filenames)
 }
 #getFileExtension('L_CTTGTA_L007_R1_001.fastq.gz')
 
+openPdf <- function(filename)
+{
+	system(concat('evince ',filename)) #system(concat('open ',pdffile))
+}
+
 sweaveToPdf <- function(filename, clean=TRUE)
 {
 	stem <- stripPath(filename)
@@ -697,8 +702,7 @@ sweaveToPdf <- function(filename, clean=TRUE)
 		system(concat('rm --f Rplots.pdf'))
 		system(concat('rm --f ',stem,'-*.pdf'))
 	}
-	system(concat('evince ',pdffile))
-	#system(concat('open ',pdffile))
+	openPdf(pdffile)
 }
 #sweaveToPdf('tables.Rnw')
 

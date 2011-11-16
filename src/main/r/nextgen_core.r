@@ -1,8 +1,10 @@
-loadConfig <- function(dir=NULL)
+loadConfig <- function(config.dir=NULL, data.dir=NULL)
 {
-	if (is.null(dir))
-		dir <- concat('../config/',getCurDir())
-	config <- new('nextgenconfig',config.dir=dir)
+	if (is.null(config.dir))
+		config.dir <- concat('~/nextgen/config/',getCurDir())	#dir <- concat('../config/',getCurDir())
+	if (is.null(data.dir))
+		data.dir <-'~/nextgen/data/'
+	config <- new('nextgenconfig',config.dir=config.dir, data.dir=data.dir)
 	try({config <- preloadCodonPositions(config)})
 	return(config)
 }
@@ -92,6 +94,7 @@ writeRefs <- function(config)
 			seq <- config@refs[ref,'sequence']
 			write.fasta(s2c(seq), ref, file.out=reffile)
 			checkFileExists(reffile)
+			runCommand('bwa index ',reffile)
 		}
 	}
 }

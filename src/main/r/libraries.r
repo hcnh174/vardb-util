@@ -26,6 +26,7 @@ install.packages('relaimpo')
 install.packages('reshape')
 install.packages("foreach")
 install.packages("doSNOW")
+install.packages('MiscPsycho')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
