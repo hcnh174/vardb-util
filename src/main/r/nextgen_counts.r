@@ -3,7 +3,7 @@ loadPileupData <- function(config, sample)
 	samplename <- ifelse(config@filter,concat(sample,'.filtered'), sample)
 	filename <- concat(config@pileup.dir,'/',samplename,'.txt'); print(filename) # load the corresponding data file
 	data <- loadDataFrame(filename)
-	print(concat('loaded file ',filename,'. contains ',nrow(data),' reads'))
+	printcat('loaded file ',filename,'. contains ',nrow(data),' reads')
 	ref <- getRefForSample(sample)
 	startnt <- getField(config@refs,ref,'start')#startnt <- config@refs[ref,'start']	
 	data$ntnum <- data$position + startnt - 1
@@ -174,7 +174,7 @@ createAminoAcidCountTable <- function(config, data, params, positions)
 
 countCodonsForRegion <- function(config, data, params, variantdata)
 {
-	print(concat('countCodonsForRegion: ',as.character(params@region)))
+	printcat('countCodonsForRegion: ',as.character(params@region))
 	positions <- getCodonPositionsForRegion(config,params@region,params@ref)
 	variantdata@nt <- rbind(variantdata@nt, createNtCountTable(config, data, params, positions))
 	variantdata@codons <- rbind(variantdata@codons, createCodonCountTable(config, data, params, positions))
@@ -192,7 +192,7 @@ getCodonCountFilename <- function(config, sample, type)
 
 countCodonsForSample <- function(config, sample)
 {
-	print(concat('countCodonsForSample: ',sample))
+	printcat('countCodonsForSample: ',sample)
 	params <- new('sampleparams', sample=sample)
 	row <-config@data[which(config@data$sample==sample),]
 	params@group <- unique(row$group)

@@ -861,24 +861,6 @@ makeCodonBarcharts <- function(config, subject=NULL, ...)
 
 #############################################################3
 
-#makeVariantTable <- function(config, type, subject, region, cutoff=0)
-#{
-#	aanum <- as.integer(config@regions[region,'aafocus'])
-#	data.subset <- getCodonCountSubset(config,subject,region,type,aanum,cutoff=cutoff)
-#	if (type=='codons')
-#		frmla <- as.formula(codon ~ replicate)
-#	else frmla <- as.formula(aa ~ replicate)
-#	counts <- cast(data.subset, frmla, value='count', fun.aggregate=function(x) return(x[1])); counts
-#	counts <- counts[order(counts[,2], decreasing=TRUE),]
-#	row.names(counts) <- seq(nrow(counts))
-#	#row <- data.frame(codon="Total", t(colSums(counts[,-1], na.rm=TRUE)))
-#	#colnames(row) <- colnames(counts)
-#	#counts <- rbind(counts,row)	
-#	return(counts)
-#}
-##makeVariantTable(config,'codons','KT9','NS3aa156')
-##makeVariantTable(config,'aa','KT9','NS3aa156')
-
 makeVariantTable <- function(config, type, subject, region, cutoff=0)
 {
 	aanum <- as.integer(config@regions[region,'aafocus'])
@@ -889,9 +871,6 @@ makeVariantTable <- function(config, type, subject, region, cutoff=0)
 	counts <- cast(data.subset, frmla, value='count', fun.aggregate=function(x) return(x[1])); counts
 	counts <- counts[order(counts[,2], decreasing=TRUE),]
 	row.names(counts) <- seq(nrow(counts))
-	#row <- data.frame(codon="Total", t(colSums(counts[,-1], na.rm=TRUE)))
-	#colnames(row) <- colnames(counts)
-	#counts <- rbind(counts,row)
 	
 	# add an asterisk to indicate the reference codon
 	refcodon <- getReferenceCodon(config,subject,region)

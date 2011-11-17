@@ -156,13 +156,13 @@ class(data)
 methods("print")
 methods(class='lm')
 
-define classes: setClass()
-create objects: new()
-define generics: setGeneric()
-define methods: setMethods()
-convert objects: as(), setAs()
-check object validity: setValidity(), validObject()
-access registry: showClass(), showMethods(), getMethod()
+#define classes: setClass()
+#create objects: new()
+#define generics: setGeneric()
+#define methods: setMethods()
+#convert objects: as(), setAs()
+#check object validity: setValidity(), validObject()
+#access registry: showClass(), showMethods(), getMethod()
 
 
 showClass("pixmap")
@@ -246,3 +246,21 @@ traceback() #gets you a stack trace at the last error
 options(warn=2) #makes warnings into errors
 options(error=recover) #starts the post-mortem debugger at any error, allowing you to inspect the stack interactively.
 options(warning.expression=quote(recover())) #starts the same debugger at each warning.
+
+
+#http://tonybreyal.wordpress.com/2011/11/16/fgui-automatically-creating-widgets-for-arguments-of-a-function-a-quick-example/
+# load packages
+require(fgui)
+
+# add two number together and return the value
+add <- function(x1,  x2) {
+	return(x1 + x2)
+}
+
+add <- function(x1=4,  x2=2) {
+	return(x1 + x2)
+}
+
+# execute function through GUI
+y <- guiv(add)
+# [1] 5

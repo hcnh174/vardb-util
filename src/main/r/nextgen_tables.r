@@ -1,4 +1,4 @@
-getCodonCountSubset <- function(config, group, subgroup, region, filetype, start, end=start, cutoff=0)
+getCodonCountSubset <- function(config, group, subgroup, region, filetype, start, end=start, minreads=0)
 {
 	samples <- getSamplesForSubGroup(config,group,subgroup)
 	data <- NULL
@@ -10,21 +10,21 @@ getCodonCountSubset <- function(config, group, subgroup, region, filetype, start
 			data <- data.sample
 		else data <- rbind(data,data.sample)
 	}
-	data.subset <- data[which(data$region==region & data$aanum>=start & data$aanum<=end & data$count>=cutoff),]
+	data.subset <- data[which(data$region==region & data$aanum>=start & data$aanum<=end & data$count>=minreads),]
 	data.subset$column <- factor(data.subset$column)
 	data.subset$aanum <- factor(data.subset$aanum)
 	return(data.subset)
 }
 #getCodonCountSubset(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy','NS3aa36','codons',)
 
-makeCodonVariantTable <- function(config, group, subgroup, region, aanum, cutoff=0)
+makeCodonVariantTable <- function(config, group, subgroup, region, aanum, minreads=0)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
 	gene <- config@regions[region,'gene']
 	ref <- getRefForGroup(config,group)
 	positions <- getCodonPositionsForGene(config,gene,ref)
 	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
-	data.subset <- getCodonCountSubset(config,group,subgroup,region,'codons',aanum,cutoff=cutoff)
+	data.subset <- getCodonCountSubset(config,group,subgroup,region,'codons',aanum,minreads=minreads)
 	counts <- cast(data.subset, codon ~ column, value='count', fun.aggregate=function(x) return(x[1])); counts
 	if (length(which(counts$codon==refcodon))==0)
 		counts <- addRow(counts, list(codon=refcodon))
@@ -51,7 +51,7 @@ makeCodonVariantTable <- function(config, group, subgroup, region, aanum, cutoff
 	totalrow[,countcols] <- sums
 	counts <- rbind(counts,totalrow)
 	
-	freqrow <- makeRow(counts,list(codon='freq'))
+	freqrow <- makeRow(counts,list(codon='maf'))
 	freqrow[,countcols] <- format(mafs/sums, digits=3)
 	counts <- rbind(counts,freqrow)
 
@@ -60,11 +60,13 @@ makeCodonVariantTable <- function(config, group, subgroup, region, aanum, cutoff
 #group <- 'MP-424'; subgroup <- 'undetectable_in_absence_of_therapy'; region <- 'NS3aa36'; aanum <- 36
 #makeCodonVariantTable(config,group,subgroup,region,aanum,50)
 
+
+
 appendVariantTablesToLatex <- function(config,tables)
 {
 	for (subject in names(tables))
 	{
-		#print(concat('Mutation: ',as.character(config@subjects[subject,'mutation'][[1]])))
+		#printcat('Mutation: ',as.character(config@subjects[subject,'mutation'][[1]]))
 		for (region in names(tables[[subject]]))
 		{
 			tbl <- tables[[subject]][[region]]
@@ -79,8 +81,9 @@ appendVariantTablesToLatex <- function(config,tables)
 
 ###############################################
 
-writeCodonTables <- function(config, groups=config@groups, cutoff=2)
+writeCodonTables <- function(config, groups=config@groups, minreads=config@minreads)
 {
+	printcat('using minreads: ',minreads)
 	tbls <- list()
 	for (group in groups)
 	{
@@ -92,9 +95,9 @@ writeCodonTables <- function(config, groups=config@groups, cutoff=2)
 			{
 				for (aanum in getFociForRegion(config,region))
 				{
-					tbl <- makeCodonVariantTable(config, group, subgroup, region, aanum, cutoff)
+					tbl <- makeCodonVariantTable(config, group, subgroup, region, aanum, minreads)
 					identifier <- concat(group,'-',subgroup,'-',region,'-',aanum,'-',ref)
-					filename <- concat(config@tables.dir,'/table-',identifier,'.txt')
+					filename <- concat(config@tables.dir,'/table-codons-',identifier,'.txt')
 					writeTable(tbl,filename,row.names=FALSE)
 					tbls[[identifier]] <- tbl
 				}
@@ -106,6 +109,83 @@ writeCodonTables <- function(config, groups=config@groups, cutoff=2)
 #writeCodonTables(config,'MP-424')
 #writeCodonTables(config,'confirm_with_new_reagents')
 #writeCodonTables(config,'PXB0220-0030')
+
+
+###############################################
+
+makeAminoAcidVariantTable <- function(config, group, subgroup, region, aanum, minreads=0)
+{
+	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
+	gene <- config@regions[region,'gene']
+	ref <- getRefForGroup(config,group)
+	positions <- getCodonPositionsForGene(config,gene,ref)
+	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
+	refaa <- translateCodon(refcodon)
+	data.subset <- getCodonCountSubset(config,group,subgroup,region,'aa',aanum,minreads=minreads)
+	counts <- cast(data.subset, aa ~ column, value='count', fun.aggregate=function(x) return(x[1]))
+	if (length(which(counts$aa==refaa))==0)
+		counts <- addRow(counts, list(aa=refaa))
+	counts$isref <- ifelse(counts$aa==refaa,1,0)
+	counts[which(counts$aa==refaa),'aa'] <- concat(refaa,'*')
+	counts <- counts[order(counts$isref,counts$aa,decreasing=TRUE),]
+	print(colnames(counts))
+	#return(counts)
+	countcols <- removeElements(colnames(counts),'aa,isref')
+	counts <- counts[,c('aa',countcols)]
+
+	mafs <- c(); sums <- c()
+	for (col in countcols)
+	{
+		colsum <- sum(counts[[col]], na.rm=TRUE)
+		if (length(colsum)==0) colsum <- 0
+		sums <- c(sums,colsum)
+		
+		maf <- sort(as.numeric(names(xtabs(~counts[[col]]))), decreasing=TRUE)[2]
+		if (is.na(maf)) maf <- 0
+		mafs <- c(mafs,maf)
+	}
+	
+	totalrow <- makeRow(counts,list(aa='total'))
+	totalrow[,countcols] <- sums
+	counts <- rbind(counts,totalrow)
+	
+	freqrow <- makeRow(counts,list(aa='maf'))
+	freqrow[,countcols] <- format(mafs/sums, digits=3)
+	counts <- rbind(counts,freqrow)
+	
+	return(counts)
+}
+#group <- 'hcv_infection'; subgroup <- 'hcv_infection'; region <- 'NS3'; aanum <- 36
+#group <- 'confirm_plasmid_with_new_reagents'; subgroup <- 'confirm_plasmid_with_new_reagents'; region <- 'NS3'; aanum <- 36
+#counts <- makeAminoAcidVariantTable(config,group,subgroup,region,aanum)
+#counts
+
+writeAminoAcidTables <- function(config, groups=config@groups, minreads=config@minreads)
+{
+	printcat('using minreads: ',minreads)
+	tbls <- list()
+	for (group in groups)
+	{
+		ref <- getRefForGroup(config,group)
+		for (subgroup in getTablesForGroup(config,group))
+		{
+			#print(subgroup)
+			for (region in getRegionsForSubGroup(config,group,subgroup))
+			{
+				for (aanum in getFociForRegion(config,region))
+				{
+					tbl <- makeAminoAcidVariantTable(config, group, subgroup, region, aanum, minreads)
+					identifier <- concat(group,'-',subgroup,'-',region,'-',aanum,'-',ref)
+					filename <- concat(config@tables.dir,'/table-aa-',identifier,'.txt')
+					writeTable(tbl,filename,row.names=FALSE)
+					tbls[[identifier]] <- tbl
+				}
+			}
+		}
+	}
+	return(tbls)
+}
+#writeCowriteAminoAcidTablesdonTables(config,'MP-424')
 
 #################################################################
 

@@ -25,10 +25,10 @@ options("width"=200)
 
 #################################################################
 		
-concat <- function(...)
-{
-	return(paste(..., sep=''))
-}
+#concat <- function(...)
+#{
+#	return(paste(..., sep=''))
+#}
 
 #http://jermdemo.blogspot.com/2011/10/making-rs-paste-act-more-like-concat.html
 concat <- function(..., sep='', collapse=NULL)
@@ -45,6 +45,12 @@ concat <- function(..., sep='', collapse=NULL)
 	}
 }
 #concat('abc','def','ghi')
+
+printcat <- function(...)
+{
+	print(concat(...))
+}
+#printcat('abc','def','ghi')
 
 loadUtilFiles <- function(filenames)
 {

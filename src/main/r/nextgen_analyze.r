@@ -1,5 +1,5 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
-loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments')
+loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments,nextgen_report')
 config <- loadConfig()
 
 #analyzeReads<- function(config)
@@ -44,6 +44,36 @@ analyzeReadsForGroup(config,'NS3_V36A_mutation_maintained')
 analyzeReadsForGroup(config,'NS5A_L31V_mutation_maintained')
 analyzeReadsForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
 
-#KT9
-#
-#HBV_nucleoside_analogues
+doForSample <- function(config,sample)
+{
+	#mapReads(config,sample)
+	#if (config@filter) filterBams(config,sample)
+	#writeConsensusForBams(config,sample)
+	#exportPileup(config,sample)
+	#countCodons(config,sample)
+}
+#doForSample(config,config@samples)
+
+doForGroup <- function(config,group)
+{
+	samples <- getSamplesForGroup(config,group)
+	#doForSample(config,samples)
+	#analyzeReadsForSample(config,samples)
+	writeCodonTables(config,group,minreads=40)
+	writeAminoAcidTables(config,group,minreads=40)
+	concatTablesByGroup(config,group)
+	makeAminoAcidBarcharts(config,group)
+}
+doForGroup(config,'KT9')
+doForGroup(config,'confirm_plasmid_with_new_reagents')
+doForGroup(config,'HBV_nucleoside_analogues')
+
+doForGroup(config,'MP-424')
+doForGroup(config,'BMS-790052_BMS-650032')
+doForGroup(config,'hcv_infection')
+
+doForGroup(config,'BMS-790052_MP-424')
+doForGroup(config,'NS3_V36A_mutation_maintained')
+doForGroup(config,'NS5A_L31V_mutation_maintained')
+
+doForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')

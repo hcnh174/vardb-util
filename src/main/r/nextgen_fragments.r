@@ -8,7 +8,7 @@ findFragmentStartPosition <- function(refseq, seq)
 	startnt <- Biostrings::pattern(psa1)@range@start
 	#return(Biostrings::pattern(psa1)@range)
 	endnt <- startnt + nchar(seq) -1 
-	print(concat(startnt,'..',endnt))
+	printcat(startnt,'..',endnt)
 	return(list(start=startnt,end=endnt))
 }
 #findFragmentStartPosition(config,'HCV-HCJ4','HCV-KT9-NS3') #3410..5302
@@ -52,7 +52,7 @@ findBestFragmentStartPositions <- function(config, refid, region,
 		for (id in rownames(rows))
 		{
 			start <- rows[id,'start']
-			print(concat(id,': ',start))
+			printcat(id,': ',start)
 			seq1 <- tolower(substring(refseq,start,start+samplelen-1))
 			seq2 <- tolower(substring(seqs[[id]],1,samplelen))
 			mismatches <- MiscPsycho::stringMatch(seq1, seq2, normalize = 'no')
@@ -68,8 +68,8 @@ findBestFragmentStartPositions <- function(config, refid, region,
 				#print(aln)
 				print(seq1)
 				print(seq2)
-				print(concat(freq,' [',mismatches,'/',nchar(seq2),']'))
-				#print(concat('offset=',offset,', oldstart=',start,', newstart=',newstart))
+				printcat(freq,' [',mismatches,'/',nchar(seq2),']')
+				#printcat('offset=',offset,', oldstart=',start,', newstart=',newstart))
 				print('')
 				print('###########################################################')
 				print('')
@@ -124,7 +124,7 @@ createHybridReferenceSequences <- function(config, refid,
 		sharedid <- getSharedNameForFragment(refid,id)
 		refseq <- data[[sharedid]]
 		start <- startdata[id,'start']
-		print(concat('id=',id,', sharedid=',sharedid))
+		printcat('id=',id,', sharedid=',sharedid)
 		hybrid <- mergeFragmentWithReferenceSequence(refseq,seq,start)
 		data[[sharedid]] <- hybrid
 	}

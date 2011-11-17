@@ -32,7 +32,9 @@ setClass("nextgenconfig",
 				profile='character',
 				trim='logical',
 				filter='logical',
-				map.quality='character'
+				map.quality='character',
+				minfreq='numeric',
+				minreads='numeric'
 		),
 		prototype(
 				out.dir='out',
@@ -41,7 +43,9 @@ setClass("nextgenconfig",
 				profile='default',
 				trim=TRUE,
 				filter=TRUE,
-				map.quality='>30'
+				map.quality='>30',
+				minfreq=0.0,
+				minreads=0
 		)
 )
 
@@ -63,6 +67,8 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		value <- getField(params,name,'value')
 		if (type=='logical')
 			value <- as.logical(value)
+		if (type=='numeric')
+			value <- as.numeric(value)
 		slot(.Object,name) <- value
 	}	
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='id')
@@ -71,7 +77,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')#
 	if (.Object@profile!='default')
 	{
-		print(concat('subsetting samples from selected profile: ',.Object@profile))
+		printcat('subsetting samples from selected profile: ',.Object@profile)
 		.Object@profile <- splitFields(.Object@profile)
 		print(.Object@profile)
 		.Object@data <- .Object@data[which(.Object@data$profile %in% .Object@profile),]

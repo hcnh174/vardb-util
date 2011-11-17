@@ -90,7 +90,7 @@ writeRefs <- function(config)
 		reffile <- concat(config@ref.dir,'/',ref,'.fasta')
 		if (!file.exists(reffile))
 		{
-			print(concat('writing ref file ',reffile))
+			printcat('writing ref file ',reffile)
 			seq <- config@refs[ref,'sequence']
 			write.fasta(s2c(seq), ref, file.out=reffile)
 			checkFileExists(reffile)

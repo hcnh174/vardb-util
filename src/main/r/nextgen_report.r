@@ -1,34 +1,4 @@
 
-#reportAminoAcidChange <- function(config, subject, region, log=FALSE, updown=5)
-#{
-#	aanum <- config@regions[region,'aafocus']
-#	if (!is.integer(aanum))
-#		stop(concat('cannot find aafocus aanum for region: ',region,' (',aanum,')'))
-#	aanum <- as.integer(aanum)	
-#	start <- aanum - updown
-#	end <- aanum + updown
-#	
-#	data.subset <- getCodonCountSubset(config,subject,region,'aa', start, end)
-#	
-#	print(data.subset[which(data.subset$aanum==aanum),splitFields('replicate,rank,aa,count,freq')])
-#	#print(head(data.subset))
-#	numcol <- length(unique(data.subset$rank))
-#	col <- gray(numcol:0 / numcol)
-#	if (log)
-#		frmla <- as.formula(log10(count) ~ aanum | replicate)
-#	else frmla <- as.formula(count ~ aanum | replicate)	
-#	chrt <- barchart(frmla, data.subset, group=rank, horizontal=FALSE, stack=TRUE,
-#			main=subject, xlab='Amino acid number', ylab='Amino acid count', sub=region,
-#			col=col, strip=FALSE, strip.left=TRUE, #strip.text = list(cex = 0.75),
-#			#auto.key = list(space = "right"),
-#			layout = c(1,length(unique(data.subset$replicate))))
-#	print(chrt)
-#	addLine(v=aanum - start + 1 - 0.5, col='red', lty=2)
-#	addLine(v=aanum - start + 1 + 0.5, col='red', lty=2)
-#	return(data.subset)
-#}
-##reportAminoAcidChange(config,'PXB0218-0007','NS3aa156')
-
 
 reportAminoAcidChange <- function(config, subject, region, log=FALSE, updown=5)
 {

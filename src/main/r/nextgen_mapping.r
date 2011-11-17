@@ -38,7 +38,7 @@ preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tm
 		{
 			ext <- ifelse(getFileExtension(filename)=='gz','.fastq.gz','.fastq')
 			newfilename <- concat(dir.to,'/',stem,'.',row$region,'.',rowname,ext)
-			#print(concat('cp ', dir.from, filename,' ',newfilename))
+			#printcat('cp ', dir.from, filename,' ',newfilename)
 			runCommand('cp ', dir.from, filename,' ',newfilename)
 		}
 	}
@@ -160,7 +160,7 @@ mapReads <- function(config, samples=config@samples)
 {
 	for (sample in samples)
 	{
-		print(concat('runBwa: ',sample))
+		printcat('runBwa: ',sample)
 		try(runBwa(config,sample))
 	}
 	outputBams(config, samples)
@@ -284,7 +284,7 @@ outputBams <- function(config,samples=config@samples,suffix='') #ifelse(config@t
 	}
 	fixBaiFiles(config)
 }
-#outputBams(config)
+#outputBams(config,getSamplesForGroup(config,'NS5A_L31V_Y93H_mutations_maintained'))
 #outputBams(config,getSamplesForGroup(config,'MP-424'))
 #outputBams(config,getSamplesForSubject(config,'10464592'))
 
@@ -423,12 +423,10 @@ fixBaiFiles <- function(config, bam.dir=config@bam.dir)
 	for (filename in list.files(bam.dir, pattern='\\.bam$'))
 	{
 		stem <- stripExtension(filename)
+		oldbaifile <- concat(bam.dir,'/',stem,'.bai')
 		baifile <- concat(bam.dir,'/',stem,'.bam.bai')
-		if (!file.exists(baifile))
-		{
-			oldbaifile <- concat(bam.dir,'/',stem,'.bai')
+		if (file.exists(oldbaifile) & !file.exists(baifile))
 			runCommand('mv "',oldbaifile,'" "',baifile,'"')
-		}
 	}
 }
 #fixBaiFiles(config)
@@ -455,7 +453,7 @@ filterBams <- function(config, samples=config@samples)
 {
 	for (sample in samples)
 	{
-		print(concat('filter_bam: ',sample))
+		printcat('filter_bam: ',sample)
 		try(filterBam(config,sample))
 	}
 }
@@ -489,7 +487,7 @@ countCodons <- function(config, samples=config@samples)
 {
 	for (sample in samples)
 	{
-		countCodonsForSample(config,sample)
+		try(countCodonsForSample(config,sample))
 	}
 }
 #countCodons(config)
@@ -504,10 +502,12 @@ concatTablesByGroup <- function(config, groups=config@groups)
 {
 	for (group in groups)
 	{
-		infiles <- concat(config@tables.dir,'/table-',group,'*.txt')
-		outfile <- concat(config@tables.dir,'/group-',group,'.txt')
-		#runCommand('cat ',infiles,' > ',outfile)
-		runCommand('tail -n +1 ',infiles,' > ',outfile)
+		for (type in splitFields('codons,aa'))
+		{
+			infiles <- concat(config@tables.dir,'/table-',type,'-',group,'*.txt')
+			outfile <- concat(config@tables.dir,'/group-',type,'-',group,'.txt')
+			runCommand('tail -n +1 ',infiles,' > ',outfile)
+		}
 	}
 }
 #concatTablesByGroup(config)
