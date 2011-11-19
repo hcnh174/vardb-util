@@ -61,24 +61,6 @@ makeCodonVariantTable <- function(config, group, subgroup, region, aanum, minrea
 #makeCodonVariantTable(config,group,subgroup,region,aanum,50)
 
 
-
-appendVariantTablesToLatex <- function(config,tables)
-{
-	for (subject in names(tables))
-	{
-		#printcat('Mutation: ',as.character(config@subjects[subject,'mutation'][[1]]))
-		for (region in names(tables[[subject]]))
-		{
-			tbl <- tables[[subject]][[region]]
-			caption <- concat('Subject: ',as.character(subject[1]),', Region: ',as.character(region[1]))
-			caption <- concat(caption,'\\newline  Description: ',as.character(config@subjects[subject,'description']))
-			caption <- concat(caption,'\\newline')
-			xtbl <- xtable(tbl, caption=caption, digits=0)
-			print(xtbl, include.rownames=FALSE, caption.placement='top', latex.environments='flushleft')
-		}
-	}
-}
-
 ###############################################
 
 writeCodonTables <- function(config, groups=config@groups, minreads=config@minreads)

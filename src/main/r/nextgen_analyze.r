@@ -43,28 +43,34 @@ analyzeReadsForGroup(config,'BMS-790052_MP-424')
 analyzeReadsForGroup(config,'NS3_V36A_mutation_maintained')
 analyzeReadsForGroup(config,'NS5A_L31V_mutation_maintained')
 analyzeReadsForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
+analyzeReadsForGroup(config,'BMS-605339')
+analyzeReadsForGroup(config,'BMS-788329')
+analyzeReadsForGroup(config,'BMS-821095')
+
 
 doForSample <- function(config,sample)
 {
 	#mapReads(config,sample)
 	#if (config@filter) filterBams(config,sample)
 	#writeConsensusForBams(config,sample)
-	#exportPileup(config,sample)
-	#countCodons(config,sample)
+	exportPileup(config,sample)
+	countCodons(config,sample)
 }
 #doForSample(config,config@samples)
 
 doForGroup <- function(config,group)
 {
 	samples <- getSamplesForGroup(config,group)
-	#doForSample(config,samples)
+	#trimSamples(config,samples)
+	doForSample(config,samples)
 	#analyzeReadsForSample(config,samples)
-	writeCodonTables(config,group,minreads=40)
-	writeAminoAcidTables(config,group,minreads=40)
+	writeCodonTables(config,group,minreads=1)
+	writeAminoAcidTables(config,group,minreads=1)
 	concatTablesByGroup(config,group)
-	makeAminoAcidBarcharts(config,group)
+	#makeAminoAcidBarcharts(config,group)
 }
-doForGroup(config,'KT9')
+
+doForGroup(config,'BMS-821095')
 doForGroup(config,'confirm_plasmid_with_new_reagents')
 doForGroup(config,'HBV_nucleoside_analogues')
 
@@ -77,3 +83,7 @@ doForGroup(config,'NS3_V36A_mutation_maintained')
 doForGroup(config,'NS5A_L31V_mutation_maintained')
 
 doForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
+doForGroup(config,'BMS-605339')
+doForGroup(config,'BMS-788329')
+
+doForGroup(config,'KT9')

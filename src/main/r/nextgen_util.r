@@ -190,26 +190,47 @@ getMapStats <- function(bamfile)
 	return(list(total=total, mapped=mapped, prop=prop))
 }
 #getMapStats(concat(config@bam.dir,'/','etsuko_yamada__HCV-HCJ4.bam'))
+#
+#getMappingReport <- function(config, bam.dir=config@bam.dir, samples=config@samples, outfile=concat(config@tmp.dir,'/','readcounts-mapped.txt'))
+#{
+#	counts <- data.frame()
+#	for (sample in samples)
+#	{
+#		try({
+#			stats <- getMapStats(concat(bam.dir,'/',sample,'.bam'))
+#			print(concat('mapstats for ',sample,': ',stats))
+#			counts[sample,'sample'] <- sample
+#			counts[sample,'total'] <- stats$total
+#			counts[sample,'mapped'] <- stats$mapped
+#			counts[sample,'prop'] <- stats$prop
+#		})
+#	}
+#	#outfile <- concat(out.dir,'/','readcounts-mapped.txt')
+#	writeTable(counts,outfile,row.names=FALSE)
+#	return(counts)
+#}
+##getMappingReport(config)
 
 getMappingReport <- function(config, bam.dir=config@bam.dir, samples=config@samples, outfile=concat(config@tmp.dir,'/','readcounts-mapped.txt'))
 {
 	counts <- data.frame()
-	for (sample in samples)
+	for (filename in list.files(bam.dir, pattern='\\.bam$'))
 	{
 		try({
-			stats <- getMapStats(concat(bam.dir,'/',sample,'.bam'))
+			stats <- getMapStats(concat(bam.dir,'/',filename))
+			sample <- stripExtension(filename)
 			print(concat('mapstats for ',sample,': ',stats))
-			counts[sample,'sample'] <- sample
+			counts[sample,'sample'] <- filename
 			counts[sample,'total'] <- stats$total
 			counts[sample,'mapped'] <- stats$mapped
 			counts[sample,'prop'] <- stats$prop
 		})
 	}
-	#outfile <- concat(out.dir,'/','readcounts-mapped.txt')
 	writeTable(counts,outfile,row.names=FALSE)
 	return(counts)
 }
 #getMappingReport(config)
+
 
 bambino <- function(config, sample)
 {
@@ -345,12 +366,42 @@ checkSampleMappingForSubject <- function(config, subject, refs)
 	return(report)
 }
 
+##########################################################################
+
+writeConsensusForBam <- function(config,sample,bam.dir=config@bam.dir, out.dir=config@consensus.dir)
+{
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	bamfile <- concat(bam.dir,'/',sample,'.bam')
+	fastqfile <- concat(out.dir,'/',sample,'.consensus.fastq')
+	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
+	checkFileExists(fastqfile)
+	#fastq2fasta(fastqfile)
+}
+#writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
+
+writeCoverageForBam <- function(config,sample)
+{
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	outfilebase <- concat(config@coverage.dir,'/',sample)
+	
+	str <- 'java -Xmx2g -jar $GTAK_HOME/GenomeAnalysisTK.jar -T DepthOfCoverage'
+	str <- concat(str,' -I ',bamfile)
+	str <- concat(str,' -o ',outfilebase)
+	str <- concat(str,' -R ',reffile)
+	runCommand(str)
+}
+#writeCoverageForBam(config,'PXB0220-0002.wk09__HCV-KT9')
+
+
 ###############################################
 
-displayConfig <- function()
+displayConfig <- function(config)
 {
-	data <- loadDataFrame('merged/data.txt', idcol='id')
-	readcounts <- loadDataFrame('merged/readcounts.txt', idcol='id')
+	data <- loadDataFrame(concat(config@config.dir,'/data.txt'), idcol='id')
+	#readcounts <- loadDataFrame(concat(config@config.dir,'/readcounts.txt'), idcol='id')
 	indent <- '  '
 	for (group in unique(data$group))
 	{
@@ -365,7 +416,8 @@ displayConfig <- function()
 				replicaterows <- subgrouprows[which(subgrouprows$column==replicate),]
 				stem <- unique(replicaterows$stem)
 				print(stem)
-				counts <- readcounts[which(readcounts$id==stem),]
+				#counts <- readcounts[which(readcounts$id==stem),]
+				counts <- list(mapped=0,total=0)
 				print(concat(indent,indent,'replicate: ',replicate,', counts=',counts$mapped,'/',counts$total,' (',counts$prop,')'))				
 				for (run in unique(replicaterows$id))
 				{
@@ -376,5 +428,5 @@ displayConfig <- function()
 		}
 	}
 }
-#displayConfig()
+#displayConfig(config)
 

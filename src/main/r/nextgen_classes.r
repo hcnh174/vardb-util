@@ -84,8 +84,14 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	}
 	
 	subjects <- loadDataFrame(concat(.Object@config.dir,'/subjects.txt'), idcol='id')
+	
 	for (row in row.names(.Object@data))
 	{
+		# if there is no table listed, use the group name
+		group <- .Object@data[row,'group']
+		if (is.na(.Object@data[row,'table']))
+			.Object@data[row,'table'] <- group
+		
 		subject <- .Object@data[row,'subject']
 		col <- .Object@data[row,'column']
 		stem <- subject
@@ -101,11 +107,12 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		
 		.Object@data[row,'stem'] <- stem
 		ref <- subjects[subject,'ref']
+		if (is.na(ref))#check to make sure each subject is defined
+			throw('subject ',subject,' is not defined in subjects.txt')
 		sample <- concat(stem,'__',ref)
 		.Object@data[row,'ref'] <- ref
 		.Object@data[row,'sample'] <- sample
-		#print(sample)
-	}	
+	}
 	
 	.Object@samples <- unique(.Object@data$sample)
 	.Object@subjects <- unique(.Object@data$subject)
@@ -133,6 +140,14 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		data[id,'sequence'] <- sequences[[id]]
 	}
 	.Object@refs <- data
+	
+	#needed <- unique(config@data$ref)
+	#present <- rownames(config@refs)
+	#if (length(removeElements(needed,present)))
+	unmatched <- uniqueValues(unique(.Object@data$ref),rownames(.Object@refs))
+	if (length(unmatched)>0)
+		throw('ref(s) missing: ',unmatched)
+
 	return(.Object)
 })
 

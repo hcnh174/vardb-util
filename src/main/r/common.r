@@ -543,6 +543,19 @@ intersectValues <- function(values1, values2)
 }
 #intersectValues('A,B,C','B,D')
 
+# finds values in 1 that are not in 2
+uniqueValues <- function(values1, values2)
+{
+	values <- c()
+	for (value in splitFields(values1))
+	{
+		if (!containsElement(values2,value))
+			values <- appendValues(values,value)
+	}
+	return(values)
+}
+#uniqueValues('A,B,C','B,D')
+
 excludeColumns <- function(data, cols)
 {
 	cols <- splitFields(cols)
