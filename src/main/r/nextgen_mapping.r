@@ -260,11 +260,11 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	samfile <- concat(outdir,'/',outstem,'.sam')
 	saifile <- concat(outdir,'/',outstem,'.sai')
 	bamfile <- concat(outdir,'/',outstem,'.bam')
-	if (!file.exists(bamfile))
+	if (config@force | !file.exists(bamfile))
 	{		
-		if (!file.exists(concat(reffile,'.amb')))
+		if (config@force | !file.exists(concat(reffile,'.amb')))
 			runCommand('bwa index ',reffile)
-		runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile)
+		runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile) # -k 3 -n 4
 		runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 		checkFileExists(samfile)
 	

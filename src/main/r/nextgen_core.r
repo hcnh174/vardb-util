@@ -88,14 +88,14 @@ writeRefs <- function(config)
 	for (ref in rownames(config@refs))
 	{
 		reffile <- concat(config@ref.dir,'/',ref,'.fasta')
-		if (!file.exists(reffile))
-		{
+		#if (!file.exists(reffile))
+		#{
 			printcat('writing ref file ',reffile)
 			seq <- config@refs[ref,'sequence']
 			write.fasta(s2c(seq), ref, file.out=reffile)
 			checkFileExists(reffile)
 			runCommand('bwa index ',reffile)
-		}
+		#}
 	}
 }
 #writeRefs(config)

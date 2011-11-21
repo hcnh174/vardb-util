@@ -430,3 +430,22 @@ displayConfig <- function(config)
 }
 #displayConfig(config)
 
+###########################################################################
+
+exportUnmappedReads <- function(config,stem)
+{
+	unmapped.dir <- concat(config@out.dir,'/unmapped')
+	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
+	fastqfile <- concat(unmapped.dir,'/',stem,'.unmapped.fastq')
+	trimmedfastqfile <- concat(unmapped.dir,'/',stem,'.unmapped.fastq.trimmed')
+	fastafile <- concat(unmapped.dir,'/',stem,'.unmapped.fasta')
+	tablefile <- concat(unmapped.dir,'/',stem,'.table.txt')
+	countsfile <- concat(unmapped.dir,'/',stem,'.counts.txt')
+	uniquefile <- concat(unmapped.dir,'/',stem,'.unique.txt')
+	runCommand('bam2fastq --force --no-aligned --unaligned --no-filtered -o ',fastqfile,' ',bamfile)
+	runCommand('perl $VARDB_RUTIL_HOME/fq_all2std.pl fq2fa ',fastqfile,' > ',fastafile)
+	runCommand('perl $VARDB_RUTIL_HOME/fastq2table.pl -i ',fastqfile,' -o ',tablefile)
+	runCommand('sort ',tablefile,' | uniq -dc > ',countsfile)
+	runCommand('sort --numeric-sort --reverse ',countsfile,' > ',uniquefile)
+}
+#exportUnmappedReads(config,'nextgen4-8F__HCV-KT9')

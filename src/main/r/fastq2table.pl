@@ -55,8 +55,8 @@ while (<$in>){
   # Prune first char.
   $temp[0] = substr($temp[0], 1);
 
-  # Print to fasta file.
-   print $out "$temp[0]\t$temp[1]\t$temp[2]\t$temp[3]\n";
+	print $out "$temp[1]\n";
+	#print $out "$temp[0]\t$temp[1]\t$temp[2]\t$temp[3]\n";
 }
 
 close $in or die "$in: $!";

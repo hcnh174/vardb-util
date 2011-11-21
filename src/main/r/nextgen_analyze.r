@@ -1,6 +1,7 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments,nextgen_report')
 config <- loadConfig()
+writeRefs(config)
 
 #analyzeReads<- function(config)
 #{
@@ -47,14 +48,16 @@ analyzeReadsForGroup(config,'BMS-605339')
 analyzeReadsForGroup(config,'BMS-788329')
 analyzeReadsForGroup(config,'BMS-821095')
 
+writeConsensusForBam(config,'nextgen4-8F__HCV-KT9')
+
 
 doForSample <- function(config,sample)
 {
-	#mapReads(config,sample)
+	mapReads(config,sample)
 	#if (config@filter) filterBams(config,sample)
 	#writeConsensusForBams(config,sample)
-	exportPileup(config,sample)
-	countCodons(config,sample)
+	#exportPileup(config,sample)
+	#countCodons(config,sample)
 }
 #doForSample(config,config@samples)
 
@@ -64,11 +67,17 @@ doForGroup <- function(config,group)
 	#trimSamples(config,samples)
 	doForSample(config,samples)
 	#analyzeReadsForSample(config,samples)
-	writeCodonTables(config,group,minreads=1)
-	writeAminoAcidTables(config,group,minreads=1)
-	concatTablesByGroup(config,group)
+	#writeCodonTables(config,group,minreads=1)
+	#writeAminoAcidTables(config,group,minreads=1)
+	#concatTablesByGroup(config,group)
 	#makeAminoAcidBarcharts(config,group)
 }
+doForGroup(config,'BMS-605339')
+getMapStats('out/bam/nextgen4-8E__HCV-KT9_katsuyuki_nakazawa.bam')
+getMapStats('out/bam/nextgen4-8F__HCV-KT9_katsuyuki_nakazawa.bam')
+exportUnmappedReads(config,'nextgen4-8E__HCV-KT9_katsuyuki_nakazawa')
+exportUnmappedReads(config,'nextgen4-8F__HCV-KT9_katsuyuki_nakazawa')
+
 
 doForGroup(config,'BMS-821095')
 doForGroup(config,'confirm_plasmid_with_new_reagents')
@@ -83,7 +92,7 @@ doForGroup(config,'NS3_V36A_mutation_maintained')
 doForGroup(config,'NS5A_L31V_mutation_maintained')
 
 doForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
-doForGroup(config,'BMS-605339')
+
 doForGroup(config,'BMS-788329')
 
 doForGroup(config,'KT9')
