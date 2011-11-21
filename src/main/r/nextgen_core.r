@@ -52,7 +52,7 @@ readFastaFiles <- function(dir, pattern='*.fasta')
 	filenames <- list.files(dir,pattern)
 	if (length(filenames)==0)
 		throw('could not find any fasta files in directory: ',dir)
-	#print(filenames)
+	print(filenames)
 	data <- list()
 	for (filename in filenames)
 	{
@@ -290,7 +290,7 @@ translateCodon <- function(codon)
 }
 #translateCodon('GGG')
 
-extractSequence <- function(sequence, start, end, pad=FALSE)
+extractSequence <- function(sequence, start, end)
 {
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	if (start<1)
@@ -334,6 +334,14 @@ splitCodons <- function(sequence,start=1)
 	return(data)
 }
 #splitCodons(sequence)
+
+reverseComplement <- function(seq)
+{
+	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
+	return(c2s(rev(comp(s2c(seq)))))
+}
+#reverseComplement('aaaattttggggcccc')
+
 
 ################################################################################
 

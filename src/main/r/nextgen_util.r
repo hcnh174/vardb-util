@@ -434,10 +434,10 @@ displayConfig <- function(config)
 
 exportUnmappedReads <- function(config,stem)
 {
-	unmapped.dir <- concat(config@out.dir,'/unmapped')
 	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
+	checkFileExists(bamfile)
+	unmapped.dir <- concat(config@out.dir,'/unmapped')	
 	fastqfile <- concat(unmapped.dir,'/',stem,'.unmapped.fastq')
-	trimmedfastqfile <- concat(unmapped.dir,'/',stem,'.unmapped.fastq.trimmed')
 	fastafile <- concat(unmapped.dir,'/',stem,'.unmapped.fasta')
 	tablefile <- concat(unmapped.dir,'/',stem,'.table.txt')
 	countsfile <- concat(unmapped.dir,'/',stem,'.counts.txt')
@@ -447,5 +447,91 @@ exportUnmappedReads <- function(config,stem)
 	runCommand('perl $VARDB_RUTIL_HOME/fastq2table.pl -i ',fastqfile,' -o ',tablefile)
 	runCommand('sort ',tablefile,' | uniq -dc > ',countsfile)
 	runCommand('sort --numeric-sort --reverse ',countsfile,' > ',uniquefile)
+	
+	runCommand('rm ',fastqfile)
+	runCommand('rm ',fastafile)
+	runCommand('rm ',tablefile)
+	runCommand('rm ',countsfile)
 }
 #exportUnmappedReads(config,'nextgen4-8F__HCV-KT9')
+
+
+
+convertUniqueReadsToFasta <- function(config,sample,mincount=1000,maxdiff=5)#100000
+{
+	#refid <- config@data[stem,'ref']
+	#ref <- getRefSequence(config,refid)
+	filename <- concat(config@out.dir,'/unmapped/',sample,'.unique.txt')
+	data <- read.table(filename, header=FALSE, encoding='UTF-8', comment.char='#', stringsAsFactors=FALSE)
+	colnames(data) <- c('count','read')
+	data <- subset(data,count>=mincount)
+	data <- data[order(data$count,decreasing=TRUE),]
+	head(data)
+	seqs <- list()
+	for (rowname in rownames(data))
+	{
+		count <- data[rowname,'count']
+		seq <- tolower(data[rowname,'read'])
+		readname <- concat('read',rowname,'_',count)
+		seqs[readname] <- seq
+	}
+	#head(seqs)
+	outfile <- concat(stripExtension(filename),'.fasta')
+	writeFastaFile(outfile,seqs)
+	return(list(filename=outfile, sequences=seqs))
+}
+#convertUniqueReadsToFasta(config,'nextgen1-2A__HCV-KT9')
+
+analyzeUnmappedReads <- function(config,stem)
+{
+	refid <- config@data[stem,'ref']
+	ref <- getRefSequence(config,refid)
+	reffile <- getRefFile(config,refid)
+	sample <- concat(stem,'__',refid)
+	exportUnmappedReads(config,sample)
+	res <- convertUniqueReadsToFasta(config,sample)
+	infile <- res$filename
+	reads <- res$sequences
+	outfile <- concat(sample,'.txt')
+	db <- concat(refid,'_db')
+	runCommand('makeblastdb -in ',reffile,' -dbtype nucl -out ',db)
+	#runCommand('blastn -db ',db,' -query ',infile,' -out ',outfile,' -word_size 9 -dust no -evalue 1000 -ungapped -max_target_seqs 1 -outfmt 7')#6
+	#runCommand('blastn -db ',db,' -query ',infile,' -out ',outfile,' -word_size 7 -dust no -evalue 1000 -gapopen 5 -gapextend 3 -reward 2 -penalty -3 -max_target_seqs 1 -outfmt 7')#6
+	runCommand('blastn -db ',db,' -query ',infile,' -out ',outfile,' -word_size 4 -dust no -evalue 1000 -ungapped -max_target_seqs 1 -outfmt 7')#6
+	checkFileExists(outfile)
+	data <- read.table(outfile, header=FALSE, encoding='UTF-8', comment.char='#', stringsAsFactors=FALSE)
+	colnames(data) <- splitFields('query_id,subject_id,identity,align_length,mismatches,gap_opens,q_start,q_end,s_start,s_end,evalue,bitscore')
+	rownames(data) <- data$query_id
+	newseqs <- list()
+	newseqs[[refid]] <- ref
+	for (readname in rownames(data)) #rev(
+	{
+		#print(data[readname,])
+		q_start <- data[readname,'q_start']
+		q_end <- data[readname,'q_end']
+		s_start <- data[readname,'s_start']
+		s_end <- data[readname,'s_end']
+		read <- reads[[readname]]
+		seqname <- readname
+		# assume no insertions and expand the range to include the whole read
+		if (s_start>s_end) #use reverse complement
+		{
+			read <- reverseComplement(read)
+			tmp <- s_start; s_start <- s_end; s_end <- tmp
+			seqname <- concat(readname,'_rev')
+		}
+		s_start <- s_start-q_start+1
+		s_end <- s_end+nchar(read)-q_end
+		#s_start <- s_start-10
+		#s_end <- s_end+10
+		#oldread <- extractSequence(ref,s_start,s_end)
+		#printcat('start: ',s_start,', end: ',s_end,', length: ',nchar(oldread))
+		#print(oldread)
+		#print(read)
+		newseqs[[seqname]] <- read
+	}
+	outfile <- concat(stripExtension(infile),'.strand.fasta')
+	writeFastaFile(outfile,newseqs)
+}
+#analyzeUnmappedReads(config,'nextgen1-2A')
+#analyzeUnmappedReads(config,'nextgen2-5I')

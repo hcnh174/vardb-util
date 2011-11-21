@@ -1,6 +1,7 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments,nextgen_report')
 config <- loadConfig()
+
 writeRefs(config)
 
 #analyzeReads<- function(config)
@@ -72,6 +73,21 @@ doForGroup <- function(config,group)
 	#concatTablesByGroup(config,group)
 	#makeAminoAcidBarcharts(config,group)
 }
+
+for (rowname in rownames(config@data))
+{
+	ref <- config@data[rowname,'ref']
+	stem <- concat(rowname,'__',ref)
+	print(stem)
+	try(exportUnmappedReads(config,stem))
+}
+
+stem <- 'nextgen1-2E'#nextgen2-5I'
+runBwa(config,stem)
+analyzeUnmappedReads(config,stem)
+
+getMapStats('out/bam/nextgen2-5I__HCV-KT9_sadako_yamamoto.bam')
+
 doForGroup(config,'BMS-605339')
 getMapStats('out/bam/nextgen4-8E__HCV-KT9_katsuyuki_nakazawa.bam')
 getMapStats('out/bam/nextgen4-8F__HCV-KT9_katsuyuki_nakazawa.bam')
