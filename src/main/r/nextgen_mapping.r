@@ -110,8 +110,6 @@ fixBaiFile <- function(config, bamfile)
 	baifile <- concat(stem,'.bam.bai')
 	print(oldbaifile)
 	print(baifile)
-	#oldbaifile <- concat(bam.dir,'/',stem,'.bai')
-	#baifile <- concat(bam.dir,'/',stem,'.bam.bai')
 	if (file.exists(oldbaifile) & !file.exists(baifile))
 		runCommand('mv "',oldbaifile,'" "',baifile,'"')
 }
@@ -126,10 +124,14 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	samfile <- concat(outdir,'/',outstem,'.sam')
 	saifile <- concat(outdir,'/',outstem,'.sai')
 	bamfile <- concat(outdir,'/',outstem,'.bam')
+	baifile <- concat(outdir,'/',outstem,'.bai')
+	baifile2 <- concat(outdir,'/',outstem,'.bam.bai')
 	if (config@force | !file.exists(bamfile))
-	{		
+	{
 		if (config@force | !file.exists(concat(reffile,'.amb')))
 			runCommand('bwa index ',reffile)
+		#delete any existing files
+		runCommand('rm ',outdir,'/',outstem,'.*')
 		runCommand('bwa aln -n 4 ',reffile,' ',fqfile,' > ',saifile) # -k 3 -n 4
 		runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 		checkFileExists(samfile)
@@ -138,7 +140,8 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	}
 	runCommand('rm ',samfile)
 	runCommand('rm ',saifile)
-	fixBaiFile(config,bamfile)
+	runCommand('mv "',baifile,'" "',baifile2,'"')
+	#fixBaiFile(config,bamfile)
 	getMapStats(bamfile)
 }
 #bwa('fastq/test.fastq','ref/hcv.fasta','tmp')
@@ -153,7 +156,7 @@ runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim)#
 	outstem <- concat(stem,'__',ref)
 	bwa(fqfile,reffile,config@bam.dir,outstem)
 }
-#runBwa(config,'nextgen1-2E')#'nextgen2-5I')
+#runBwa(config,'nextgen1-3F') #'nextgen1-2E')#'nextgen2-5I')
 
 
 #runBwa(config,'nextgen4-7A')
@@ -314,22 +317,23 @@ concatTablesByGroup <- function(config, groups=config@groups)
 	{
 		for (type in splitFields('codons,aa'))
 		{
-			infiles <- concat(config@tables.dir,'/table-',type,'-',group,'*.txt')
+			infiles <- concat(config@tables.dir,'/table-',type,'-',group,'*.txt /dev/null')
 			outfile <- concat(config@tables.dir,'/group-',type,'-',group,'.txt')
 			runCommand('tail -n +1 ',infiles,' > ',outfile)
 		}
 	}
 }
 #concatTablesByGroup(config)
-#concatTablesByGroup(config,'PXB0219-0011')
+#concatTablesByGroup(config,'BMS-605339')
 
 ###############################################################
 
 analyzeReadsForSample <- function(config,sample)
 {
 	mapReads(config,sample)
+	mergeBamsForSamples(config,sample)
 	if (config@filter) filterBams(config,sample)
-	writeConsensusForBams(config,sample)
+	#writeConsensusForBams(config,sample)
 	exportPileup(config,sample)
 	countCodons(config,sample)
 }
@@ -340,8 +344,9 @@ analyzeReadsForGroup <- function(config,group)
 	samples <- getSamplesForGroup(config,group)
 	analyzeReadsForSample(config,samples)
 	writeCodonTables(config,group)
+	writeAminoAcidTables(config,group)
 	concatTablesByGroup(config,group)
-	makeAminoAcidBarcharts(config,group)
+	#makeAminoAcidBarcharts(config,group)
 }
 #analyzeReadsForGroup(config,'MP-424')
 #analyzeReadsForGroup(config,'hcv_infection')

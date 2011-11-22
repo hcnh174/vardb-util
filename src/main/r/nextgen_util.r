@@ -535,3 +535,14 @@ analyzeUnmappedReads <- function(config,stem)
 }
 #analyzeUnmappedReads(config,'nextgen1-2A')
 #analyzeUnmappedReads(config,'nextgen2-5I')
+
+#ref,fastq,bam
+clearNextgenOutput <- function(config, subdirs='tmp,unmapped,vcf,pileup,qc,counts,tables,charts,consensus,coverage')
+{
+	dir <- config@out.dir
+	for (subdir in splitFields(subdirs))
+	{
+		runCommand('rm ',dir,'/',subdir,'/*')
+	}
+}
+#clearNextgenOutput(config)

@@ -35,12 +35,16 @@ for (group in removeElements(config@groups,'KT9'))
 	analyzeReadsForGroup(config,group)
 }
 
+#clearNextgenOutput(config)
+
 analyzeReadsForGroup(config,'KT9')
 analyzeReadsForGroup(config,'confirm_plasmid_with_new_reagents')
 analyzeReadsForGroup(config,'HBV_nucleoside_analogues')
+analyzeReadsForGroup(config,'hcv_infection')
+
 analyzeReadsForGroup(config,'MP-424')
 analyzeReadsForGroup(config,'BMS-790052_BMS-650032')
-analyzeReadsForGroup(config,'hcv_infection')
+
 analyzeReadsForGroup(config,'BMS-790052_MP-424')
 analyzeReadsForGroup(config,'NS3_V36A_mutation_maintained')
 analyzeReadsForGroup(config,'NS5A_L31V_mutation_maintained')
@@ -54,7 +58,7 @@ writeConsensusForBam(config,'nextgen4-8F__HCV-KT9')
 
 doForSample <- function(config,sample)
 {
-	mapReads(config,sample)
+	mapReads(config,sample)	
 	#if (config@filter) filterBams(config,sample)
 	#writeConsensusForBams(config,sample)
 	#exportPileup(config,sample)
@@ -82,17 +86,29 @@ for (rowname in rownames(config@data))
 	try(exportUnmappedReads(config,stem))
 }
 
-stem <- 'nextgen1-2E'#nextgen2-5I'
-runBwa(config,stem)
-analyzeUnmappedReads(config,stem)
 
-getMapStats('out/bam/nextgen2-5I__HCV-KT9_sadako_yamamoto.bam')
+#stem <- 'nextgen2-6I'#nextgen2-5I'
+runBwa(config,'nextgen2-6I')
+runBwa(config,'nextgen2-6J')
+runBwa(config,'nextgen3-1L')
+runBwa(config,'nextgen3-8J')
+#analyzeUnmappedReads(config,stem)
+getMapStats('out/bam/nextgen2_6I__HCV-KT9.bam')
+
+
+
+getMapStats('out/bam/nextgen3-7L__HCV-KT9.bam')
+getMapStats('out/bam/PXB0220-0002.wk08__HCV-KT9.bam')
+exportPileup(config,'PXB0220-0002.wk08__HCV-KT9')
+countCodons(config,'PXB0220-0002.wk08__HCV-KT9')
+
+
 
 doForGroup(config,'BMS-605339')
-getMapStats('out/bam/nextgen4-8E__HCV-KT9_katsuyuki_nakazawa.bam')
-getMapStats('out/bam/nextgen4-8F__HCV-KT9_katsuyuki_nakazawa.bam')
-exportUnmappedReads(config,'nextgen4-8E__HCV-KT9_katsuyuki_nakazawa')
-exportUnmappedReads(config,'nextgen4-8F__HCV-KT9_katsuyuki_nakazawa')
+getMapStats('out/bam/nextgen4-8E__HCV-KT9.bam')
+getMapStats('out/bam/nextgen4-8F__HCV-KT9.bam')
+exportUnmappedReads(config,'nextgen4-8E__HCV-KT9')
+exportUnmappedReads(config,'nextgen4-8F__HCV-KT9')
 
 
 doForGroup(config,'BMS-821095')
@@ -112,3 +128,15 @@ doForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
 doForGroup(config,'BMS-788329')
 
 doForGroup(config,'KT9')
+
+####################################################################
+
+mergeBamsForSamples(config)
+#getMappingReport(config)
+exportPileup(config)
+countCodons(config)
+writeCodonTables(config)
+writeAminoAcidTables(config)
+concatTablesByGroup(config)
+
+
