@@ -97,8 +97,15 @@ getMapStats('out/bam/nextgen2_6I__HCV-KT9.bam')
 
 
 
+
+#config@trim <- FALSE
+analyzeReadsForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
+
+runBwa(config,'nextgen3-7L')
+
 getMapStats('out/bam/nextgen3-7L__HCV-KT9.bam')
-getMapStats('out/bam/PXB0220-0002.wk08__HCV-KT9.bam')
+#getMapStats('out/bam/PXB0220-0002.wk08__HCV-KT9.bam')
+analyzeUnmappedReads(config,'nextgen3-7L')
 exportPileup(config,'PXB0220-0002.wk08__HCV-KT9')
 countCodons(config,'PXB0220-0002.wk08__HCV-KT9')
 

@@ -39,7 +39,7 @@ solexaqa <- function(config,stem)
 {
 	runCommand('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',stem,'.fastq -sanger')
 }
-#solexa_qa(config,'KT9.plasmid__KT9')
+#solexaqa(config,'nextgen3-7L')
 
 trimSolexaqa <- function(config,stem, fastq.dir=config@fastq.dir)
 {
@@ -133,6 +133,7 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 		#delete any existing files
 		runCommand('rm ',outdir,'/',outstem,'.*')
 		runCommand('bwa aln -n 4 ',reffile,' ',fqfile,' > ',saifile) # -k 3 -n 4
+		#runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile) # -k 3 -n 4
 		runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 		checkFileExists(samfile)
 	

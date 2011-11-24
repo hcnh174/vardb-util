@@ -239,7 +239,7 @@ bambino <- function(config, sample)
 	reffile <- getRefFile(config,ref)
 	runCommand('java -Xmx3072m -cp $BAMBINO_HOME/bambino_bundle_1.03.jar Ace2.AceViewer -bam ',bamfile,' -fasta ',reffile)
 }
-#bambino(config,'KT9.plasmid__KT9')
+#bambino(config,'PXB0220-0002.wk08__HCV-KT9')
 
 #########################################################################
 

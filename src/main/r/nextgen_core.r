@@ -109,24 +109,24 @@ getSamplesForSubject <- function(config, subject)
 
 getSamplesForGroup <- function(config, group)
 {
-	samples <- unique(config@data[which(config@data$group==group),'sample'])
+	samples <- sort(unique(config@data[which(config@data$group==group),'sample']))
 	return(samples)
 }
 #getSamplesForGroup(config,'KT9')
 
 getSamplesForSubGroup <- function(config, group, subgroup)
 {
-	samples <- unique(config@data[which(config@data$group==group & config@data$table==subgroup),'sample'])
+	samples <- sort(unique(config@data[which(config@data$group==group & config@data$table==subgroup),'sample']))
 	return(samples)
 }
 #getSamplesForSubGroup(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy')
-
-getReplicatesForSubject <- function(config, subject)
-{
-	replicates <- config@samples[which(config@samples$subject==subject),c('replicate')]	
-	return(replicates)
-}
-#getReplicatesForSubject(config,'PXB0220-0002')
+#
+#getReplicatesForSubject <- function(config, subject)
+#{
+#	replicates <- config@samples[which(config@samples$subject==subject),c('replicate')]	
+#	return(replicates)
+#}
+##getReplicatesForSubject(config,'PXB0220-0002')
 
 getRefForSample <- function(sample)
 {

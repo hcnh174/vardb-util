@@ -145,6 +145,19 @@ makeCodonBarcharts <- function(config, subject=NULL, ...)
 
 #######################################################################3
 
+#makeAminoAcidBarchart <- function(config, sample, region, ...)
+#{
+#	filename <- getCodonCountFilename(config,sample,'aa')
+#	data <- loadDataFrame(filename)
+#	data <- data[which(data$region==region),]
+#	data$aanum <- factor(data$aanum)
+#	chrt <- barchart(count ~ aanum, data, group=aa, horizontal=FALSE, stack=TRUE,
+#			main=sample, xlab=concat(region,' region'), ylab='Count',
+#			auto.key = list(space = "right"))
+#	print(chrt)
+#}
+##makeAminoAcidBarchart(config,'')
+
 makeAminoAcidBarchart <- function(config, sample, region, ...)
 {
 	filename <- getCodonCountFilename(config,sample,'aa')
@@ -153,25 +166,35 @@ makeAminoAcidBarchart <- function(config, sample, region, ...)
 	data$aanum <- factor(data$aanum)
 	chrt <- barchart(count ~ aanum, data, group=aa, horizontal=FALSE, stack=TRUE,
 			main=sample, xlab=concat(region,' region'), ylab='Count',
-			auto.key = list(space = "right"))
+			auto.key = list(space = "right")
+#			http://www.talkstats.com/showthread.php/16023-Problem-with-reordering-in-lattice-barchart
+#			prepanel=function(x, y,...)
+#			{
+#				list(ylim=levels(reorder(y, x, sum)))
+#			},
+#			panel=function(x, y,...)
+#			{
+#				panel.barchart(x, reorder(y, x, mean),...) #sort(x)
+#			}
+	)
 	print(chrt)
 }
-#makeAminoAcidBarchart(config,'')
+#makeAminoAcidBarchart(config,'PXB0220-0002.wk08__HCV-KT9_PXB0220-0002', 'NS5Aaa93')
 
 makeAminoAcidBarcharts <- function(config, group, ...)
 {
 	samples <- getSamplesForGroup(config,group)
 	pdffile <- concat(config@charts.dir,'/barcharts-',group,'-aa.pdf')
 	pdf(pdffile, width = 10, height = 3)
-	for (sample in samples)
+	regions <- getRegionsForGroup(config,group)
+	for (region in regions)
 	{
-		regions <- getRegionsForSample(config,sample)
-		for (region in regions)
+		for (sample in samples)
 		{
 			makeAminoAcidBarchart(config, sample, region, ...)
 		}
 	}
 	dev.off()
-	openPdf(pdffile)
+	#openPdf(pdffile)
 }
-#makeAminoAcidBarcharts(config, 'hcv_infection')
+#makeAminoAcidBarcharts(config, 'NS5A_L31V_Y93H_mutations_maintained')

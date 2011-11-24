@@ -6,15 +6,14 @@ loadPileupData <- function(config, sample)
 	printcat('loaded file ',filename,'. contains ',nrow(data),' reads')
 	ref <- getRefForSample(sample)
 	startnt <- getField(config@refs,ref,'start')#startnt <- config@refs[ref,'start']	
-	data$ntnum <- data$position + startnt - 1
+	data$ntnum <- data$position + startnt# - 1
 	return(data)
 }
-#data <- loadPileupData(config,'KT9.plasmid__KT9')
+#data <- loadPileupData(config,'PXB0220-0002.wk08__HCV-KT9')
 
 extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
 {
-	#hack!!!
-	ntnum <- ntnum - 1
+	#ntnum <- ntnum - 1 #hack
 	nt1 <- data[which(data$ntnum==ntnum),'nt']
 	nt2 <- data[which(data$ntnum==ntnum+1),'nt']
 	nt3 <- data[which(data$ntnum==ntnum+2),'nt']
@@ -49,7 +48,7 @@ getNtCounts <- function(data, ntnum)
 getCodonCounts <- function(data, ntnum)
 {
 	counts <- data.frame()
-	codons <- extractCodonData(data,ntnum, FALSE)
+	codons <- extractCodonData(data,ntnum,FALSE)
 	if (length(codons)==0)
 		return(counts)
 	freqs <- sort(xtabs(as.data.frame(codons)), decreasing=TRUE)
@@ -212,5 +211,5 @@ countCodonsForSample <- function(config, sample)
 	writeTable(variantdata@aa, getCodonCountFilename(config,sample,'aa'), row.names=FALSE)
 	return(variantdata)
 }
-#countCodonsForSample(config,'KT9.random__HCV-KT9')
+#countCodonsForSample(config,'PXB0220-0002.wk08__HCV-KT9_PXB0220-0002')#KT9.random__HCV-KT9
 
