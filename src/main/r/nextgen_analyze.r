@@ -78,6 +78,11 @@ doForGroup <- function(config,group)
 	#makeAminoAcidBarcharts(config,group)
 }
 
+for (group in config@groups)
+{
+	try(makeAminoAcidBarcharts(config,group))
+}
+
 for (rowname in rownames(config@data))
 {
 	ref <- config@data[rowname,'ref']
@@ -145,5 +150,16 @@ countCodons(config)
 writeCodonTables(config)
 writeAminoAcidTables(config)
 concatTablesByGroup(config)
+
+
+
+
+for (group in config@groups)
+{
+	reportAminoAcidChanges(config,group)
+}
+
+
+
 
 

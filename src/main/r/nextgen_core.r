@@ -1,10 +1,12 @@
-loadConfig <- function(config.dir=NULL, data.dir=NULL)
+loadConfig <- function(config.dir=NULL, data.dir=NULL, out.dir=NULL)
 {
 	if (is.null(config.dir))
 		config.dir <- concat('~/nextgen/config/',getCurDir())	#dir <- concat('../config/',getCurDir())
 	if (is.null(data.dir))
 		data.dir <-'~/nextgen/data/'
-	config <- new('nextgenconfig',config.dir=config.dir, data.dir=data.dir)
+	if (is.null(out.dir))
+		data.dir <-'out'
+	config <- new('nextgenconfig',config.dir=config.dir, data.dir=data.dir, out.dir=out.dir)
 	try({config <- preloadCodonPositions(config)})
 	return(config)
 }
@@ -102,7 +104,7 @@ writeRefs <- function(config)
 
 getSamplesForSubject <- function(config, subject)
 {
-	samples <- config@data[which(config@data$subject==subject),'sample']
+	samples <- sort(unique(config@data[which(config@data$subject==subject),'sample']))
 	return(samples)
 }
 #getSamplesForSubject(config,'10348001')
@@ -113,6 +115,15 @@ getSamplesForGroup <- function(config, group)
 	return(samples)
 }
 #getSamplesForGroup(config,'KT9')
+
+
+getSubjectsForGroup <- function(config, group)
+{
+	subjects <- sort(unique(config@data[which(config@data$group==group),'subject']))
+	return(subjects)
+}
+#getSubjectsForGroup(config,'KT9')
+
 
 getSamplesForSubGroup <- function(config, group, subgroup)
 {
@@ -205,6 +216,12 @@ getStemsForSamples <- function(config, samples)
 	return(unique(config@data[which(config@data$sample %in% samples),'stem']))
 }
 #getStemsForSamples(config, config@samples)
+
+getGroupForSubject <- function(config, subject)
+{
+	return(unique(config@data[which(config@data$subject==subject),'group']))
+}
+#getGroupForSubject(config, 'PXB0220-0002')
 
 #############################################################################
 

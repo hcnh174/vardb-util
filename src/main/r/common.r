@@ -678,10 +678,17 @@ getFileExtension <- function (filenames)
 }
 #getFileExtension('L_CTTGTA_L007_R1_001.fastq.gz')
 
+isWindows <- function()
+{
+	return(.Platform$OS.type=='windows')	
+}
+#isWindows()
+
 openPdf <- function(filename)
 {
-	system(concat('evince ',filename)) #system(concat('open ',pdffile))
+	ifelse(isWindows(),	system(concat('open ',filename)), system(concat('evince ',filename)))
 }
+#openPdf('\\\\ubuntu\\merged\\out\\charts\\multibarcharts-NS5A_L31V_Y93H_mutations_maintained-aa.pdf')
 
 sweaveToPdf <- function(filename, clean=TRUE)
 {

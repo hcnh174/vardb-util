@@ -1,6 +1,25 @@
-getCodonCountSubset <- function(config, group, subgroup, region, filetype, start, end=start, minreads=0)
+#getCodonCountSubset <- function(config, group, subgroup, region, filetype, start, end=start, minreads=0)
+#{
+#	samples <- getSamplesForSubGroup(config,group,subgroup)
+#	data <- NULL
+#	for (sample in samples)
+#	{
+#		filename <- getCodonCountFilename(config,sample,filetype)
+#		data.sample <- loadDataFrame(filename)
+#		if (is.null(data))
+#			data <- data.sample
+#		else data <- rbind(data,data.sample)
+#	}
+#	data.subset <- data[which(data$region==region & data$aanum>=start & data$aanum<=end & data$count>=minreads),]
+#	data.subset$column <- factor(data.subset$column)
+#	data.subset$aanum <- factor(data.subset$aanum)
+#	return(data.subset)
+#}
+##getCodonCountSubset(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy','NS3aa36','codons',)
+
+getCodonCountSubset <- function(config, samples, region, filetype, start, end=start, minreads=0)
 {
-	samples <- getSamplesForSubGroup(config,group,subgroup)
+	#samples <- getSamplesForSubGroup(config,group,subgroup)
 	data <- NULL
 	for (sample in samples)
 	{
@@ -10,7 +29,8 @@ getCodonCountSubset <- function(config, group, subgroup, region, filetype, start
 			data <- data.sample
 		else data <- rbind(data,data.sample)
 	}
-	data.subset <- data[which(data$region==region & data$aanum>=start & data$aanum<=end & data$count>=minreads),]
+	data.subset <- data[which(data$aanum>=start & data$aanum<=end & data$count>=minreads),]
+	data.subset <- data[which(data$region %in% splitFields(region)),]
 	data.subset$column <- factor(data.subset$column)
 	data.subset$aanum <- factor(data.subset$aanum)
 	return(data.subset)
@@ -24,7 +44,9 @@ makeCodonVariantTable <- function(config, group, subgroup, region, aanum, minrea
 	ref <- getRefForGroup(config,group)
 	positions <- getCodonPositionsForGene(config,gene,ref)
 	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
-	data.subset <- getCodonCountSubset(config,group,subgroup,region,'codons',aanum,minreads=minreads)
+	samples <- getSamplesForSubGroup(config,group,subgroup)
+	#data.subset <- getCodonCountSubset(config,group,subgroup,region,'codons',aanum,minreads=minreads)
+	data.subset <- getCodonCountSubset(config,samples,region,'codons',aanum,minreads=minreads)
 	counts <- cast(data.subset, codon ~ column, value='count', fun.aggregate=function(x) return(x[1])); counts
 	if (length(which(counts$codon==refcodon))==0)
 		counts <- addRow(counts, list(codon=refcodon))
@@ -103,7 +125,9 @@ makeAminoAcidVariantTable <- function(config, group, subgroup, region, aanum, mi
 	positions <- getCodonPositionsForGene(config,gene,ref)
 	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
 	refaa <- translateCodon(refcodon)
-	data.subset <- getCodonCountSubset(config,group,subgroup,region,'aa',aanum,minreads=minreads)
+	samples <- getSamplesForSubGroup(config,group,subgroup)
+	#data.subset <- getCodonCountSubset(config,group,subgroup,region,'aa',aanum,minreads=minreads)
+	data.subset <- getCodonCountSubset(config,samples,region,'aa',aanum,minreads=minreads)
 	counts <- cast(data.subset, aa ~ column, value='count', fun.aggregate=function(x) return(x[1]))
 	if (length(which(counts$aa==refaa))==0)
 		counts <- addRow(counts, list(aa=refaa))

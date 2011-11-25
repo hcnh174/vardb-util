@@ -264,3 +264,50 @@ add <- function(x1=4,  x2=2) {
 # execute function through GUI
 y <- guiv(add)
 # [1] 5
+
+
+#https://sites.google.com/site/daishizuka/toolkits/overlapping-histograms
+hist(a,xlim=c(5,18),ylim=c(0,30),breaks=10,col=rgb(1,1,0,0.7),main="",xlab="number")
+par(new=TRUE)
+hist(b,xlim=c(5,18),ylim=c(0,30),breaks=10,col=rgb(0,1,1,0.4),main="",xlab="",ylab="")
+
+
+
+
+
+
+
+library(lattice)
+dataNT <- read.table("c:/users/nelson/downloads/scenariotest.txt",sep ="\t", header=TRUE,skip="",colClasses=c("factor", "factor", "numeric"))
+Scenario_median <- with(dataNT, reorder(Scenario, Percent, mean))
+barchart(dataNT$NT ~ Percent | Scenario_median, data = dataNT,
+		main= "Chr 1 Shoots",
+		xlab= "Percent of ESTs ",
+		xlim=c(0,55),
+		ylab= "Nullitetra",
+		col="grey",
+		border= "NA",
+		par.settings=list(axis.text=list(cex=0.85), fontsize=list(text=10)),
+		par.strip.text=list(cex=0.9),
+		par.strip.col="white" ,
+		layout = c(1,6),
+		aspect = (0.3),
+		scales=list(y=list(relation="free")),
+		prepanel=function(x, y,...) {
+			list(ylim=levels(reorder(y, x, sum)))},
+		panel=function(x, y,...) {
+			panel.barchart(x, reorder(y, x, mean),...) }
+)
+
+
+barchart(dataNT$NT ~ Percent | Scenario_median, data = dataNT,
+	main= "Chr 1 Shoots", xlab= "Percent of ESTs ", ylab="Nullitetra",	xlim=c(0,55), col="grey",
+	layout = c(1,6),
+	panel=function(x, y,...) {panel.barchart(x, reorder(y, x, mean),...)}
+)
+
+
+
+size <- factor(c(9,12,26,22,24,13))
+as.numeric(levels(size)[size])
+

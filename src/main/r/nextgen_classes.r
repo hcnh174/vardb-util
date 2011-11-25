@@ -38,7 +38,7 @@ setClass("nextgenconfig",
 				minreads='numeric'
 		),
 		prototype(
-				out.dir='out',
+				#out.dir='out',
 				index.dir='indexes',
 				goals=data.frame(),
 				profile='default',
@@ -51,7 +51,7 @@ setClass("nextgenconfig",
 		)
 )
 
-setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.dir='~/nextgen/data')
+setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.dir='~/nextgen/data', out.dir='out')
 {	
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	if (!file.exists(config.dir))
@@ -61,6 +61,10 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	if (!file.exists(data.dir))
 		throw('data directory does not exist: ',data.dir)
 	.Object@data.dir <- data.dir
+	
+	if (!file.exists(out.dir))
+		throw('out directory does not exist: ',out.dir)
+	.Object@out.dir <- out.dir
 	
 	params <- loadDataFrame(concat(.Object@config.dir,'/params.txt'), idcol='name')
 	for (name in row.names(params))
