@@ -157,17 +157,22 @@ viewBam <- function(config, sample, alignment_status='Aligned', pf_status='All')
 
 #######################################################################
 
+getRawReadCount <- function(config, rowname)
+{
+	filename <- concat(config@fastq.dir,'/',rowname,'.fastq')
+	if (!file.exists(filename))
+		return(NA)
+	kb <- getFileSize(filename)
+	reads <- estimateReadCount(kb/1000)
+	return(reads)
+}
+#getRawReadCount(config,'nextgen3-2G')
+
 getRawReadCounts <- function(config)
 {
 	for (rowname in rownames(config@data))
 	{
-		row <-  config@data[rowname,]
-		dir <- concat(config@tmp.dir,'/',row$sample)
-		filename <- concat(row$folder,'_',row$barcode,'_L00',row$lane,'_R1_001.fastq')
-		kb <- getFileSize(concat(dir,'/',filename))
-		reads <- estimateReadCount(kb/1000)
-		print(concat(filename,': ',reads))
-		config@data[rowname,'reads'] <- reads
+		config@data[rowname,'reads'] <- getRawReadCount(config,rowname)
 	}
 	runcounts <- config@data[,splitFields('sample,region,reads')]
 	outfile <- concat(config@tmp.dir,'/','readcounts-runs.txt')
@@ -180,17 +185,23 @@ getRawReadCounts <- function(config)
 }
 #getRawReadCounts(config)
 
-getMapStats <- function(bamfile)
+getMapStats <- function(config,bamfile)
 {
 	checkFileExists(bamfile)
-	total <- as.numeric(system(concat('samtools flagstat ',bamfile,' | awk \'{print $1}\' | head -n 1'), intern=TRUE))
+	stem <- getStemForSample(bamfile)
+	total <- getRawReadCount(config,stem)
+	trimmed <- as.numeric(system(concat('samtools flagstat ',bamfile,' | awk \'{print $1}\' | head -n 1'), intern=TRUE))
 	mapped <- as.numeric(system(concat('samtools flagstat ',bamfile,' | awk \'{print $1}\' | head -n 3 | tail -n 1'), intern=TRUE))
-	prop <- mapped/total
+	if (is.na(total))
+		total <- trimmed
+	prop.trimmed <- trimmed/total
+	prop.mapped <- mapped/trimmed
+	prop.used <- mapped/total
 	#print(concat('total=',total,', mapped=',mapped,' proportion=',prop))
-	return(list(total=total, mapped=mapped, prop=prop))
+	return(list(total=total, mapped=mapped, prop.trimmed=prop.trimmed, prop.mapped=prop.mapped, prop.used=prop.used))
 }
-#getMapStats(concat(config@bam.dir,'/','etsuko_yamada__HCV-HCJ4.bam'))
-#
+#getMapStats(config,concat(config@bam.dir,'/nextgen3-2G.bam'))
+
 #getMappingReport <- function(config, bam.dir=config@bam.dir, samples=config@samples, outfile=concat(config@tmp.dir,'/','readcounts-mapped.txt'))
 #{
 #	counts <- data.frame()
@@ -455,16 +466,18 @@ exportUnmappedReads <- function(config,stem)
 }
 #exportUnmappedReads(config,'nextgen4-8F__HCV-KT9')
 
-
-
-convertUniqueReadsToFasta <- function(config,sample,mincount=1000,maxdiff=5)#100000
+convertUniqueReadsToFasta <- function(config,sample,numrows=10,maxdiff=5)#100000,mincount=1000,
 {
 	#refid <- config@data[stem,'ref']
 	#ref <- getRefSequence(config,refid)
 	filename <- concat(config@out.dir,'/unmapped/',sample,'.unique.txt')
 	data <- read.table(filename, header=FALSE, encoding='UTF-8', comment.char='#', stringsAsFactors=FALSE)
 	colnames(data) <- c('count','read')
-	data <- subset(data,count>=mincount)
+	#data <- subset(data,count>=mincount)
+	if (numrows < nrow(data))
+		numrows <- nrow(data)
+	data <- data[1:numrows,]
+	#data <- subset(data,count>=mincount)
 	data <- data[order(data$count,decreasing=TRUE),]
 	head(data)
 	seqs <- list()

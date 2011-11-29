@@ -192,37 +192,82 @@ makeAminoAcidBarcharts <- function(config, group, ...)
 
 #########################################################
 
+#barchart(value ~ Kat, group= Gruppe,
+#		par.settings = list(superpose.polygon = list(col=c(pal1, pal2)) ),
+#		panel = function(y,x,...){
+#			panel.barchart(x,y, ...)
+#		}, data = df,
+#		auto.key = list(points = FALSE, rectangles = TRUE,
+#				columns = 2, space = "bottom")
+#)
+
+# makes a list of colors for just the aas in the data set
+getAminoAcidColors <- function(aas)
+{
+	aacolors <- list(
+		I = '#ff00d6',
+		L = '#ffad00',
+		V = '#ff8400',
+		A = '#ffef00',
+		M = '#ffc600',
+		F = '#ff0000',
+		W = '#ffd600',
+		Y = '#7bff00',
+		K = '#0000ff',
+		R = '#bd00ff',
+		H = '#00ffad',
+		D = '#00adff',
+		E = '#00ffc6',
+		S = '#00ff94',
+		T = '#00ff6b',
+		N = '#00ffff',
+		Q = '#00efff',
+		P = '#00ff00',
+		G = '#ffff00',
+		C = '#c6ff00'
+	)
+	aacolors[['*']] <- 'gray'
+	cols <- c()
+	for (aa in unique(sort(aas)))
+	{
+		cols <- c(cols, aacolors[[aa]])
+	}
+	return(cols)
+}
+#getAminoAcidColors(splitFields('*,A,C,Y'))
+
 reportAminoAcidChangeBarChart <- function(config, subject, region, usecounts=TRUE)
 {
 	group <- getGroupForSubject(config, subject)
-	start <- config@regions[region,'start']
-	end <- config@regions[region,'end']
+	start <- config@regions[region,'start']; end <- config@regions[region,'end']
 	samples <- getSamplesForSubject(config,subject)
 	data.subset <- 	getCodonCountSubset(config, samples, region, 'aa', start, end, minreads=10)
-
-	#update the start and end values
+	
+	#data.subset$aa <- reorder(data.subset$aa, barley$count, function(x) x[2] ) 
+	#data.subset$aa <- reorder(data.subset$aa, data.subset$rank)
+	
 	start <- min(as.numeric(levels(data.subset$aanum)[data.subset$aanum]))
 	end <- max(as.numeric(levels(data.subset$aanum)[data.subset$aanum]))
-	
+	col <- getAminoAcidColors(data.subset$aa)	
 	frmla <- freq ~ aanum | column
-	main <- concat(group,': ',subject); main <- gsub ('_',' ',main,ignore.case=T,perl=T)
-	xlab <- 'Amino acid number'
-	ylab <- 'Amino acid count'
+	main <- concat(group,': ',subject); main <- simpleCap(gsub ('_',' ',main,ignore.case=T,perl=T))
+	xlab <- 'Amino acid number'; ylab <- 'Amino acid count'
 	ylim <- c(0,1)
 	if (usecounts)
 	{
+		#frmla <- count ~ aanum | column
 		frmla <- count ~ aanum | column
-		ylim <- c(0,max(data.subset$count))
+		ylim <- c(0,8500)
 		ylab <- 'Amino acid frequency'
 	}
-	chrt <- barchart(frmla, data.subset, group=aa, horizontal=FALSE, stack=TRUE,
-			main=main, xlab='Amino acid number', sub=region, ylab=ylab,# ylim=ylim,
-			par.settings=list(axis.text=list(cex=0.7), fontsize=list(text=10)),
+	chrt <- barchart(frmla, data.subset, group=aa, horizontal=FALSE, stack=TRUE, box.width = 1,
+			main=main, xlab=xlab, sub=region, ylab=ylab, ylim=ylim,
+			par.settings=list(axis.text=list(cex=0.7), fontsize=list(text=10), 
+					superpose.polygon = list(col=col)),
 			auto.key = list(space = "right"),
-			strip = FALSE,
-			strip.left = strip.custom(bg='#F2F2F2',fg='#F2F2F2', horizontal = FALSE),#,style = 4, 
+			strip = FALSE, strip.left = strip.custom(bg='#F2F2F2',fg='#F2F2F2', horizontal = FALSE),
 			layout = c(1,length(unique(data.subset$column))))
-	print(chrt)#, more=TRUE)
+	print(chrt)
 	for (aanum in as.numeric(splitFields(config@regions[region,'focus'])))
 	{
 		addLine(v = aanum - start + 1 - 0.5, col='red', lty=2)

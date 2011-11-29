@@ -640,6 +640,7 @@ appendFile <- function(file, ...)
 
 getFileSize <- function(filename)
 {
+	checkFileExists(filename)
 	return(file.info(filename)$size/1000)
 }
 #getFileSize(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))

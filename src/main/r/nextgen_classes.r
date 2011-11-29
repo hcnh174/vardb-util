@@ -35,7 +35,8 @@ setClass("nextgenconfig",
 				filter='logical',
 				map.quality='character',
 				minfreq='numeric',
-				minreads='numeric'
+				minreads='numeric',
+				minlength='numeric'
 		),
 		prototype(
 				#out.dir='out',
@@ -47,7 +48,8 @@ setClass("nextgenconfig",
 				filter=TRUE,
 				map.quality='>30',
 				minfreq=0.0,
-				minreads=0
+				minreads=0,
+				minlength=34
 		)
 )
 

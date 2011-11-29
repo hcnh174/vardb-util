@@ -311,3 +311,4 @@ barchart(dataNT$NT ~ Percent | Scenario_median, data = dataNT,
 size <- factor(c(9,12,26,22,24,13))
 as.numeric(levels(size)[size])
 
+.libPaths()

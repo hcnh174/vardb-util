@@ -5,7 +5,7 @@ loadConfig <- function(config.dir=NULL, data.dir=NULL, out.dir=NULL)
 	if (is.null(data.dir))
 		data.dir <-'~/nextgen/data/'
 	if (is.null(out.dir))
-		data.dir <-'out'
+		out.dir <-'out'
 	config <- new('nextgenconfig',config.dir=config.dir, data.dir=data.dir, out.dir=out.dir)
 	try({config <- preloadCodonPositions(config)})
 	return(config)
@@ -139,6 +139,14 @@ getSamplesForSubGroup <- function(config, group, subgroup)
 #}
 ##getReplicatesForSubject(config,'PXB0220-0002')
 
+getStemForSample <- function(sample)
+{
+	stem <- stripPath(sample)
+	stem <- strsplit(stem,'__', fixed=TRUE)[[1]][1] #use the part before the delimiter (__)
+	return(stem)
+}
+#getStemForSample('out/bam/nextgen3-2G__HCV-KT9.bam')
+
 getRefForSample <- function(sample)
 {
 	ref <- strsplit(sample,'__', fixed=TRUE)[[1]][2] #use the part after the delimiter (__)
@@ -236,6 +244,7 @@ getCodonPositionsForRegion <- function(config, region, ref)
 	positions$focus <- ifelse(positions$codon %in% region.focus,'*','')
 	return(positions)
 }
+#getCodonPositionsForRegion(config,'NS5Aaa31','HCV-KT9')
 #getCodonPositionsForRegion(config,'NS3aa156','HCV-KT9')
 
 getFociForRegion <- function(config, region)
