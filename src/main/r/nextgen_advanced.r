@@ -198,3 +198,45 @@ appendVariantTablesToLatex <- function(config,tables)
 	}
 }
 
+
+callVariants <- function(config,stem)
+{	
+	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
+	outfile <- concat(config@vcf.dir,'/',stem,'.vcf')
+	
+	str <- 'java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper'
+	str <- concat(str,' -R ',config@reffile)
+	str <- concat(str,' -I ',bamfile)
+	#str <- concat(str,' -stand_call_conf 10.0')	#30.0' #50.0
+	#str <- concat(str,' -stand_emit_conf 10.0')
+	str <- concat(str,' -L config/',config@ref,'.interval_list')
+	#str <- concat(str,' -dcov 50')
+	str <- concat(str,' -o ',outfile)
+	runCommand(str)
+	
+	checkFileExists(outfile)
+}
+#callVariants(config,'merged')
+
+
+addReadGroups <- function(config, sample, tmp.dir=config@tmp.dir)
+{
+	samfile <- concat(tmp.dir,'/',sample,'.sam')
+	bamfile <- concat(tmp.dir,'/',sample,'.bam')
+	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
+	str <- concat(str,' INPUT=',samfile)
+	str <- concat(str,' OUTPUT=',bamfile)
+	str <- concat(str,' RGSM="',sample,'"')
+	str <- concat(str,' RGLB="',sample,'"')
+	str <- concat(str,' RGID="',sample,'"')
+	str <- concat(str,' RGPL=illumina')
+	str <- concat(str,' RGPU=barcode')
+	str <- concat(str,' SORT_ORDER=coordinate')
+	str <- concat(str,' CREATE_INDEX=true')
+	runCommand(str)
+	checkFileExists(bamfile)
+	baifile <- concat(tmp.dir,'/',sample,'.bai')
+	checkFileExists(baifile)
+	return(bamfile)
+}
+#addReadGroups(config,'110617HBV.HBV07@HBV-RT')

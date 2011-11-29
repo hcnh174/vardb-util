@@ -80,28 +80,6 @@ trimSamples <- function(config, samples=config@samples)
 
 ######################################################################
 
-addReadGroups <- function(config, sample, tmp.dir=config@tmp.dir)
-{
-	samfile <- concat(tmp.dir,'/',sample,'.sam')
-	bamfile <- concat(tmp.dir,'/',sample,'.bam')
-	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
-	str <- concat(str,' INPUT=',samfile)
-	str <- concat(str,' OUTPUT=',bamfile)
-	str <- concat(str,' RGSM="',sample,'"')
-	str <- concat(str,' RGLB="',sample,'"')
-	str <- concat(str,' RGID="',sample,'"')
-	str <- concat(str,' RGPL=illumina')
-	str <- concat(str,' RGPU=barcode')
-	str <- concat(str,' SORT_ORDER=coordinate')
-	str <- concat(str,' CREATE_INDEX=true')
-	runCommand(str)
-	checkFileExists(bamfile)
-	baifile <- concat(tmp.dir,'/',sample,'.bai')
-	checkFileExists(baifile)
-	return(bamfile)
-}
-#addReadGroups(config,'110617HBV.HBV07@HBV-RT')
-
 #
 #addReadGroups <- function(config, sample, tmp.dir=config@tmp.dir)
 #{
@@ -125,18 +103,49 @@ addReadGroups <- function(config, sample, tmp.dir=config@tmp.dir)
 #	return(bamfile)
 #}
 ##addReadGroups(config,'110617HBV.HBV07@HBV-RT')
-
-fixBaiFile <- function(config, bamfile)
-{
-	stem <- stripExtension(bamfile)
-	oldbaifile <- concat(stem,'.bai')
-	baifile <- concat(stem,'.bam.bai')
-	print(oldbaifile)
-	print(baifile)
-	if (file.exists(oldbaifile) & !file.exists(baifile))
-		runCommand('mv "',oldbaifile,'" "',baifile,'"')
-}
-#fixBaiFile(config)
+#
+#fixBaiFile <- function(config, bamfile)
+#{
+#	stem <- stripExtension(bamfile)
+#	oldbaifile <- concat(stem,'.bai')
+#	baifile <- concat(stem,'.bam.bai')
+#	print(oldbaifile)
+#	print(baifile)
+#	if (file.exists(oldbaifile) & !file.exists(baifile))
+#		runCommand('mv "',oldbaifile,'" "',baifile,'"')
+#}
+##fixBaiFile(config)
+#
+#bwa <- function(fqfile, reffile, outdir, outstem=NULL)
+#{
+#	sample <- stripPath(fqfile)
+#	sample <- stripExtension(sample)
+#	if (is.null(outstem)) outstem=sample
+#	
+#	samfile <- concat(outdir,'/',outstem,'.sam')
+#	saifile <- concat(outdir,'/',outstem,'.sai')
+#	bamfile <- concat(outdir,'/',outstem,'.bam')
+#	baifile <- concat(outdir,'/',outstem,'.bai')
+#	baifile2 <- concat(outdir,'/',outstem,'.bam.bai')
+#	if (config@force | !file.exists(bamfile))
+#	{
+#		if (config@force | !file.exists(concat(reffile,'.amb')))
+#			runCommand('bwa index ',reffile)
+#		#delete any existing files
+#		runCommand('rm ',outdir,'/',outstem,'.*')
+#		runCommand('bwa aln -n 4 ',reffile,' ',fqfile,' > ',saifile) # -k 3 -n 4
+#		#runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile) # -k 3 -n 4
+#		runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
+#		checkFileExists(samfile)
+#	
+#		addReadGroups(config,outstem,outdir)
+#	}
+#	runCommand('rm ',samfile)
+#	runCommand('rm ',saifile)
+#	runCommand('mv "',baifile,'" "',baifile2,'"')
+#	return(bamfile)
+#}
+##bwa('fastq/test.fastq','ref/hcv.fasta','tmp')
 
 bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 {
@@ -148,7 +157,6 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	saifile <- concat(outdir,'/',outstem,'.sai')
 	bamfile <- concat(outdir,'/',outstem,'.bam')
 	baifile <- concat(outdir,'/',outstem,'.bai')
-	baifile2 <- concat(outdir,'/',outstem,'.bam.bai')
 	if (config@force | !file.exists(bamfile))
 	{
 		if (config@force | !file.exists(concat(reffile,'.amb')))
@@ -159,15 +167,12 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 		#runCommand('bwa aln ',reffile,' ',fqfile,' > ',saifile) # -k 3 -n 4
 		runCommand('bwa samse ',reffile,' ',saifile,' ',fqfile,' > ',samfile)
 		checkFileExists(samfile)
-	
-		addReadGroups(config,outstem,outdir)
+		sam2bam(samfile,bamfile)
 	}
 	runCommand('rm ',samfile)
 	runCommand('rm ',saifile)
-	runCommand('mv "',baifile,'" "',baifile2,'"')
 	return(bamfile)
 }
-#bwa('fastq/test.fastq','ref/hcv.fasta','tmp')
 
 runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim)
 {
@@ -183,7 +188,19 @@ runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim)
 }
 #runBwa(config,'nextgen1-3F') #'nextgen1-2E')#'nextgen2-5I')
 
-
+runBwa <- function(config, stem, ref=unique(config@data[which(config@data$id==stem | config@data$stem==stem),'ref']), trim=config@trim)
+{
+	printcat('stem=',stem,', ref=',ref)
+	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
+	reffile <- getRefFile(config,ref)
+	print(reffile)
+	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
+	print(fqfile)
+	outstem <- concat(stem,'__',ref)
+	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
+	print(getMapStats(config,bamfile))
+	return(bamfile)
+}
 #runBwa(config,'nextgen4-7A')
 
 mapReadsByProfile <- function(config, profile)
@@ -213,46 +230,46 @@ mapReads <- function(config, samples=config@samples)
 
 #################################################################
 
-mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=config@bam.dir)
-{
-	tmpoutfile <- concat(out.dir,'/tmp-',sample,'.bam')
-	
-	str <- 'java -Xmx2g -jar $PICARD_HOME/MergeSamFiles.jar'
-	str <- concat(str,' MERGE_SEQUENCE_DICTIONARIES=true')
-	str <- concat(str,' CREATE_INDEX=true')
-	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
-	
-	for (rowname in rownames(config@data[which(config@data$sample==sample),]))
-	{
-		ref <- config@data[rowname,'ref']
-		infile <- concat(bam.dir,'/',rowname,'__',ref,'.bam')
-		str <- concat(str,' INPUT=',infile)
-	}
-	str <- concat(str,' OUTPUT=',tmpoutfile)
-	runCommand(str)
-	checkFileExists(tmpoutfile)
-	
-	outfile <- concat(out.dir,'/',sample,'.bam')
-	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
-	str <- concat(str,' INPUT=',tmpoutfile)
-	str <- concat(str,' OUTPUT=',outfile)
-	str <- concat(str,' RGSM="',sample,'"')
-	str <- concat(str,' RGLB="',sample,'"')
-	str <- concat(str,' RGID="',sample,'"')
-	str <- concat(str,' RGPL=illumina')
-	str <- concat(str,' RGPU=barcode')
-	str <- concat(str,' SORT_ORDER=coordinate')
-	str <- concat(str,' CREATE_INDEX=true')
-	
-	runCommand(str)
-	checkFileExists(outfile)
-	baifile <- concat(out.dir,'/',sample,'.bai')
-	checkFileExists(baifile)
-	fixBaiFile(config,outfile)
-	runCommand('rm ',out.dir,'/tmp-',sample,'.*')
-	return(outfile)	
-}
-#mergeBamsForSample(config,'sample__HCV-KT9')
+#mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=config@bam.dir)
+#{
+#	tmpoutfile <- concat(out.dir,'/tmp-',sample,'.bam')
+#	
+#	str <- 'java -Xmx2g -jar $PICARD_HOME/MergeSamFiles.jar'
+#	str <- concat(str,' MERGE_SEQUENCE_DICTIONARIES=true')
+#	str <- concat(str,' CREATE_INDEX=true')
+#	str <- concat(str,' VALIDATION_STRINGENCY=LENIENT')
+#	
+#	for (rowname in rownames(config@data[which(config@data$sample==sample),]))
+#	{
+#		ref <- config@data[rowname,'ref']
+#		infile <- concat(bam.dir,'/',rowname,'__',ref,'.bam')
+#		str <- concat(str,' INPUT=',infile)
+#	}
+#	str <- concat(str,' OUTPUT=',tmpoutfile)
+#	runCommand(str)
+#	checkFileExists(tmpoutfile)
+#	
+#	outfile <- concat(out.dir,'/',sample,'.bam')
+#	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
+#	str <- concat(str,' INPUT=',tmpoutfile)
+#	str <- concat(str,' OUTPUT=',outfile)
+#	str <- concat(str,' RGSM="',sample,'"')
+#	str <- concat(str,' RGLB="',sample,'"')
+#	str <- concat(str,' RGID="',sample,'"')
+#	str <- concat(str,' RGPL=illumina')
+#	str <- concat(str,' RGPU=barcode')
+#	str <- concat(str,' SORT_ORDER=coordinate')
+#	str <- concat(str,' CREATE_INDEX=true')
+#	
+#	runCommand(str)
+#	checkFileExists(outfile)
+#	baifile <- concat(out.dir,'/',sample,'.bai')
+#	checkFileExists(baifile)
+#	fixBaiFile(config,outfile)
+#	runCommand('rm ',out.dir,'/tmp-',sample,'.*')
+#	return(outfile)	
+#}
+##mergeBamsForSample(config,'sample__HCV-KT9')
 
 #mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=config@bam.dir)
 #{
@@ -277,6 +294,27 @@ mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=c
 #}
 ##mergeBamsForSample(config,'sample__HCV-KT9_sample')
 
+mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=config@bam.dir)
+{
+	outfile <- concat(out.dir,'/',sample,'.bam')
+	filenames <- c()
+	for (rowname in rownames(config@data[which(config@data$sample==sample),]))
+	{
+		print(rowname)
+		ref <- config@data[rowname,'ref']
+		filename <- concat(bam.dir,'/',rowname,'__',ref,'.bam')
+		stripregion <- config@data[rowname,'stripregion']
+		if (!is.na(stripregion))
+		{			
+			filename <- trimBamToRegion(config,concat(rowname,'__',ref),as.numeric(stripregion))
+		}
+		filenames <- c(filenames,filename)
+	}
+	print(filenames)
+	mergeBamFiles(config,filenames,outfile)
+	return(outfile)
+}
+#mergeBamsForSample(config,'katsuko_shigeoka__HCV-KT9_katsuko_shigeoka')
 
 mergeBamsForSamples <- function(config, samples=config@samples)
 {
@@ -342,14 +380,21 @@ filterBams <- function(config, samples=config@samples)
 
 ####################################################
 
-exportPileupForSample <- function(config,sample,ref=getRefForSample(sample), bam.dir=config@bam.dir, out.dir=config@pileup.dir, filtered=TRUE)
+#exportPileupForSample <- function(config,sample,ref=getRefForSample(sample), bam.dir=config@bam.dir, out.dir=config@pileup.dir, filtered=TRUE)
+#{
+#	#ref <- getRefForSample(sample)
+#	samplename <- ifelse(filtered,concat(sample,'.filtered'), sample)
+#	#runCommand('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
+#	runCommand('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',bam.dir,' ',out.dir)
+#}
+##exportPileupForSample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
+
+exportPileupForSample <- function(config,sample,ref=getRefForSample(sample), bam.dir=config@bam.dir, out.dir=config@pileup.dir, filtered=FALSE)
 {
-	#ref <- getRefForSample(sample)
 	samplename <- ifelse(filtered,concat(sample,'.filtered'), sample)
-	#runCommand('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
 	runCommand('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',bam.dir,' ',out.dir)
 }
-#exportPileupForSample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
+#exportPileupForSample(config,'sample','ref','out','out')
 
 exportPileup <- function(config, samples=config@samples)
 {
@@ -401,7 +446,8 @@ analyzeReadsForSample <- function(config,sample)
 	mapReads(config,sample)
 	mergeBamsForSamples(config,sample)
 	if (config@filter) filterBams(config,sample)
-	#writeConsensusForBams(config,sample)
+	writeConsensusForBams(config,sample)
+	findVariants(config,sample)
 	exportPileup(config,sample)
 	countCodons(config,sample)
 }
@@ -410,7 +456,10 @@ analyzeReadsForSample <- function(config,sample)
 analyzeReadsForGroup <- function(config,group)
 {
 	samples <- getSamplesForGroup(config,group)
-	analyzeReadsForSample(config,samples)
+	for (sample in samples)
+	{
+		try(analyzeReadsForSample(config,sample))
+	}
 	writeCodonTables(config,group)
 	writeAminoAcidTables(config,group)
 	concatTablesByGroup(config,group)
@@ -443,22 +492,3 @@ analyzeReadsForGroup <- function(config,group)
 #	make_piecharts(config)
 #	#export_unmapped_reads(config,concat(stem,'.nodup'))
 #}
-
-callVariants <- function(config,stem)
-{	
-	bamfile <- concat(config@bam.dir,'/',stem,'.bam')
-	outfile <- concat(config@vcf.dir,'/',stem,'.vcf')
-	
-	str <- 'java -jar $GTAK_HOME/GenomeAnalysisTK.jar -T UnifiedGenotyper'
-	str <- concat(str,' -R ',config@reffile)
-	str <- concat(str,' -I ',bamfile)
-	#str <- concat(str,' -stand_call_conf 10.0')	#30.0' #50.0
-	#str <- concat(str,' -stand_emit_conf 10.0')
-	str <- concat(str,' -L config/',config@ref,'.interval_list')
-	#str <- concat(str,' -dcov 50')
-	str <- concat(str,' -o ',outfile)
-	runCommand(str)
-	
-	checkFileExists(outfile)
-}
-#callVariants(config,'merged')

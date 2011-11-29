@@ -550,7 +550,7 @@ analyzeUnmappedReads <- function(config,stem)
 #analyzeUnmappedReads(config,'nextgen2-5I')
 
 #ref,fastq,bam
-clearNextgenOutput <- function(config, subdirs='tmp,unmapped,vcf,pileup,qc,counts,tables,charts,consensus,coverage')
+clearNextgenOutput <- function(config, subdirs='tmp,unmapped,vcf,pileup,qc,counts,tables,charts,consensus')
 {
 	dir <- config@out.dir
 	for (subdir in splitFields(subdirs))
@@ -559,3 +559,20 @@ clearNextgenOutput <- function(config, subdirs='tmp,unmapped,vcf,pileup,qc,count
 	}
 }
 #clearNextgenOutput(config)
+
+###############################################
+
+mergeBamFiles <- function(config, filenames, outfile)
+{
+	str <- concat('samtools merge ',outfile)
+	for (filename in splitFields(filenames))
+	{
+		str <- concat(str,' ',filename)
+	}
+	runCommand(str)
+	checkFileExists(outfile)
+	indexBam(outfile)
+	return(outfile)
+}
+#mergeBamFiles(config, c('out/NS5Aaa31.bam','out/NS5Aaa93.bam'), 'out/NS5A.bam')
+

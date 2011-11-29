@@ -417,3 +417,89 @@ plotTiters <- function(config)
 }
 #plotTiters(config)
 
+
+indexBam <- function(bamfile)
+{
+	checkFileExists(bamfile)
+	runCommand('samtools index ',bamfile)
+}
+
+sam2bam <- function(samfile,bamfile)
+{
+	checkFileExists(samfile)
+	tmpbamfile <- concat(bamfile,'.sort.bam')
+	print(tmpbamfile)
+	runCommand('samtools view -bS ',samfile,' > ',tmpbamfile)
+	checkFileExists(tmpbamfile)
+	runCommand('samtools sort ',tmpbamfile,' ',stripExtension(bamfile))
+	checkFileExists(bamfile)
+	indexBam(bamfile)
+	checkFileExists(concat(bamfile,'.bai'))
+	deleteFile(tmpbamfile)
+	return(bamfile)
+}
+
+copyFile <- function(src, dest)
+{
+	checkFileExists(src)
+	runCommand('cp --force ',src,' ',dest)
+	checkFileExists(dest)
+}
+#copyFile('out/bam/nextgen3-2H__HCV-KT9.bam','out/test.bam')
+
+mergeBamFiles <- function(config, filenames, outfile)
+{
+	filenames <- splitFields(filenames)
+	if (length(filenames)==0)
+		throw('no bam files to merge')
+	#throws an error if there is only one file, so copy it using the new name
+	if (length(filenames)==1)		
+	{
+		copyFile(filenames,outfile)
+		copyFile(concat(filenames,'.bai'),concat(outfile,'.bai'))
+		return(outfile)
+	}	
+	str <- concat('samtools merge -f ',outfile)
+	for (filename in filenames)
+	{
+		checkFileExists(filename)
+		str <- concat(str,' ',filename)
+	}
+	runCommand(str)
+	checkFileExists(outfile)
+	indexBam(outfile)
+	return(outfile)
+}
+#mergeBamFiles(config, c('out/NS5Aaa31.bam','out/NS5Aaa93.bam'), 'out/NS5A.bam')
+#mergeBamFiles(config, c('out/test.bam'), 'out/test-merged.bam')
+
+
+trimBamToRegion <- function(config, sample, start, end=start, ref=getRefForSample(sample), bam.dir=config@bam.dir)
+{
+	bamfile <-concat(bam.dir,'/',sample,'.bam')
+	newbamfile <-concat(bam.dir,'/',sample,'.region.bam')
+	checkFileExists(bamfile)
+	region <- concat(ref,':',start,'-',end)
+	runCommand('samtools view -b ',bamfile,' ',region,' > ',newbamfile)
+	checkFileExists(newbamfile)
+	indexBam(newbamfile)
+	return(newbamfile)
+}
+#trimBamToRegion(config,'nextgen3-2G__HCV-KT9',6348)
+#trimBamToRegion(config,'nextgen3-5G__HCV-KT9',6534)
+
+findVariants <- function(config,sample)
+{
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
+	bcffile <- concat(config@vcf.dir,'/',sample,'.bcf')
+	vcffile <- concat(config@vcf.dir,'/',sample,'.vcf')
+	checkFileExists(bamfile)
+	checkFileExists(reffile)
+	runCommand('samtools mpileup -uD -f ',reffile,' ',bamfile,' | bcftools view -vcg - > ',vcffile)
+	checkFileExists(vcffile)
+	#runCommand('bcftools view ',bcffile,' | vcfutils.pl varFilter > ',vcffile)
+	#checkFileExists(vcffile)
+	return(vcffile)
+}

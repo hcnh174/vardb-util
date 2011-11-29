@@ -883,3 +883,19 @@ makeSubDirs <- function(dir, subdirs)
 	}
 }
 
+renameFile <- function(filename, newfilename)
+{
+	checkFileExists(filename)
+	runCommand('mv ',filename,' ',newfilename)
+	checkFileExists(newfilename)
+}
+#renameFile('out/raw.bcf','out/newraw.bcf')
+
+
+deleteFile <- function(filename)
+{
+	if (file.exists(filename))
+		runCommand('rm ',filename)
+}
+#deleteFile('out/pileup.txt')
+
