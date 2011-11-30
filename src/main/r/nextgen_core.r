@@ -503,3 +503,10 @@ findVariants <- function(config,sample)
 	#checkFileExists(vcffile)
 	return(vcffile)
 }
+
+hasRegion <- function(config, subject, region)
+{
+	return(nrow(config@data[which(config@data$subject==subject & config@data$region==region),])>0)
+}
+#hasRegion(config,'subject','NS5Aaa31')
+

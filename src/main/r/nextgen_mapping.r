@@ -303,23 +303,18 @@ mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=c
 		print(rowname)
 		ref <- config@data[rowname,'ref']
 		filename <- concat(bam.dir,'/',rowname,'__',ref,'.bam')
-		stripregion <- config@data[rowname,'stripregion']
-		if (!is.na(stripregion))
-		{			
-			filename <- trimBamToRegion(config,concat(rowname,'__',ref),as.numeric(stripregion))
-		}
+		clipregion <- config@data[rowname,'clipregion']
+		if (!is.na(clipregion))
+			filename <- trimBamToRegion(config,concat(rowname,'__',ref),as.numeric(clipregion))
 		filenames <- c(filenames,filename)
 	}
 	print(filenames)
 	mergeBamFiles(config,filenames,outfile)
 	return(outfile)
 }
-#mergeBamsForSample(config,'katsuko_shigeoka__HCV-KT9_katsuko_shigeoka')
 
 mergeBamsForSamples <- function(config, samples=config@samples)
 {
-	#stems <- getStemsForSamples(config,samples)
-	#3for (rowname in rownames(config@data[which(config@data$stem %in% stems),]))
 	for (sample in samples)
 	{
 		mergeBamsForSample(config,sample)
@@ -455,15 +450,13 @@ analyzeReadsForSample <- function(config,sample)
 
 analyzeReadsForGroup <- function(config,group)
 {
-	samples <- getSamplesForGroup(config,group)
-	for (sample in samples)
+	for (sample in getSamplesForGroup(config,group))
 	{
 		try(analyzeReadsForSample(config,sample))
 	}
 	writeCodonTables(config,group)
 	writeAminoAcidTables(config,group)
 	concatTablesByGroup(config,group)
-	#makeAminoAcidBarcharts(config,group)
 	reportAminoAcidChanges(config,group)
 }
 #analyzeReadsForGroup(config,'MP-424')

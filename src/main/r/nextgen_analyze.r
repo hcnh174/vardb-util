@@ -27,7 +27,8 @@ analyzeReads(config)
 
 #Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r out=out
 
-#clearNextgenOutput(config)
+clearNextgenOutput(config)
+analyzeReadsForGroup(config,'hcv_infection')
 
 analyzeReadsForGroup(config,'KT9')
 analyzeReadsForGroup(config,'confirm_plasmid_with_new_reagents')
