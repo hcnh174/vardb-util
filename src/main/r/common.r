@@ -769,6 +769,14 @@ checkFileExists <- function(filename)
 }
 #checkFileExists('test.txt')
 
+checkFileDoesNotExist <- function(filename)
+{
+	if (file.exists(filename))
+		throw(concat('file already exists: ',filename))
+}
+#checkFileDoesNotExist('test.txt')
+
+
 checkFilesExist <- function(...)
 {
 	filenames <- c(...)
@@ -898,4 +906,9 @@ deleteFile <- function(filename)
 		runCommand('rm ',filename)
 }
 #deleteFile('out/pileup.txt')
+
+getObjectSize <- function(obj)
+{
+	return(object.size(obj)/1048600)
+}
 

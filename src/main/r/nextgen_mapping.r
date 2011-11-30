@@ -78,6 +78,30 @@ trimSamples <- function(config, samples=config@samples)
 }
 #trimSamples(config)
 
+##########################################
+
+collapseDuplicates <- function(config, stem, 
+		infile=concat(config@fastq.dir,'/',stem,getTrimmedExtension(config),'.fastq'),
+		outfile=concat(config@fastq.dir,'/',stem,getTrimmedExtension(config),getDedupExtension(config,TRUE),'.fastq'))
+{
+	printcat(infile)
+	printcat(outfile)
+	checkFileExists(infile)
+	runCommand('fastx_collapser -v -i ',infile,' -o ',outfile)
+	checkFileExists(outfile)
+}
+#collapseDuplicates(config, 'nextgen3-2G')
+#collapseDuplicates(config, 'nextgen3-5G')
+
+dedupSamples <- function(config, samples=config@samples)
+{
+	stems <- getStemsForSamples(config,samples)
+	for (rowname in rownames(config@data[which(config@data$stem %in% stems),]))
+	{
+		collapseDuplicates(config,rowname)
+	}
+}
+
 ######################################################################
 
 #
@@ -149,6 +173,8 @@ trimSamples <- function(config, samples=config@samples)
 
 bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 {
+	checkFileExists(fqfile)
+	checkFileExists(reffile)
 	sample <- stripPath(fqfile)
 	sample <- stripExtension(sample)
 	if (is.null(outstem)) outstem=sample
@@ -174,34 +200,45 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	return(bamfile)
 }
 
-runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim)
-{
-	print(ref)
-	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
-	reffile <- getRefFile(config,ref)
-	print(reffile)
-	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)	
-	outstem <- concat(stem,'__',ref)
-	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
-	print(getMapStats(config,bamfile))
-	return(bamfile)
-}
-#runBwa(config,'nextgen1-3F') #'nextgen1-2E')#'nextgen2-5I')
+#runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim)
+#{
+#	print(ref)
+#	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
+#	reffile <- getRefFile(config,ref)
+#	print(reffile)
+#	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)	
+#	outstem <- concat(stem,'__',ref)
+#	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
+#	print(getMapStats(config,bamfile))
+#	return(bamfile)
+#}
+##runBwa(config,'nextgen1-3F') #'nextgen1-2E')#'nextgen2-5I')
+#
+#runBwa <- function(config, stem, ref=unique(config@data[which(config@data$id==stem | config@data$stem==stem),'ref']), trim=config@trim)
+#{
+#	printcat('stem=',stem,', ref=',ref)
+#	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
+#	reffile <- getRefFile(config,ref)
+#	print(reffile)
+#	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
+#	print(fqfile)
+#	outstem <- concat(stem,'__',ref)
+#	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
+#	print(getMapStats(config,bamfile))
+#	return(bamfile)
+#}
+##runBwa(config,'nextgen4-7A')
 
-runBwa <- function(config, stem, ref=unique(config@data[which(config@data$id==stem | config@data$stem==stem),'ref']), trim=config@trim)
+runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, dedup=TRUE)
 {
-	printcat('stem=',stem,', ref=',ref)
-	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
 	reffile <- getRefFile(config,ref)
-	print(reffile)
-	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
-	print(fqfile)
+	fqfile <- getFastqFilename(config,stem)
 	outstem <- concat(stem,'__',ref)
 	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
 	print(getMapStats(config,bamfile))
 	return(bamfile)
 }
-#runBwa(config,'nextgen4-7A')
+#runBwa(config,'nextgen3-2G')
 
 mapReadsByProfile <- function(config, profile)
 {
@@ -321,6 +358,7 @@ mergeBamsForSamples <- function(config, samples=config@samples)
 	}
 }
 #mergeBamsForSamples(config)
+
 
 ############################################
 

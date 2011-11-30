@@ -510,3 +510,25 @@ hasRegion <- function(config, subject, region)
 }
 #hasRegion(config,'subject','NS5Aaa31')
 
+
+getTrimmedExtension <- function(config, trim=config@trim)
+{
+	return(ifelse(trim,'.trimmed',''))
+}
+
+getDedupExtension <- function(config, dedup=config@dedup)
+{
+	return(ifelse(dedup,'.dedup',''))
+}
+
+getFastqExtension <- function(config, trim=config@trim, dedup=config@dedup)
+{
+	return(concat(getTrimmedExtension(config,trim),getDedupExtension(config,dedup),'.fastq'))
+}
+
+getFastqFilename <- function(config, stem, fastq.dir=config@fastq.dir, trim=config@trim, dedup=config@dedup)
+{
+	ext <- getFastqExtension(config,trim,dedup)
+	return(concat(config@fastq.dir,'/',stem,ext))
+}
+#getFastqFilename(config, 'nextgen3-4C')

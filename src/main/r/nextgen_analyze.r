@@ -8,6 +8,7 @@ writeRefs(config)
 #{
 	preprocess(config)
 	trimSamples(config)
+	dedupSamples(config)
 	mapReads(config)
 	outputBams(config)
 	#fixBaiFiles(config)

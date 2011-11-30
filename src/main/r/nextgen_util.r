@@ -562,17 +562,13 @@ clearNextgenOutput <- function(config, subdirs='tmp,unmapped,vcf,pileup,qc,count
 
 ###############################################
 
-mergeBamFiles <- function(config, filenames, outfile)
+markDuplicates <- function(config, stem, infile=concat(config@bam.dir,'/',stem,'.bam'), outfile=concat(config@bam.dir,'/',stem,'.dedup.bam'))
 {
-	str <- concat('samtools merge ',outfile)
-	for (filename in splitFields(filenames))
-	{
-		str <- concat(str,' ',filename)
-	}
-	runCommand(str)
+	checkFileExists(infile)
+	runCommand('samtools rmdup -s ',infile,' ',outfile)
 	checkFileExists(outfile)
 	indexBam(outfile)
 	return(outfile)
 }
-#mergeBamFiles(config, c('out/NS5Aaa31.bam','out/NS5Aaa93.bam'), 'out/NS5A.bam')
+#markDuplicates(config,'merged', infile='out/merged.bam', outfile='out/merged.dedup.bam')
 
