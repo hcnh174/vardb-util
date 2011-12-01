@@ -80,9 +80,34 @@ trimSamples <- function(config, samples=config@samples)
 
 ##########################################
 
+
+maskReads <- function(config, stem, q=5,
+		infile=concat(config@fastq.dir,'/',stem,getFastqExtension(config,mask=FALSE,dedup=FALSE)),
+		outfile=concat(config@fastq.dir,'/',stem,getFastqExtension(config,mask=TRUE,dedup=FALSE)))
+{
+	printcat(infile)
+	printcat(outfile)
+	checkFileExists(infile)
+	runCommand('fastq_masker -q ',q,' -v -i ',infile,' -o ',outfile)
+	checkFileExists(outfile)
+	runCommand('head ',outfile)
+}
+#maskReads(config, 'nextgen3-2G')
+
+maskSamples <- function(config, samples=config@samples)
+{
+	stems <- getStemsForSamples(config,samples)
+	for (rowname in rownames(config@data[which(config@data$stem %in% stems),]))
+	{
+		maskReads(config,rowname)
+	}
+}
+
+##########################################
+
 collapseDuplicates <- function(config, stem, 
-		infile=concat(config@fastq.dir,'/',stem,getTrimmedExtension(config),'.fastq'),
-		outfile=concat(config@fastq.dir,'/',stem,getTrimmedExtension(config),getDedupExtension(config,TRUE),'.fastq'))
+		infile=concat(config@fastq.dir,'/',stem,getFastqExtension(config,dedup=FALSE)),
+		outfile=concat(config@fastq.dir,'/',stem,getFastqExtension(config,dedup=TRUE)))
 {
 	printcat(infile)
 	printcat(outfile)
@@ -340,9 +365,9 @@ mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=c
 		print(rowname)
 		ref <- config@data[rowname,'ref']
 		filename <- concat(bam.dir,'/',rowname,'__',ref,'.bam')
-		clipregion <- config@data[rowname,'clipregion']
-		if (!is.na(clipregion))
-			filename <- trimBamToRegion(config,concat(rowname,'__',ref),as.numeric(clipregion))
+		#clipregion <- config@data[rowname,'clipregion']
+		#if (!is.na(clipregion))
+		#	filename <- trimBamToRegion(config,concat(rowname,'__',ref),as.numeric(clipregion))
 		filenames <- c(filenames,filename)
 	}
 	print(filenames)

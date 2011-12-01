@@ -312,3 +312,11 @@ size <- factor(c(9,12,26,22,24,13))
 as.numeric(levels(size)[size])
 
 .libPaths()
+
+if(class(result) == “try-error”)
+	
+
+	tryCatch(throw('fail'), error=function(ex){print('logging error')})
+
+	
+	

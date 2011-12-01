@@ -175,6 +175,17 @@ getRefForGroup <- function(config, group)
 }
 #getRefForGroup(config,'NS3_NS5A_inhibitors')
 
+getRefForSamples <- function(config, samples)
+{
+	refs <- unique(config@data[which(config@data$sample %in% samples),'ref'])
+	mapref <- unique(config@refs[which(config@refs$ref %in% refs),'mapping'])
+	if (length(mapref)>1)
+		throw('multiple mapping refs found for samples: ',joinFields(samples,','))
+	return(mapref)
+}
+#getRefForSamples(config,getSamplesForSubGroup(config,'hcv_infection','hcv_infection'))
+
+
 getRefFile <- function(config, ref)
 {
 	reffile <- concat(config@ref.dir,'/',ref,'.fasta')
@@ -516,14 +527,19 @@ getTrimmedExtension <- function(config, trim=config@trim)
 	return(ifelse(trim,'.trimmed',''))
 }
 
+getMaskedExtension <- function(config, mask=config@mask)
+{
+	return(ifelse(mask,'.masked',''))
+}
+
 getDedupExtension <- function(config, dedup=config@dedup)
 {
 	return(ifelse(dedup,'.dedup',''))
 }
 
-getFastqExtension <- function(config, trim=config@trim, dedup=config@dedup)
+getFastqExtension <- function(config, trim=config@trim, mask=config@mask, dedup=config@dedup)
 {
-	return(concat(getTrimmedExtension(config,trim),getDedupExtension(config,dedup),'.fastq'))
+	return(concat(getTrimmedExtension(config,trim),getMaskedExtension(config,mask),getDedupExtension(config,dedup),'.fastq'))
 }
 
 getFastqFilename <- function(config, stem, fastq.dir=config@fastq.dir, trim=config@trim, dedup=config@dedup)

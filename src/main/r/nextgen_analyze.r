@@ -1,5 +1,5 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
-loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments,nextgen_report')
+loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments,nextgen_charts')
 config <- loadConfig()
 
 writeRefs(config)
@@ -8,7 +8,9 @@ writeRefs(config)
 #{
 	preprocess(config)
 	trimSamples(config)
+	maskSamples(config)
 	dedupSamples(config)
+	
 	mapReads(config)
 	outputBams(config)
 	#fixBaiFiles(config)
@@ -29,12 +31,11 @@ analyzeReads(config)
 #Rscript $VARDB_RUTIL_HOME/analyze_reads_merged.r out=out
 
 clearNextgenOutput(config)
-analyzeReadsForGroup(config,'hcv_infection')
 
 analyzeReadsForGroup(config,'KT9')
 analyzeReadsForGroup(config,'confirm_plasmid_with_new_reagents')
 analyzeReadsForGroup(config,'HBV_nucleoside_analogues')
-analyzeReadsForGroup(config,'hcv_infection')
+#analyzeReadsForGroup(config,'hcv_infection')
 
 analyzeReadsForGroup(config,'MP-424')
 analyzeReadsForGroup(config,'BMS-790052_BMS-650032')

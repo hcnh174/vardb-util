@@ -5,34 +5,57 @@ loadPileupData <- function(config, sample)
 	data <- loadDataFrame(filename)
 	printcat('loaded file ',filename,'. contains ',nrow(data),' reads')
 	ref <- getRefForSample(sample)
-	startnt <- getField(config@refs,ref,'start')#startnt <- config@refs[ref,'start']	
-	data$ntnum <- data$position + startnt# - 1
+	startnt <- getField(config@refs,ref,'start')
+	data$ntnum <- data$position + startnt
 	return(data)
 }
 #data <- loadPileupData(config,'PXB0220-0002.wk08__HCV-KT9')
+#
+#extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
+#{
+#	#ntnum <- ntnum - 1 #hack
+#	nt1 <- data[which(data$ntnum==ntnum),'nt']
+#	nt2 <- data[which(data$ntnum==ntnum+1),'nt']
+#	nt3 <- data[which(data$ntnum==ntnum+2),'nt']
+#	printcat('nt1=',length(nt1),' nt2=',length(nt2),' nt3=',length(nt3))
+#	codons <- paste(nt1, nt2, nt3, sep='')
+#	#if (drop.ambig)
+#	#	codons <- removeAmbiguousCodons(codons)
+#	return(codons)
+#}
+##extractCodonData(data,6348)
 
-extractCodonData <- function(data, ntnum, drop.ambig=FALSE)
+extractCodonData <- function(data, ntnum)
 {
-	#ntnum <- ntnum - 1 #hack
-	nt1 <- data[which(data$ntnum==ntnum),'nt']
-	nt2 <- data[which(data$ntnum==ntnum+1),'nt']
-	nt3 <- data[which(data$ntnum==ntnum+2),'nt']
+	cols <- c('read','nt')
+	nts1 <- data[which(data$ntnum==ntnum),cols]; nts1 <- nts1[order(nts1$read),]
+	nts2 <- data[which(data$ntnum==ntnum+1),cols]; nts2 <- nts2[order(nts2$read),]
+	nts3 <- data[which(data$ntnum==ntnum+2),cols]; nts3 <- nts3[order(nts3$read),]
+	
+	reads <- nts1$read
+	reads <- reads[which(reads %in% nts2$read)]
+	reads <- reads[which(reads %in% nts3$read)]
+	reads <- sort(reads)
+	
+	nt1 <- nts1[which(nts1$read %in% reads),'nt']
+	nt2 <- nts2[which(nts2$read %in% reads),'nt']
+	nt3 <- nts3[which(nts3$read %in% reads),'nt']
+	
 	codons <- paste(nt1, nt2, nt3, sep='')
-	if (drop.ambig)
-		codons <- removeAmbiguousCodons(codons)
+	codons <- removeAmbiguousCodons(codons)
 	return(codons)
 }
-#extractCodonData(data,3495)
+#extractCodonData(data,6348)
 
 #################################################################
 
 getNtCounts <- function(data, ntnum)
 {
-	counts <- data.frame()
-	nts <- data[which(data$ntnum==ntnum),'nt']
+	nts <- data[which(data$ntnum==ntnum & data$nt!='N'),'nt']
 	freqs <- sort(xtabs(as.data.frame(nts)), decreasing=TRUE)
-	total <- sum(freqs)				
+	total <- sum(freqs)		
 	rank <- 1
+	counts <- data.frame()
 	for (nt in names(freqs))
 	{
 		count <- freqs[nt]
@@ -43,12 +66,12 @@ getNtCounts <- function(data, ntnum)
 	}
 	return(counts)
 }
-#counts <- getNtCounts(data,3885)
+#counts <- getNtCounts(data,6348)
 
 getCodonCounts <- function(data, ntnum)
 {
 	counts <- data.frame()
-	codons <- extractCodonData(data,ntnum,FALSE)
+	codons <- extractCodonData(data,ntnum)
 	if (length(codons)==0)
 		return(counts)
 	freqs <- sort(xtabs(as.data.frame(codons)), decreasing=TRUE)
@@ -70,7 +93,7 @@ getCodonCounts <- function(data, ntnum)
 getAaCounts <- function(data, ntnum)
 {
 	counts <- data.frame()
-	codons <- extractCodonData(data,ntnum,FALSE)
+	codons <- extractCodonData(data,ntnum)
 	if (length(codons)==0)
 		return(counts)
 	aa <- sapply(codons,translateCodon)

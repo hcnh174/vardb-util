@@ -572,3 +572,51 @@ markDuplicates <- function(config, stem, infile=concat(config@bam.dir,'/',stem,'
 }
 #markDuplicates(config,'merged', infile='out/merged.bam', outfile='out/merged.dedup.bam')
 
+removeAmbiguousCodons <- function(codons)
+{
+	newvalues <- c()
+	for (codon in codons)
+	{
+		if (regexpr("N", codon) == -1)
+			newvalues <- appendValues(newvalues,codon)
+	}
+	return(newvalues)
+}
+#removeAmbiguousCodons(splitFields('GCT,GTT,NGT'))
+
+
+# makes a list of colors for just the aas in the data set
+getAminoAcidColors <- function(aas)
+{
+	aacolors <- list(
+			I = '#ff00d6',
+			L = '#ffad00',
+			V = '#ff8400',
+			A = '#ffef00',
+			M = '#ffc600',
+			F = '#ff0000',
+			W = '#ffd600',
+			Y = '#7bff00',
+			K = '#0000ff',
+			R = '#bd00ff',
+			H = '#00ffad',
+			D = '#00adff',
+			E = '#00ffc6',
+			S = '#00ff94',
+			T = '#00ff6b',
+			N = '#00ffff',
+			Q = '#00efff',
+			P = '#00ff00',
+			G = '#ffff00',
+			C = '#c6ff00'
+	)
+	aacolors[['*']] <- 'gray'
+	cols <- c()
+	for (aa in unique(sort(aas)))
+	{
+		cols <- c(cols, aacolors[[aa]])
+	}
+	return(cols)
+}
+#getAminoAcidColors(splitFields('*,A,C,Y'))
+

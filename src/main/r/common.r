@@ -911,4 +911,3 @@ getObjectSize <- function(obj)
 {
 	return(object.size(obj)/1048600)
 }
-

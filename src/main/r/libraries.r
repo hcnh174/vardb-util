@@ -27,6 +27,7 @@ install.packages('reshape')
 install.packages("foreach")
 install.packages("doSNOW")
 install.packages('MiscPsycho')
+install.packages('gplots')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
