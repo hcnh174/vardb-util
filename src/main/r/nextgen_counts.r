@@ -236,3 +236,22 @@ countCodonsForSample <- function(config, sample)
 }
 #countCodonsForSample(config,'PXB0220-0002.wk08__HCV-KT9_PXB0220-0002')#KT9.random__HCV-KT9
 
+#uses GATK custom walker to count all the bases at each position
+countBases <- function(config, sample, bam.dir=config@bam.dir, out.dir=config@basecounts.dir)
+{
+	reffile <- getRefFile(config,getRefForSample(sample))
+	bamfile <- concat(bam.dir,'/',sample,'.bam')
+	outfile <- concat(out.dir,'/',sample,'.txt')
+	checkFileExists(reffile)
+	checkFileExists(bamfile)	
+	str <- 'java -Xmx2g'
+	str <- concat(str,' -cp $VARDB_UTIL_HOME/target/gatk-walkers.jar;$GATK_HOME/GenomeAnalysisTK.jar')
+	str <- concat(str,' org.broadinstitute.sting.gatk.CommandLineGATK -T CountVariants')
+	str <- concat(str,' -dt NONE')
+	str <- concat(str,' -R ',reffile)
+	str <- concat(str,' -I ',bamfile)
+	str <- concat(str,' -o ',outfile)
+	print(str)
+	#runCommand(str)
+	#checkFileExists(outfile)
+}

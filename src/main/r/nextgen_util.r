@@ -620,3 +620,21 @@ getAminoAcidColors <- function(aas)
 }
 #getAminoAcidColors(splitFields('*,A,C,Y'))
 
+createSequenceDictionary <- function(config, ref)
+{
+	reffile <- getRefFile(config,ref)
+	dictfile <- concat(config@ref.dir,'/',ref,'.dict')
+	str <- 'java -Xmx2g -jar $PICARD_HOME/CreateSequenceDictionary.jar'
+	str <- concat(str,' REFERENCE=',reffile)
+	str <- concat(str,' OUTPUT=',dictfile)
+	runCommand(str)
+	checkFileExists(dictfile)
+}
+#createSequenceDictionary(config,'HCV-KT9')
+
+peekBam <- function(bamfile)
+{
+	runCommand('samtools view ',bamfile,' | head')	#less -S
+}
+#peekBam('U:\OLD2bam\nextgen3-2G__HCV-KT9.bam')
+

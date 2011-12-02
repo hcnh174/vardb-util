@@ -22,6 +22,7 @@ setClass("nextgenconfig",
 				vcf.dir='character',
 				qc.dir='character',
 				pileup.dir='character',
+				basecounts.dir='character',
 				tables.dir='character',
 				charts.dir='character',
 				counts.dir='character',
@@ -137,6 +138,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	.Object@qc.dir <- concat(.Object@out.dir,'/qc')
 	.Object@counts.dir <- concat(.Object@out.dir,'/counts')
 	.Object@pileup.dir <- concat(.Object@out.dir,'/pileup')
+	.Object@basecounts.dir <- concat(.Object@out.dir,'/basecounts')
 	.Object@tables.dir <- concat(.Object@out.dir,'/tables')
 	.Object@charts.dir <- concat(.Object@out.dir,'/charts')
 	.Object@consensus.dir <- concat(.Object@out.dir,'/consensus')

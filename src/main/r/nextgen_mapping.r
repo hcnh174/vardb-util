@@ -1,4 +1,4 @@
-preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,qc,counts,tables,charts,consensus,coverage')
+preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,basecounts,qc,counts,tables,charts,consensus,coverage')
 {
 	makeSubDirs(config@out.dir,subdirs)
 	writeRefs(config)
@@ -260,6 +260,7 @@ runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, 
 	fqfile <- getFastqFilename(config,stem)
 	outstem <- concat(stem,'__',ref)
 	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
+	addReadGroup(config,outstem)
 	print(getMapStats(config,bamfile))
 	return(bamfile)
 }
@@ -548,3 +549,5 @@ analyzeReadsForGroup <- function(config,group)
 #	make_piecharts(config)
 #	#export_unmapped_reads(config,concat(stem,'.nodup'))
 #}
+
+

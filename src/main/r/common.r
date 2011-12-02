@@ -911,3 +911,12 @@ getObjectSize <- function(obj)
 {
 	return(object.size(obj)/1048600)
 }
+
+copyFile <- function(src, dest)
+{
+	checkFileExists(src)
+	runCommand('cp --force ',src,' ',dest)
+	checkFileExists(dest)
+}
+#copyFile('out/bam/nextgen3-2H__HCV-KT9.bam','out/test.bam')
+

@@ -23,6 +23,13 @@
 		    <artifactId>commons-lang</artifactId>
 		    <version>2.6</version>
 		</dependency>
+		<dependency>
+		    <groupId>org.broadinstitute.sting</groupId>
+		    <artifactId>GenomeAnalysisTK</artifactId>
+		    <version>0.9.2</version>
+		    <scope>system</scope>
+		    <systemPath>${project.basedir}/../lib/GenomeAnalysisTK.jar</systemPath>
+		</dependency>
 	</dependencies>
 	<profiles>  
 		<profile>  
@@ -38,7 +45,7 @@
 							<execution>  
 								<phase>test</phase>  
 								<goals>  
-								<goal>java</goal> 
+									<goal>java</goal> 
 								</goals>
 								<configuration>  
 									<mainClass>org.vardb.util.tools.snps.PlinkConverter</mainClass>  
@@ -59,6 +66,36 @@
 											<argument>false</argument> 
 										<argument>-minimize</argument>
 											<argument>false</argument> 
+									</arguments>  
+								</configuration>  
+							</execution>  
+						</executions>  
+					</plugin> 
+				</plugins>  
+			</build>  
+		</profile>
+		<profile>  
+			<id>helloread</id> 
+			<!--  mvn test -Phelloread  -->
+			<build>  
+				<plugins>  
+					<plugin>  
+						<groupId>org.codehaus.mojo</groupId>  
+						<artifactId>exec-maven-plugin</artifactId>  
+						<version>1.1.1</version>  
+						<executions>  
+							<execution>  
+								<phase>test</phase>  
+								<goals>  
+									<goal>java</goal> 
+								</goals>
+								<!-- java -cp GenomeAnalysisTK-1.2-60-g585a45b/GenomeAnalysisTK.jar:.  org.broadinstitute.sting.gatk.CommandLineGATK -T HelloWalker -->
+								<configuration>
+									<mainClass>org.broadinstitute.sting.gatk.CommandLineGATK</mainClass> 
+									<arguments>
+										<argument>-T</argument><argument>HelloRead</argument>
+										<argument>-R</argument><argument>\\ubuntu\merged\out\ref\HCV-KT9.fasta</argument>
+										<argument>-I</argument><argument>\\ubuntu\merged\out\OLD2bam\nextgen3-2G__HCV-KT9.bam</argument>
 									</arguments>  
 								</configuration>  
 							</execution>  

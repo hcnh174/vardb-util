@@ -433,6 +433,7 @@ indexBam <- function(bamfile)
 {
 	checkFileExists(bamfile)
 	runCommand('samtools index ',bamfile)
+	checkFileExists(concat(bamfile,'.bai'))
 }
 
 sam2bam <- function(samfile,bamfile)
@@ -444,19 +445,10 @@ sam2bam <- function(samfile,bamfile)
 	checkFileExists(tmpbamfile)
 	runCommand('samtools sort ',tmpbamfile,' ',stripExtension(bamfile))
 	checkFileExists(bamfile)
-	indexBam(bamfile)
-	checkFileExists(concat(bamfile,'.bai'))
+	indexBam(bamfile)	
 	deleteFile(tmpbamfile)
 	return(bamfile)
 }
-
-copyFile <- function(src, dest)
-{
-	checkFileExists(src)
-	runCommand('cp --force ',src,' ',dest)
-	checkFileExists(dest)
-}
-#copyFile('out/bam/nextgen3-2H__HCV-KT9.bam','out/test.bam')
 
 mergeBamFiles <- function(config, filenames, outfile)
 {
@@ -548,3 +540,27 @@ getFastqFilename <- function(config, stem, fastq.dir=config@fastq.dir, trim=conf
 	return(concat(config@fastq.dir,'/',stem,ext))
 }
 #getFastqFilename(config, 'nextgen3-4C')
+
+addReadGroup <- function(config, sample, bam.dir=config@bam.dir)
+{
+	bamfile <- concat(bam.dir,'/',sample,'.bam')
+	tmpfile <- concat(bam.dir,'/tmp-',sample,'.bam')
+	str <- 'java -Xmx2g -jar $PICARD_HOME/AddOrReplaceReadGroups.jar'
+	str <- concat(str,' INPUT=',bamfile)
+	str <- concat(str,' OUTPUT=',tmpfile)
+	str <- concat(str,' RGSM="',sample,'"')
+	str <- concat(str,' RGLB="',sample,'"')
+	str <- concat(str,' RGID="',sample,'"')
+	str <- concat(str,' RGPL=illumina')
+	str <- concat(str,' RGPU=barcode')
+	str <- concat(str,' SORT_ORDER=coordinate')
+	#str <- concat(str,' CREATE_INDEX=true')
+	runCommand(str)
+	checkFileExists(tmpfile)
+	deleteFile(bamfile)
+	renameFile(tmpfile,bamfile)
+	indexBam(bamfile) #bamfile
+	return(bamfile)
+}
+
+

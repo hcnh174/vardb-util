@@ -146,6 +146,18 @@ public final class CStringHelper
 		return buffer.toString();
 	}
 	
+	public static String join(int[] array, String delimiter)
+	{
+		StringBuilder buffer=new StringBuilder();
+		for (int index=0;index<array.length;index++)
+		{
+			buffer.append(array[index]);
+			if (index<array.length-1)
+				buffer.append(delimiter);
+		}
+		return buffer.toString();
+	}
+	
 	public static String join(double[] array, String delimiter)
 	{
 		StringBuilder buffer=new StringBuilder();

@@ -3,5 +3,6 @@
     <wb-module deploy-name="vardb-util">
         <wb-resource deploy-path="/" source-path="/src/main/java"/>
         <wb-resource deploy-path="/" source-path="/src/main/resources"/>
+        <wb-resource deploy-path="/" source-path="/gatk"/>
     </wb-module>
 </project-modules>
