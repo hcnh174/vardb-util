@@ -380,7 +380,7 @@ mergeBamsForSamples <- function(config, samples=config@samples)
 {
 	for (sample in samples)
 	{
-		mergeBamsForSample(config,sample)
+		try(mergeBamsForSample(config,sample))
 	}
 }
 #mergeBamsForSamples(config)

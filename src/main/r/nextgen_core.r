@@ -452,6 +452,8 @@ sam2bam <- function(samfile,bamfile)
 
 mergeBamFiles <- function(config, filenames, outfile)
 {
+	if (!config@force & file.exists(outfile))
+		return(outfile)
 	filenames <- splitFields(filenames)
 	if (length(filenames)==0)
 		throw('no bam files to merge')
@@ -462,7 +464,10 @@ mergeBamFiles <- function(config, filenames, outfile)
 		copyFile(concat(filenames,'.bai'),concat(outfile,'.bai'))
 		return(outfile)
 	}	
-	str <- concat('samtools merge -f ',outfile)
+	str <- concat('samtools merge')
+	if (config@force)
+		str <- concat(str,' -f')
+	str <- concat(str,' ',outfile)
 	for (filename in filenames)
 	{
 		checkFileExists(filename)
