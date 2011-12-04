@@ -318,5 +318,17 @@ if(class(result) == “try-error”)
 
 	tryCatch(throw('fail'), error=function(ex){print('logging error')})
 
+############################
 	
+data(diamonds)
+
+# Create a histogram, assign to "plot1"
+plot1 <- qplot(price,data=diamonds,binwidth=1000)
+
+# Create a scatterplot
+plot2 <- qplot(carat,price,data=diamonds)
+
+# Arrange and display the plots into a 2x1 grid
+arrange(plot1,plot2,ncol=1)
+
 	
