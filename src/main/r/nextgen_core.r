@@ -242,6 +242,31 @@ getGroupForSubject <- function(config, subject)
 }
 #getGroupForSubject(config, 'PXB0220-0002')
 
+getIntervalsForSample <- function(config, sample)
+{
+	ref <- getRefForSample(sample)
+	print(ref)
+	regions <- getRegionsForSample(config, sample)
+	if (length(regions)==0)
+	{
+		stem <- getStemForSample(sample)
+		regions <- config@data[stem,'region']
+	}
+	print(regions)
+	genes <- unique(config@regions[which(config@regions$id %in% regions),'gene'])
+	print(genes)
+	intervals <- c()
+	for (gene in genes)
+	{
+		start <- config@genes[gene,'start']
+		end <- config@genes[gene,'end']
+		interval <- concat(ref,':',start,'-',end)
+		intervals <- c(intervals,interval)
+	}
+	return(intervals)	
+}
+#getIntervalsForSample(config,'KT9.random__HCV-KT9')
+
 #############################################################################
 
 getCodonPositionsForRegion <- function(config, region, ref)
