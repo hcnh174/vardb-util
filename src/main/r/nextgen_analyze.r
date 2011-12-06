@@ -1,5 +1,5 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
-loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts2,nextgen_tables,nextgen_fragments,nextgen_charts')
+loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts2,nextgen_tables2,nextgen_fragments,nextgen_charts')
 config <- loadConfig()
 
 writeRefs(config)
@@ -22,6 +22,7 @@ writeRefs(config)
 	exportPileup(config)
 	countCodons(config)
 	writeCodonTables(config)
+	writeAminoAcidTables(config)
 	concatTablesByGroup(config)
 	#makePiecharts(config)
 #}

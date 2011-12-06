@@ -240,32 +240,55 @@ getGroupForSubject <- function(config, subject)
 {
 	return(unique(config@data[which(config@data$subject==subject),'group']))
 }
-#getGroupForSubject(config, 'PXB0220-0002')
+##getGroupForSubject(config, 'PXB0220-0002')
+#
+#getIntervalsForSample <- function(config, sample)
+#{
+#	ref <- getRefForSample(sample)
+#	print(ref)
+#	regions <- getRegionsForSample(config, sample)
+#	if (length(regions)==0)
+#	{
+#		stem <- getStemForSample(sample)
+#		regions <- config@data[stem,'region']
+#	}
+#	print(regions)
+#	genes <- unique(config@regions[which(config@regions$id %in% regions),'gene'])
+#	print(genes)
+#	intervals <- c()
+#	for (gene in genes)
+#	{
+#		start <- config@genes[gene,'start']
+#		end <- config@genes[gene,'end']
+#		interval <- concat(ref,':',start,'-',end)
+#		intervals <- c(intervals,interval)
+#	}
+#	return(intervals)	
+#}
+##getIntervalsForSample(config,'KT9.random__HCV-KT9')
 
-getIntervalsForSample <- function(config, sample)
+getLocationForRegion <- function(config, ref, region)
 {
-	ref <- getRefForSample(sample)
-	print(ref)
-	regions <- getRegionsForSample(config, sample)
-	if (length(regions)==0)
-	{
-		stem <- getStemForSample(sample)
-		regions <- config@data[stem,'region']
-	}
-	print(regions)
-	genes <- unique(config@regions[which(config@regions$id %in% regions),'gene'])
-	print(genes)
-	intervals <- c()
-	for (gene in genes)
-	{
-		start <- config@genes[gene,'start']
-		end <- config@genes[gene,'end']
-		interval <- concat(ref,':',start,'-',end)
-		intervals <- c(intervals,interval)
-	}
-	return(intervals)	
+	mapref <- unique(config@refs[which(config@refs$ref==ref),'mapping'])
+	#print(mapref)
+	gene <- unique(config@regions[region,'gene'])
+	#print(gene)
+	row <- config@genes[which(config@genes$gene==gene & config@genes$ref==mapref),]
+	#print(row)
+	location <- list(ref=ref, start=row$start, end=row$end)
+	return(location)	
 }
-#getIntervalsForSample(config,'KT9.random__HCV-KT9')
+#getLocationForRegion(config,'HCV-KT9','NS3aa156')
+
+
+getIntervalForRegion <- function(config, ref, region)
+{
+	loc <- getLocationForRegion(config,ref,region)
+	interval <- concat(loc$ref,':',loc$start,'-',loc$end)
+	return(interval)	
+}
+#getIntervalForRegion(config,'HCV-KT9','NS3aa156')
+
 
 #############################################################################
 

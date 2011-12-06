@@ -74,7 +74,7 @@ public class CountVariantsWalker extends LocusWalker<Integer, Integer> implement
 
 	private void writeCodonCountsHeader(PrintStream out)
 	{
-		out.println("position"+TAB+"aanum"+TAB+"aa"+TAB+"codon"+TAB+"rank"+TAB+"count"+TAB+"freq");
+		out.println("position"+TAB+"aa"+TAB+"codon"+TAB+"rank"+TAB+"count"+TAB+"freq");
 	}
 	
 	private void writeCodonCounts(PrintStream out, Region region, List<CodonCount> counts)
@@ -83,7 +83,7 @@ public class CountVariantsWalker extends LocusWalker<Integer, Integer> implement
 		{
 			//System.out.println("codon="+count.codon+"="+count.count);
 			out.print(region.codonstart);
-			out.print(TAB+region.aanum);
+			//out.print(TAB+region.aanum);
 			out.print(TAB+count.codon.getAminoAcid().getCode());
 			out.print(TAB+count.codon.name());
 			out.print(TAB+count.rank);
@@ -98,7 +98,7 @@ public class CountVariantsWalker extends LocusWalker<Integer, Integer> implement
 	
 	private void writeAminoAcidCountsHeader(PrintStream out)
 	{
-		out.println("position"+TAB+"aanum"+TAB+"aa"+TAB+"rank"+TAB+"count"+TAB+"freq");
+		out.println("position"+TAB+"aa"+TAB+"rank"+TAB+"count"+TAB+"freq");
 	}
 
 	private void writeAminoAcidCounts(PrintStream out, Region region, List<AminoAcidCount> counts)
@@ -107,7 +107,7 @@ public class CountVariantsWalker extends LocusWalker<Integer, Integer> implement
 		{
 			//System.out.println("aa="+count.aa+"="+count.count);
 			out.print(region.codonstart);
-			out.print(TAB+region.aanum);
+			//out.print(TAB+region.aanum);
 			out.print(TAB+count.aa.getCode());
 			out.print(TAB+count.rank);
 			out.print(TAB+count.count);
@@ -178,7 +178,7 @@ class Region
 	protected int end;
 	protected Map<Integer,Map<String,Character>> map=new HashMap<Integer,Map<String,Character>>();
 	protected int codonstart;
-	protected int aanum=0;
+	//protected int aanum=0;
 	
 	public Region(int start, int end)
 	{
@@ -218,7 +218,7 @@ class Region
 		if (offset==0)
 		{
 			codonstart=position;
-			aanum++;
+			//aanum++;
 		}
 		//System.out.println("position="+position+", relpos="+relpos+", offset="+offset);
 		List<GATKSAMRecord> reads=pileup.getReads();

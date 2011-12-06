@@ -5,3 +5,6 @@ git commit -m "first commit"
 git remote add origin git@github.com:hcnh174/vardb-util.git
 git push origin master
 git clone git@github.com:hcnh174/vardb-util.git vardb-util
+
+#discard uncommitted changes
+git reset HEAD
