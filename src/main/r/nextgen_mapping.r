@@ -518,10 +518,10 @@ analyzeReadsForGroup <- function(config,group)
 	{
 		try(analyzeReadsForSample(config,sample))
 	}
-	writeCodonTables(config,group)
-	writeAminoAcidTables(config,group)
-	concatTablesByGroup(config,group)
-	reportAminoAcidChanges(config,group)
+	#writeCodonTables(config,group)
+	#writeAminoAcidTables(config,group)
+	#concatTablesByGroup(config,group)
+	reportAminoAcidChangesForGroup(config,group)
 }
 #analyzeReadsForGroup(config,'MP-424')
 #analyzeReadsForGroup(config,'hcv_infection')

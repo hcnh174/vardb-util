@@ -28,6 +28,7 @@ install.packages("foreach")
 install.packages("doSNOW")
 install.packages('MiscPsycho')
 install.packages('gplots')
+install.packages('XLConnect')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")

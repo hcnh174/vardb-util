@@ -75,11 +75,14 @@ reportAminoAcidChangeBarChart <- function(config, subject, region, usecounts=TRU
 }
 #data.subset <- reportAminoAcidChangeBarChart(config,'PXB0220-0002','NS5Aaa93')
 
-reportAminoAcidChanges <- function(config, group)
+reportAminoAcidChangesForGroup <- function(config, group, make.pdf=FALSE)
 {
 	subjects <- getSubjectsForGroup(config,group)
-	pdffile <- concat(config@charts.dir,'/multibarcharts-',group,'-aa.pdf')
-	pdf(pdffile)#, width = 10, height = 3)
+	if (make.pdf)
+	{
+		pdffile <- concat(config@charts.dir,'/charts-',group,'-aa.pdf')
+		pdf(pdffile)#, width = 10, height = 3)
+	}
 	regions <- getRegionsForGroup(config,group)
 	for (region in regions)
 	{
@@ -87,19 +90,23 @@ reportAminoAcidChanges <- function(config, group)
 		{
 			printcat('subject: ',subject,', region: ',region)
 			reportAminoAcidChangeBarChart(config, subject, region, usecounts=TRUE)
-#			samples <- getSamplesForSubject(config,subject)
-#			for (aanum in getFociForRegion(config,region))
-#			{
-#				printcat(' aanum: ',aanum)
-#				tbl <- makeAminoAcidVariantTable(config, samples, region, aanum, minreads=2)[,-1]
-#				#gplots::textplot(tbl, show.rownames=FALSE, show.colnames=TRUE, cex=1, halign='left', valign='top')
-#				gplots::textplot(capture.output(tbl), cex=1, halign='left', valign='top') #, show.rownames=FALSE
-#				title(concat(group,'-',subject,'-',region,'-',aanum))
-#			}
 		}
 	}
-	dev.off()
+	if (make.pdf)
+		dev.off()
 	#openPdf(pdffile)
 }
-#reportAminoAcidChanges(config, 'hcv_infection')
-#reportAminoAcidChanges(config, 'NS5A_L31V_Y93H_mutations_maintained')
+#reportAminoAcidChangesForGroup(config, 'hcv_infection')
+#reportAminoAcidChangesForGroup(config, 'NS5A_L31V_Y93H_mutations_maintained')
+
+reportAminoAcidChanges <- function(config, groups=config@groups)
+{
+	pdffile <- concat(config@charts.dir,'/charts.pdf')
+	pdf(pdffile)#, width = 10, height = 3)
+	for (group in groups)
+	{
+		reportAminoAcidChangesForGroup(config,group)
+	}
+	dev.off()
+}
+#reportAminoAcidChanges(config)

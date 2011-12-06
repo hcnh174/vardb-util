@@ -17,7 +17,7 @@
 #}
 ##getCodonCountSubset(config,getSamplesForSubGroup(config,'hcv_infection','hcv_infection'), 'NS5Aaa31', 'aa', 31)
 
-makeCodonVariantTable <- function(config, samples, region, aanum, minreads=0)
+makeCodonVariantTable <- function(config, samples, region, aanum, minreads=0, show.total=TRUE, show.freq=TRUE)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
 	gene <- config@regions[region,'gene']
@@ -47,13 +47,19 @@ makeCodonVariantTable <- function(config, samples, region, aanum, minreads=0)
 		mafs <- c(mafs,maf)
 	}
 	
-	totalrow <- makeRow(counts,list(codon='total'))
-	totalrow[,countcols] <- sums
-	counts <- rbind(counts,totalrow)
+	if (show.total)
+	{
+		totalrow <- makeRow(counts,list(codon='total'))
+		totalrow[,countcols] <- sums
+		counts <- rbind(counts,totalrow)
+	}
 	
-	freqrow <- makeRow(counts,list(codon='maf'))
-	freqrow[,countcols] <- format(mafs/sums, digits=3)
-	counts <- rbind(counts,freqrow)
+	if (show.freq)
+	{
+		freqrow <- makeRow(counts,list(codon='maf'))
+		freqrow[,countcols] <- format(mafs/sums, digits=3)
+		counts <- rbind(counts,freqrow)
+	}
 	
 	return(counts)
 }
@@ -100,7 +106,7 @@ writeCodonTables <- function(config, groups=config@groups, minreads=config@minre
 
 ###############################################
 
-makeAminoAcidVariantTable <- function(config, samples, region, aanum, minreads=0)
+makeAminoAcidVariantTable <- function(config, samples, region, aanum, minreads=0, show.total=TRUE, show.freq=TRUE)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
 	gene <- config@regions[region,'gene']
@@ -131,13 +137,19 @@ makeAminoAcidVariantTable <- function(config, samples, region, aanum, minreads=0
 		mafs <- c(mafs,maf)
 	}
 	
-	totalrow <- makeRow(counts,list(aa='total'))
-	totalrow[,countcols] <- sums
-	counts <- rbind(counts,totalrow)
+	if (show.total)
+	{
+		totalrow <- makeRow(counts,list(aa='total'))
+		totalrow[,countcols] <- sums
+		counts <- rbind(counts,totalrow)
+	}
 	
-	freqrow <- makeRow(counts,list(aa='maf'))
-	freqrow[,countcols] <- format(mafs/sums, digits=3)
-	counts <- rbind(counts,freqrow)
+	if (show.freq)
+	{
+		freqrow <- makeRow(counts,list(aa='maf'))
+		freqrow[,countcols] <- format(mafs/sums, digits=3)
+		counts <- rbind(counts,freqrow)
+	}
 	
 	try(rownames(counts) <- counts$aa)
 	return(counts)
@@ -163,7 +175,6 @@ writeAminoAcidTables <- function(config, groups=config@groups, minreads=config@m
 					printcat('   aanum: ',aanum)
 					samples <- getSamplesForSubGroup(config,group,subgroup)
 					tbl <- makeAminoAcidVariantTable(config, samples, region, aanum, minreads)
-					#tbl <- makeAminoAcidVariantTable(config, group, subgroup, region, aanum, minreads)
 					identifier <- concat(group,'-',subgroup,'-',region,'-',aanum,'-',ref)
 					filename <- concat(config@tables.dir,'/table-aa-',identifier,'.txt')
 					writeTable(tbl,filename,row.names=FALSE)
@@ -176,7 +187,80 @@ writeAminoAcidTables <- function(config, groups=config@groups, minreads=config@m
 }
 #tables <- writeAminoAcidTables(config,'hcv_infection')
 
-#################################################################
 
-#require(XLConnect)
+outputTablesToSpreadsheet <- function(config, groups=config@groups, minreads=config@minreads)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	filename <- 'tables.xlsx'
+	deleteFile(filename)
+	wb <- loadWorkbook(filename, create = TRUE)
+	
+	headerstyle <- createCellStyle(wb)
+	setFillPattern(headerstyle, fill = XLC$"FILL.SOLID_FOREGROUND")
+	setFillBackgroundColor(headerstyle, color = XLC$"COLOR.WHITE")
+	setFillForegroundColor(headerstyle, color = XLC$"COLOR.GREY_25_PERCENT")
+	setBorder(headerstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+	
+	footerstyle <- createCellStyle(wb)
+	setFillPattern(footerstyle, fill = XLC$"FILL.SOLID_FOREGROUND")
+	setFillBackgroundColor(footerstyle, color = XLC$"COLOR.WHITE")
+	setFillForegroundColor(footerstyle, color = XLC$"COLOR.GREY_25_PERCENT")
+	setBorder(footerstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+
+	borderstyle <- createCellStyle(wb)
+	setBorder(borderstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+
+	for (group in groups)
+	{
+		sheet <- group
+		if (nchar(sheet)>31)
+			sheet <- substr(sheet,1,31)
+		createSheet(wb, name = sheet)
+		writeWorksheet(wb,group,sheet,startRow=1,startCol=1,header=FALSE)
+		ref <- getRefForGroup(config,group)
+		printcat('ref: ',ref)
+		for (subgroup in getTablesForGroup(config,group))
+		{
+			printcat(' subgroup: ',subgroup)
+			for (region in getRegionsForSubGroup(config,group,subgroup))
+			{
+				printcat('  region: ',subgroup)
+				gene <- strsplit(region,'aa', fixed=TRUE)[[1]][1]
+				for (aanum in getFociForRegion(config,region))
+				{
+					printcat('   aanum: ',aanum)
+					samples <- getSamplesForSubGroup(config,group,subgroup)
+					tbl <- makeAminoAcidVariantTable(config, samples, region, aanum, minreads, show.total=FALSE, show.freq=TRUE)
+					identifier <- concat(subgroup,' ',gene,'aa',aanum)
+					
+					startRow <- getLastRow(wb, sheet)+2
+					writeWorksheet(wb,identifier,sheet,startRow=startRow,startCol=1,header=FALSE)
+					startRow <- getLastRow(wb, sheet)+1
+					writeWorksheet(wb,tbl,sheet,startRow)
+					endRow <- getLastRow(wb, sheet)
+					startCol <- 1
+					endCol <- ncol(tbl)
+					#printcat('startRow=',startRow,', endRow=',endRow)
+					for (col in seq(startCol, endCol))
+					{
+						for (row in seq(startRow,endRow))
+						{
+							#printcat('row=',row,' col=',col)
+							if (row==startRow)
+								setCellStyle(wb,sheet,row,col,headerstyle)
+							else if (row==endRow)
+								setCellStyle(wb,sheet,row,col,footerstyle)
+							else setCellStyle(wb,sheet,row,col,borderstyle)
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	saveWorkbook(wb)
+}
+#outputTablesToSpreadsheet(config,'hcv_infection',minreads=100)
+
+#outputTablesToSpreadsheet(config,minreads=100)
 
