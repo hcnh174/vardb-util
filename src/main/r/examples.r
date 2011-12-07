@@ -331,4 +331,18 @@ plot2 <- qplot(carat,price,data=diamonds)
 # Arrange and display the plots into a 2x1 grid
 arrange(plot1,plot2,ncol=1)
 
-	
+
+#http://www.r-bloggers.com/example-9-17-much-better-pairs-plots/?utm_source=feedburner&utm_medium=email&utm_campaign=Feed%3A+RBloggers+%28R+bloggers%29
+install.packages('GGally')
+library(GGally)
+ds = read.csv("http://www.math.smith.edu/r/data/help.csv")
+ds$sex = as.factor(ifelse(ds$female==1, "female", "male"))
+ds$housing = as.factor(ifelse(ds$homeless==1, "homeless", "housed"))
+smallds = subset(ds, select=c("housing", "sex", "i1", "cesd"))
+ggpairs(smallds, diag=list(continuous="density", discrete="bar"), axisLabels="show")
+
+#For users more comfortable with R, the ggpairs function allows you to select variables to include
+ggpairs(ds, columns=c("housing", "sex", "i1", "cesd"),
+		diag=list(continuous="density",   discrete="bar"), axisLabels="show")
+
+#http://www.r-bloggers.com/my-favorite-graphs/?utm_source=feedburner&utm_medium=email&utm_campaign=Feed%3A+RBloggers+%28R+bloggers%29

@@ -188,79 +188,251 @@ writeAminoAcidTables <- function(config, groups=config@groups, minreads=config@m
 #tables <- writeAminoAcidTables(config,'hcv_infection')
 
 
+createHeaderStyle <- function(wb)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	style <- createCellStyle(wb)
+	setFillPattern(style, fill = XLC$"FILL.SOLID_FOREGROUND")
+	setFillBackgroundColor(style, color = XLC$"COLOR.WHITE")
+	setFillForegroundColor(style, color = XLC$"COLOR.GREY_25_PERCENT")
+	setBorder(style, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+	return(style)
+}
+
+createBorderStyle <- function(wb)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	style <- createCellStyle(wb)
+	setBorder(style, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+	return(style)
+}
+
+fixSheetName <- function(name)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	if (nchar(name)>31)
+		name <- substr(name,1,31)
+	return(name)
+}
+
+setCellText <- function(wb, sheet, text, row=1, col=1)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	writeWorksheet(wb,text,sheet,startRow=row,startCol=col,header=FALSE)
+}
+#
+#writeTableToWorksheet <- function(wb, sheet, tbl, startRow=NULL, startCol=1, title=NULL,
+#		style=createBorderStyle(wb),
+#		headerstyle=createHeaderStyle(wb),
+#		footerstyle=createHeaderStyle(wb))
+#{
+#	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+#	if (is.null(startRow))
+#		startRow <- getLastRow(wb, sheet)+2
+#	if (!is.null(title))
+#	{
+#		setCellText(wb,sheet,title,startRow)
+#		startRow <- getLastRow(wb, sheet)+1
+#	}
+#	writeWorksheet(wb,tbl,sheet,startRow)
+#	endRow <- getLastRow(wb, sheet)
+#	startCol <- 1
+#	endCol <- ncol(tbl)
+#	#printcat('startRow=',startRow,', endRow=',endRow)
+#	colnums <- c()
+#	rownums <- c()
+#	for (col in seq(startCol, endCol))
+#	{
+#		for (row in seq(startRow,endRow))
+#		{
+#			#printcat('row=',row,' col=',col)
+#			if (row==startRow)
+#				setCellStyle(wb,sheet,row,col,headerstyle)
+#			else if (row==endRow)
+#				setCellStyle(wb,sheet,row,col,footerstyle)
+#			else setCellStyle(wb,sheet,row,col,style)
+#		}
+#	}
+#}
+
+styleCells <- function(wb, sheet, startRow, startCol, endRow, endCol, style)
+{
+	colnums <- c()
+	rownums <- c()
+	for (col in seq(startCol, endCol))
+	{
+		for (row in seq(startRow,endRow))
+		{
+			rownums <- c(rownums, row)
+			colnums <- c(colnums, col)			
+		}
+	}
+	setCellStyle(wb,sheet,rownums,colnums,style)
+}
+
+writeTableToWorksheet <- function(wb, sheet, tbl, startRow=NULL, startCol=1, title=NULL,
+		style=createBorderStyle(wb),
+		headerstyle=createHeaderStyle(wb),
+		footerstyle=createHeaderStyle(wb))
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	if (is.null(startRow))
+		startRow <- getLastRow(wb, sheet)+2
+	if (!is.null(title))
+	{
+		setCellText(wb,sheet,title,startRow)
+		startRow <- getLastRow(wb, sheet)+1
+	}
+	writeWorksheet(wb,tbl,sheet,startRow)
+	endRow <- getLastRow(wb, sheet)
+	startCol <- 1
+	endCol <- ncol(tbl)
+	
+	styleCells(wb,sheet,startRow,startCol,endRow,endCol,style)
+	styleCells(wb,sheet,startRow,startCol,startRow,endCol,headerstyle)
+	styleCells(wb,sheet,endRow,startCol,endRow,endCol,footerstyle)
+	
+	
+	#printcat('startRow=',startRow,', endRow=',endRow)
+#	colnums <- c()
+#	rownums <- c()
+#	for (col in seq(startCol, endCol))
+#	{
+#		for (row in seq(startRow,endRow))
+#		{
+#			rownums <- c(rownums, row)
+#			colnums <- c(colnums, col)			
+#		}
+#	}
+#	printcat('colnums: ',colnums)
+#	printcat('rownums: ',rownums)
+#	
+#	setCellStyle(wb,sheet,rownums,colnums,style)
+	
+#	for (col in seq(startCol, endCol))
+#	{
+#		for (row in seq(startRow,endRow))
+#		{
+#			#printcat('row=',row,' col=',col)
+#			if (row==startRow)
+#				setCellStyle(wb,sheet,row,col,headerstyle)
+#			else if (row==endRow)
+#				setCellStyle(wb,sheet,row,col,footerstyle)
+#			else setCellStyle(wb,sheet,row,col,style)
+#		}
+#	}
+}
+
 outputTablesToSpreadsheet <- function(config, groups=config@groups, minreads=config@minreads)
 {
 	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
 	filename <- 'tables.xlsx'
 	deleteFile(filename)
 	wb <- loadWorkbook(filename, create = TRUE)
-	
-	headerstyle <- createCellStyle(wb)
-	setFillPattern(headerstyle, fill = XLC$"FILL.SOLID_FOREGROUND")
-	setFillBackgroundColor(headerstyle, color = XLC$"COLOR.WHITE")
-	setFillForegroundColor(headerstyle, color = XLC$"COLOR.GREY_25_PERCENT")
-	setBorder(headerstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
-	
-	footerstyle <- createCellStyle(wb)
-	setFillPattern(footerstyle, fill = XLC$"FILL.SOLID_FOREGROUND")
-	setFillBackgroundColor(footerstyle, color = XLC$"COLOR.WHITE")
-	setFillForegroundColor(footerstyle, color = XLC$"COLOR.GREY_25_PERCENT")
-	setBorder(footerstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
-
-	borderstyle <- createCellStyle(wb)
-	setBorder(borderstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
-
 	for (group in groups)
 	{
-		sheet <- group
-		if (nchar(sheet)>31)
-			sheet <- substr(sheet,1,31)
+		sheet <- fixSheetName(group)
 		createSheet(wb, name = sheet)
-		writeWorksheet(wb,group,sheet,startRow=1,startCol=1,header=FALSE)
+		setCellText(wb,sheet,group)
 		ref <- getRefForGroup(config,group)
-		printcat('ref: ',ref)
+		#printcat('ref: ',ref)
 		for (subgroup in getTablesForGroup(config,group))
 		{
-			printcat(' subgroup: ',subgroup)
+			#printcat(' subgroup: ',subgroup)
 			for (region in getRegionsForSubGroup(config,group,subgroup))
 			{
-				printcat('  region: ',subgroup)
+				#printcat('  region: ',subgroup)
 				gene <- strsplit(region,'aa', fixed=TRUE)[[1]][1]
 				for (aanum in getFociForRegion(config,region))
 				{
-					printcat('   aanum: ',aanum)
+					#printcat('   aanum: ',aanum)
 					samples <- getSamplesForSubGroup(config,group,subgroup)
 					tbl <- makeAminoAcidVariantTable(config, samples, region, aanum, minreads, show.total=FALSE, show.freq=TRUE)
-					identifier <- concat(subgroup,' ',gene,'aa',aanum)
-					
-					startRow <- getLastRow(wb, sheet)+2
-					writeWorksheet(wb,identifier,sheet,startRow=startRow,startCol=1,header=FALSE)
-					startRow <- getLastRow(wb, sheet)+1
-					writeWorksheet(wb,tbl,sheet,startRow)
-					endRow <- getLastRow(wb, sheet)
-					startCol <- 1
-					endCol <- ncol(tbl)
-					#printcat('startRow=',startRow,', endRow=',endRow)
-					for (col in seq(startCol, endCol))
-					{
-						for (row in seq(startRow,endRow))
-						{
-							#printcat('row=',row,' col=',col)
-							if (row==startRow)
-								setCellStyle(wb,sheet,row,col,headerstyle)
-							else if (row==endRow)
-								setCellStyle(wb,sheet,row,col,footerstyle)
-							else setCellStyle(wb,sheet,row,col,borderstyle)
-						}
-					}
+					title <- concat(subgroup,' ',gene,'aa',aanum)
+					writeTableToWorksheet(wb, sheet, tbl, title=title)
 				}
 			}
 		}
 	}
-	
 	saveWorkbook(wb)
 }
 #outputTablesToSpreadsheet(config,'hcv_infection',minreads=100)
-
 #outputTablesToSpreadsheet(config,minreads=100)
+
+#
+#outputTablesToSpreadsheet <- function(config, groups=config@groups, minreads=config@minreads)
+#{
+#	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+#	filename <- 'tables.xlsx'
+#	deleteFile(filename)
+#	wb <- loadWorkbook(filename, create = TRUE)
+#	
+#	headerstyle <- createCellStyle(wb)
+#	setFillPattern(headerstyle, fill = XLC$"FILL.SOLID_FOREGROUND")
+#	setFillBackgroundColor(headerstyle, color = XLC$"COLOR.WHITE")
+#	setFillForegroundColor(headerstyle, color = XLC$"COLOR.GREY_25_PERCENT")
+#	setBorder(headerstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+#	
+#	footerstyle <- createCellStyle(wb)
+#	setFillPattern(footerstyle, fill = XLC$"FILL.SOLID_FOREGROUND")
+#	setFillBackgroundColor(footerstyle, color = XLC$"COLOR.WHITE")
+#	setFillForegroundColor(footerstyle, color = XLC$"COLOR.GREY_25_PERCENT")
+#	setBorder(footerstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+#
+#	borderstyle <- createCellStyle(wb)
+#	setBorder(borderstyle, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+#
+#	for (group in groups)
+#	{
+#		sheet <- group
+#		if (nchar(sheet)>31)
+#			sheet <- substr(sheet,1,31)
+#		createSheet(wb, name = sheet)
+#		writeWorksheet(wb,group,sheet,startRow=1,startCol=1,header=FALSE)
+#		ref <- getRefForGroup(config,group)
+#		printcat('ref: ',ref)
+#		for (subgroup in getTablesForGroup(config,group))
+#		{
+#			printcat(' subgroup: ',subgroup)
+#			for (region in getRegionsForSubGroup(config,group,subgroup))
+#			{
+#				printcat('  region: ',subgroup)
+#				gene <- strsplit(region,'aa', fixed=TRUE)[[1]][1]
+#				for (aanum in getFociForRegion(config,region))
+#				{
+#					printcat('   aanum: ',aanum)
+#					samples <- getSamplesForSubGroup(config,group,subgroup)
+#					tbl <- makeAminoAcidVariantTable(config, samples, region, aanum, minreads, show.total=FALSE, show.freq=TRUE)
+#					identifier <- concat(subgroup,' ',gene,'aa',aanum)
+#					
+#					startRow <- getLastRow(wb, sheet)+2
+#					writeWorksheet(wb,identifier,sheet,startRow=startRow,startCol=1,header=FALSE)
+#					startRow <- getLastRow(wb, sheet)+1
+#					writeWorksheet(wb,tbl,sheet,startRow)
+#					endRow <- getLastRow(wb, sheet)
+#					startCol <- 1
+#					endCol <- ncol(tbl)
+#					#printcat('startRow=',startRow,', endRow=',endRow)
+#					for (col in seq(startCol, endCol))
+#					{
+#						for (row in seq(startRow,endRow))
+#						{
+#							#printcat('row=',row,' col=',col)
+#							if (row==startRow)
+#								setCellStyle(wb,sheet,row,col,headerstyle)
+#							else if (row==endRow)
+#								setCellStyle(wb,sheet,row,col,footerstyle)
+#							else setCellStyle(wb,sheet,row,col,borderstyle)
+#						}
+#					}
+#				}
+#			}
+#		}
+#	}
+#	
+#	saveWorkbook(wb)
+#}
+##outputTablesToSpreadsheet(config,'hcv_infection',minreads=100)
+
+
 

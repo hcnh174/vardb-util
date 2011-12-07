@@ -99,14 +99,18 @@ reportAminoAcidChangesForGroup <- function(config, group, make.pdf=FALSE)
 #reportAminoAcidChangesForGroup(config, 'hcv_infection')
 #reportAminoAcidChangesForGroup(config, 'NS5A_L31V_Y93H_mutations_maintained')
 
-reportAminoAcidChanges <- function(config, groups=config@groups)
+reportAminoAcidChanges <- function(config, groups=config@groups, single.pdf=TRUE)
 {
-	pdffile <- concat(config@charts.dir,'/charts.pdf')
-	pdf(pdffile)#, width = 10, height = 3)
+	if (single.pdf)
+	{
+		pdffile <- concat(config@charts.dir,'/charts.pdf')
+		pdf(pdffile)#, width = 10, height = 3)
+	}
 	for (group in groups)
 	{
-		reportAminoAcidChangesForGroup(config,group)
+		reportAminoAcidChangesForGroup(config, group, make.pdf=!single.pdf)
 	}
-	dev.off()
+	if (single.pdf)
+		dev.off()
 }
 #reportAminoAcidChanges(config)
