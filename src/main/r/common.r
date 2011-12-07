@@ -920,3 +920,79 @@ copyFile <- function(src, dest)
 }
 #copyFile('out/bam/nextgen3-2H__HCV-KT9.bam','out/test.bam')
 
+
+##############################################################################
+# XLConnect wrappers
+##############################################################################
+
+createHeaderStyle <- function(wb)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	style <- createCellStyle(wb)
+	setFillPattern(style, fill = XLC$"FILL.SOLID_FOREGROUND")
+	setFillBackgroundColor(style, color = XLC$"COLOR.WHITE")
+	setFillForegroundColor(style, color = XLC$"COLOR.GREY_25_PERCENT")
+	setBorder(style, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+	return(style)
+}
+
+createBorderStyle <- function(wb)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	style <- createCellStyle(wb)
+	setBorder(style, side = c("all"), type = XLC$"BORDER.THIN", color = c(XLC$"COLOR.AUTOMATIC"))
+	return(style)
+}
+
+fixSheetName <- function(name)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	if (nchar(name)>31)
+		name <- substr(name,1,31)
+	return(name)
+}
+
+setCellText <- function(wb, sheet, text, row=1, col=1)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	writeWorksheet(wb,text,sheet,startRow=row,startCol=col,header=FALSE)
+}
+
+styleCells <- function(wb, sheet, startRow, startCol, endRow, endCol, style)
+{
+	colnums <- c()
+	rownums <- c()
+	for (col in seq(startCol, endCol))
+	{
+		for (row in seq(startRow,endRow))
+		{
+			rownums <- c(rownums, row)
+			colnums <- c(colnums, col)			
+		}
+	}
+	setCellStyle(wb,sheet,rownums,colnums,style)
+}
+
+writeTableToWorksheet <- function(wb, sheet, tbl, startRow=NULL, startCol=1, title=NULL,
+		style=createBorderStyle(wb),
+		headerstyle=createHeaderStyle(wb),
+		footerstyle=createHeaderStyle(wb))
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	if (is.null(startRow))
+		startRow <- getLastRow(wb, sheet)+2
+	if (!is.null(title))
+	{
+		setCellText(wb,sheet,title,startRow)
+		startRow <- getLastRow(wb, sheet)+1
+	}
+	writeWorksheet(wb,tbl,sheet,startRow)
+	endRow <- getLastRow(wb, sheet)
+	startCol <- 1
+	endCol <- ncol(tbl)
+	
+	styleCells(wb,sheet,startRow,startCol,endRow,endCol,style)
+	styleCells(wb,sheet,startRow,startCol,startRow,endCol,headerstyle)
+	styleCells(wb,sheet,endRow,startCol,endRow,endCol,footerstyle)
+}
+
