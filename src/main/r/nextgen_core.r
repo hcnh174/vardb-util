@@ -349,6 +349,23 @@ preloadCodonPositions <- function(config)
 }
 #config <- preloadCodonPositions(config)
 
+getReferenceCodon <- function(config, ref, region, aanum)
+{
+	gene <- config@regions[region,'gene']
+	#ntstart <- config@genes[which(config@genes$gene==gene & config@genes$ref==ref),'start']
+	positions <- getCodonPositionsForGene(config,gene,ref)
+	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
+	return(refcodon)
+}
+
+getReferenceAminoAcid <- function(config, ref, region, aanum)
+{
+	refcodon <- getReferenceCodon(config,ref,region,aanum)
+	refaa <- translateCodon(refcodon)
+	return(refaa)
+}
+#getReferenceAminoAcid(config,'HCV-KT9','NS3aa36',36)
+
 ###########################################################################
 
 cleanSequence <- function(sequence)

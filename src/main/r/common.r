@@ -974,6 +974,7 @@ styleCells <- function(wb, sheet, startRow, startCol, endRow, endCol, style)
 }
 
 writeTableToWorksheet <- function(wb, sheet, tbl, startRow=NULL, startCol=1, title=NULL,
+		header=TRUE, footer=FALSE,
 		style=createBorderStyle(wb),
 		headerstyle=createHeaderStyle(wb),
 		footerstyle=createHeaderStyle(wb))
@@ -992,7 +993,9 @@ writeTableToWorksheet <- function(wb, sheet, tbl, startRow=NULL, startCol=1, tit
 	endCol <- ncol(tbl)
 	
 	styleCells(wb,sheet,startRow,startCol,endRow,endCol,style)
-	styleCells(wb,sheet,startRow,startCol,startRow,endCol,headerstyle)
-	styleCells(wb,sheet,endRow,startCol,endRow,endCol,footerstyle)
+	if (header)
+		styleCells(wb,sheet,startRow,startCol,startRow,endCol,headerstyle)
+	if (footer)
+		styleCells(wb,sheet,endRow,startCol,endRow,endCol,footerstyle)
 }
 

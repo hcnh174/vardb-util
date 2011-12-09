@@ -222,27 +222,6 @@ getMapStats <- function(config,bamfile)
 #}
 ##getMappingReport(config)
 
-getMappingReport <- function(config, bam.dir=config@bam.dir, samples=config@samples, outfile=concat(config@tmp.dir,'/','readcounts-mapped.txt'))
-{
-	counts <- data.frame()
-	for (filename in list.files(bam.dir, pattern='\\.bam$'))
-	{
-		try({
-			stats <- getMapStats(concat(bam.dir,'/',filename))
-			sample <- stripExtension(filename)
-			print(concat('mapstats for ',sample,': ',stats))
-			counts[sample,'sample'] <- filename
-			counts[sample,'total'] <- stats$total
-			counts[sample,'mapped'] <- stats$mapped
-			counts[sample,'prop'] <- stats$prop
-		})
-	}
-	writeTable(counts,outfile,row.names=FALSE)
-	return(counts)
-}
-#getMappingReport(config)
-
-
 bambino <- function(config, sample)
 {
 	bamfile <- concat(config@bam.dir,'/',sample,'.bam')
@@ -550,7 +529,7 @@ analyzeUnmappedReads <- function(config,stem)
 #analyzeUnmappedReads(config,'nextgen2-5I')
 
 #ref,fastq,bam
-clearNextgenOutput <- function(config, subdirs='tmp,unmapped,vcf,pileup,qc,counts,tables,charts,consensus')
+clearNextgenOutput <- function(config, subdirs='unmapped,vcf,qc,counts,tables,charts,consensus')
 {
 	dir <- config@out.dir
 	for (subdir in splitFields(subdirs))
@@ -637,4 +616,87 @@ peekBam <- function(bamfile)
 	runCommand('samtools view ',bamfile,' | head')	#less -S
 }
 #peekBam('U:\OLD2bam\nextgen3-2G__HCV-KT9.bam')
+
+##########################################################
+
+getMapStats <- function(config,bamfile)
+{
+	checkFileExists(bamfile)
+	stem <- getStemForSample(bamfile)
+	total <- getRawReadCount(config,stem)
+	trimmed <- as.numeric(system(concat('samtools flagstat ',bamfile,' | awk \'{print $1}\' | head -n 1'), intern=TRUE))
+	mapped <- as.numeric(system(concat('samtools flagstat ',bamfile,' | awk \'{print $1}\' | head -n 3 | tail -n 1'), intern=TRUE))
+	if (is.na(total))
+		total <- trimmed
+	unmapped <- trimmed-mapped
+	prop.trimmed <- trimmed/total
+	prop.mapped <- mapped/trimmed
+	prop.used <- mapped/total
+	#print(concat('total=',total,', mapped=',mapped,' proportion=',prop))
+	return(list(total=total, trimmed=trimmed, mapped=mapped, unmapped=unmapped, prop.trimmed=prop.trimmed, prop.mapped=prop.mapped, prop.used=prop.used))
+}
+#getMapStats(config,concat(config@bam.dir,'/nextgen4-7H__HCV-KT9.bam'))
+
+getMappingReport <- function(config, bam.dir=config@bam.dir, samples=config@samples, outfile=concat(config@out.dir,'/','readcounts.txt'))
+{
+	counts <- data.frame()
+	for (filename in list.files(bam.dir, pattern='\\.bam$'))
+	{
+		print(filename)		
+		try({
+			stats <- getMapStats(config,concat(bam.dir,'/',filename))
+			sample <- stripExtension(filename)
+			id <- getStemForSample(sample)
+			ref <- getRefForSample(sample)
+			print(concat('mapstats for ',sample,': ',stats))
+			#counts[id,'id'] <- id
+			counts[id,'ref'] <- ref
+			counts[id,'total'] <- stats$total
+			counts[id,'trimmed'] <- stats$trimmed
+			counts[id,'mapped'] <- stats$mapped
+			counts[id,'prop'] <- stats$prop.mapped
+		})
+	}
+	for (id in rownames(counts))
+	{
+		for (col in splitFields('profile,group,table,subject,column,region,folder,lane,barcode'))
+		{
+			#printcat('id=',id,', col=',col)
+			counts[id,col] <- config@data[id,col]
+		}
+	}
+	writeTable(counts,outfile,row.names=FALSE)
+	return(counts)
+}
+#mapstats <- getMappingReport(config)
+
+
+loadMapStats <- function(config)
+{
+	filename <- concat(config@out.dir,'/','readcounts.txt')
+	if (!file.exists(filename))
+		mapstats <- getMappingReport(config,outfile=filename)
+	mapstats <- loadDataFrame(filename, idcol='id')
+	
+	return(mapstats)
+}
+#mapstats <- loadMapStats(config)
+
+analyzeMapStats <- function(config)
+{
+	oldPar <- par(ask=TRUE)
+	mapstats <- loadMapStats(config)
+	boxplot(trimmed ~ profile, mapstats)
+	boxplot(trimmed ~ group, mapstats)
+	boxplot(trimmed ~ table, mapstats)
+	boxplot(trimmed ~ subject, mapstats)
+	boxplot(trimmed ~ region, mapstats)
+	boxplot(trimmed ~ folder, mapstats)
+	boxplot(trimmed ~ lane, mapstats)
+	boxplot(trimmed ~ barcode, mapstats)
+	#print(mapstats[order(mapstats$total,decreasing=TRUE),])
+	par(oldPar)
+}
+#analyzeMapStats(config)
+
 

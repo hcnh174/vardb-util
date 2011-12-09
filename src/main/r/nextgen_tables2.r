@@ -1,29 +1,11 @@
-#getCodonCountSubset <- function(config, samples, region, filetype, start, end=start, minreads=0)
-#{
-#	data <- NULL
-#	for (sample in samples)
-#	{
-#		filename <- getCodonCountFilename(config,sample,filetype)
-#		data.sample <- loadDataFrame(filename)
-#		if (is.null(data))
-#			data <- data.sample
-#		else data <- rbind(data,data.sample)
-#	}
-#	data.subset <- data[which(data$aanum>=start & data$aanum<=end & data$count>=minreads),]
-#	data.subset <- data.subset[which(data.subset$region %in% splitFields(region)),]
-#	data.subset$column <- factor(data.subset$column)
-#	data.subset$aanum <- factor(data.subset$aanum)
-#	return(data.subset)
-#}
-##getCodonCountSubset(config,getSamplesForSubGroup(config,'hcv_infection','hcv_infection'), 'NS5Aaa31', 'aa', 31)
-
 makeCodonVariantTable <- function(config, samples, region, aanum, minreads=0, show.total=TRUE, show.freq=TRUE)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
-	gene <- config@regions[region,'gene']
 	ref <- getRefForSamples(config,samples)
-	positions <- getCodonPositionsForGene(config,gene,ref)
-	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
+	#gene <- config@regions[region,'gene']
+	#positions <- getCodonPositionsForGene(config,gene,ref)
+	#refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
+	refcodon <- getReferenceCodon(config, ref, region, aanum)
 	data.subset <- getCodonCountSubset(config,samples,region,'codons',aanum,minreads=minreads)
 	counts <- cast(data.subset, codon ~ column, value='count', fun.aggregate=function(x) return(x[1])); counts
 	if (length(which(counts$codon==refcodon))==0)
@@ -63,6 +45,7 @@ makeCodonVariantTable <- function(config, samples, region, aanum, minreads=0, sh
 	
 	return(counts)
 }
+#counts <- makeCodonVariantTable(config, getSamplesForSubGroup(config,'hcv_infection','hcv_infection'),  'NS5Aaa31', 31)
 #group <- 'MP-424'; subgroup <- 'undetectable_in_absence_of_therapy'; region <- 'NS3aa36'; aanum <- 36
 #makeCodonVariantTable(config,group,subgroup,region,aanum,50)
 
@@ -109,13 +92,12 @@ writeCodonTables <- function(config, groups=config@groups, minreads=config@minre
 makeAminoAcidVariantTable <- function(config, samples, region, aanum, minreads=0, show.total=TRUE, show.freq=TRUE)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
-	gene <- config@regions[region,'gene']
 	ref <- getRefForSamples(config,samples)
-	#ref <- getRefForGroup(config,group)
-	positions <- getCodonPositionsForGene(config,gene,ref)
-	refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
-	refaa <- translateCodon(refcodon)
-	#samples <- getSamplesForSubGroup(config,group,subgroup)
+	#gene <- config@regions[region,'gene']
+	#positions <- getCodonPositionsForGene(config,gene,ref)
+	#refcodon <- toupper(as.character(positions[which(positions$codon==aanum),'refcodon']))
+	#refaa <- translateCodon(refcodon)
+	refaa <- getReferenceAminoAcid(config, ref, region, aanum)
 	data.subset <- getCodonCountSubset(config,samples,region,'aa',aanum,minreads=minreads)	
 	counts <- cast(data.subset, aa ~ column, value='count', fun.aggregate=function(x) return(x[1]))
 	if (length(which(counts$aa==refaa))==0)
@@ -214,7 +196,7 @@ outputTablesToSpreadsheet <- function(config, groups=config@groups, minreads=con
 					samples <- getSamplesForSubGroup(config,group,subgroup)
 					tbl <- makeAminoAcidVariantTable(config, samples, region, aanum, minreads, show.total=FALSE, show.freq=TRUE)
 					title <- concat(subgroup,' ',gene,'aa',aanum)
-					writeTableToWorksheet(wb, sheet, tbl, title=title)
+					writeTableToWorksheet(wb, sheet, tbl, title=title, footer=TRUE)
 				}
 			}
 		}
@@ -223,3 +205,59 @@ outputTablesToSpreadsheet <- function(config, groups=config@groups, minreads=con
 }
 #outputTablesToSpreadsheet(config,'hcv_infection',minreads=100)
 #outputTablesToSpreadsheet(config,minreads=100)
+
+
+makeReferenceVsVariantTable <- function(config, group, region, aanum, minreads=0)
+{
+	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
+	samples <- getSamplesForGroup(config,group)
+	ref <- getRefForSamples(config,samples)
+	data <- getCodonCountSubset(config, samples, region, 'aa', aanum,minreads=minreads)
+	data$sample <- sapply(data$sample,function(sample){return(getStemForSample(sample))})
+	refaa <- getReferenceAminoAcid(config, ref, region, aanum)
+	data[which(data$aa==refaa),'aa'] <- concat(refaa,'*')
+	refaa <- concat(refaa,'*')
+	counts <- cast(data, sample ~ aa, value='count', fun.aggregate=function(x) return(x[1]))
+	if (is.null(counts[[refaa]]))
+		counts[[refaa]] <- 0
+	colsums <- data.frame()
+	for (col in colnames(counts)[-1])
+	{
+		colsums[col,'aa'] <- col
+		colsums[col,'sum'] <- sum(counts[[col]], na.rm=TRUE)
+	}
+	#print(colsums)
+	cols <- colsums[order(colsums$sum, decreasing=TRUE),'aa']
+	counts <- counts[,c('sample',cols)]
+	filename <- concat(config@tables.dir,'/',group,'-bysubject.',region,'-',aanum,'.txt')
+	writeTable(counts,filename)
+	return(counts)
+}
+#counts <- makeReferenceVsVariantTable(config,'MP-424','NS3aa36', 36)
+
+makeReferenceVsVariantTables <- function(config, groups=config@groups, minreads=0)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	filename <- 'tables-by-subject.xlsx'
+	deleteFile(filename)
+	wb <- loadWorkbook(filename, create = TRUE)
+	for (group in groups)
+	{
+		sheet <- fixSheetName(group)
+		createSheet(wb, name = sheet)
+		setCellText(wb,sheet,group)
+		for (region in getRegionsForGroup(config,group))
+		{
+			gene <- strsplit(region,'aa', fixed=TRUE)[[1]][1]
+			for (aanum in getFociForRegion(config,region))
+			{
+				tbl <- makeReferenceVsVariantTable(config,group,region,aanum,minreads=minreads)
+				title <- concat(group,' ',gene,'aa',aanum)
+				writeTableToWorksheet(wb, sheet, tbl, title=title)
+			}
+		}
+	}
+	saveWorkbook(wb)
+}
+#makeReferenceVsVariantTables(config, minreads=100)
+#makeReferenceVsVariantTables(config, groups='MP-424', minreads=100)

@@ -162,6 +162,8 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	if (length(unmatched)>0)
 		throw('ref(s) missing: ',unmatched)
 
+	.Object@data <- .Object@data[order(.Object@data$order),]
+	
 	return(.Object)
 })
 

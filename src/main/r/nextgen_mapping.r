@@ -1,4 +1,4 @@
-preprocess <- function(config, samples=config@samples, subdirs='tmp,ref,fastq,tmp,bam,unmapped,vcf,pileup,basecounts,qc,counts,tables,charts,consensus,coverage')
+preprocess <- function(config, samples=config@samples, subdirs='ref,fastq,tmp,bam,unmapped,vcf,basecounts,qc,counts,tables,charts,consensus,coverage')#pileup,tmp
 {
 	makeSubDirs(config@out.dir,subdirs)
 	writeRefs(config)

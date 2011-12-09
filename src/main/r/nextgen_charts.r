@@ -114,3 +114,4 @@ reportAminoAcidChanges <- function(config, groups=config@groups, single.pdf=TRUE
 		dev.off()
 }
 #reportAminoAcidChanges(config)
+#reportAminoAcidChanges(config, single.pdf=FALSE)
