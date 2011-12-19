@@ -291,6 +291,20 @@ mapReads <- function(config, samples=config@samples)
 #mapReads(config, getSamplesForGroup(config,'MP-424'))
 #mapReads(config, getSamplesForSubject(config,'10464592'))
 
+
+writeConsensusForBams <- function(config,ids=rownames(config@data))
+{
+	for (id in ids)
+	{
+		ref <- config@data[id,'ref']
+		sample <- concat(id,'__',ref)
+		try(writeConsensusForBam(config,sample))
+		#writeCoverageForBam(config,sample)
+	}
+}
+#writeConsensusForBams(config)
+
+
 #################################################################
 
 #mergeBamsForSample <- function(config, sample, bam.dir=config@bam.dir, out.dir=config@bam.dir)
@@ -387,16 +401,16 @@ mergeBamsForSamples <- function(config, samples=config@samples)
 
 
 ############################################
-
-writeConsensusForBams <- function(config,samples=config@samples)
-{
-	for (sample in samples)
-	{
-		try(writeConsensusForBam(config,sample))
-		#writeCoverageForBam(config,sample)
-	}
-}
-#writeConsensusForBams(config)
+#
+#writeConsensusForBams <- function(config,samples=config@samples)
+#{
+#	for (sample in samples)
+#	{
+#		try(writeConsensusForBam(config,sample))
+#		#writeCoverageForBam(config,sample)
+#	}
+#}
+##writeConsensusForBams(config)
 
 ################################################################3
 
@@ -522,6 +536,7 @@ analyzeReadsForGroup <- function(config,group)
 	#writeAminoAcidTables(config,group)
 	#concatTablesByGroup(config,group)
 	reportAminoAcidChangesForGroup(config,group)
+	makeReferenceVsVariantTables(config,group=group,minreads=100)
 }
 #analyzeReadsForGroup(config,'MP-424')
 #analyzeReadsForGroup(config,'hcv_infection')

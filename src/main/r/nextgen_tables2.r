@@ -207,10 +207,10 @@ outputTablesToSpreadsheet <- function(config, groups=config@groups, minreads=con
 #outputTablesToSpreadsheet(config,minreads=100)
 
 
-makeReferenceVsVariantTable <- function(config, group, region, aanum, minreads=0)
+makeReferenceVsVariantTable <- function(config, samples, region, aanum, minreads=0)
 {
 	require(reshape, quietly=TRUE, warn.conflicts=FALSE)
-	samples <- getSamplesForGroup(config,group)
+	#samples <- getSamplesForGroup(config,group)
 	ref <- getRefForSamples(config,samples)
 	data <- getCodonCountSubset(config, samples, region, 'aa', aanum,minreads=minreads)
 	data$sample <- sapply(data$sample,function(sample){return(getStemForSample(sample))})
@@ -229,20 +229,21 @@ makeReferenceVsVariantTable <- function(config, group, region, aanum, minreads=0
 	#print(colsums)
 	cols <- colsums[order(colsums$sum, decreasing=TRUE),'aa']
 	counts <- counts[,c('sample',cols)]
-	filename <- concat(config@tables.dir,'/',group,'-bysubject.',region,'-',aanum,'.txt')
-	writeTable(counts,filename)
+	#filename <- concat(config@tables.dir,'/',group,'-bysubject.',region,'-',aanum,'.txt')
+	#writeTable(counts,filename)
 	return(counts)
 }
-#counts <- makeReferenceVsVariantTable(config,'MP-424','NS3aa36', 36)
+#tbl <- makeReferenceVsVariantTable(config,getSamplesForSubject(config,'PXB0202-0008'),'NS3aa168', 168)
 
 makeReferenceVsVariantTables <- function(config, groups=config@groups, minreads=0)
 {
 	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
-	filename <- 'tables-by-subject.xlsx'
+	filename <- 'tables-ref_vs_variants.xlsx'
 	deleteFile(filename)
 	wb <- loadWorkbook(filename, create = TRUE)
 	for (group in groups)
 	{
+		samples <- getSamplesForGroup(config,group)
 		sheet <- fixSheetName(group)
 		createSheet(wb, name = sheet)
 		setCellText(wb,sheet,group)
@@ -251,7 +252,8 @@ makeReferenceVsVariantTables <- function(config, groups=config@groups, minreads=
 			gene <- strsplit(region,'aa', fixed=TRUE)[[1]][1]
 			for (aanum in getFociForRegion(config,region))
 			{
-				tbl <- makeReferenceVsVariantTable(config,group,region,aanum,minreads=minreads)
+				
+				tbl <- makeReferenceVsVariantTable(config,samples,region,aanum,minreads=minreads)
 				title <- concat(group,' ',gene,'aa',aanum)
 				writeTableToWorksheet(wb, sheet, tbl, title=title)
 			}
@@ -261,3 +263,43 @@ makeReferenceVsVariantTables <- function(config, groups=config@groups, minreads=
 }
 #makeReferenceVsVariantTables(config, minreads=100)
 #makeReferenceVsVariantTables(config, groups='MP-424', minreads=100)
+
+
+makeReferenceVsVariantTablesBySubject <- function(config, subjects=config@subjects, minreads=0)
+{
+	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
+	filename <- 'tables-ref_vs_variants-by-subject.xlsx'
+	if (length(subjects)==1)
+		filename <- concat('tables-ref_vs_variants-',subjects,'.xlsx')	
+	deleteFile(filename)
+	wb <- loadWorkbook(filename, create = TRUE)
+	for (subject in subjects)
+	{
+		samples <- getSamplesForSubject(config,subject)
+		sheet <- fixSheetName(subject)
+		createSheet(wb, name=sheet)
+		setCellText(wb,sheet,subject)
+		for (region in getRegionsForSubject(config,subject))
+		{
+			gene <- strsplit(region,'aa', fixed=TRUE)[[1]][1]
+			for (aanum in getFociForRegion(config,region))
+			{
+				try({
+					tbl <- makeReferenceVsVariantTable(config,samples,region,aanum,minreads=minreads)
+					if (nrow(tbl)==1)
+						tbl <- tbl[,-1]
+					else tbl$sample <- sapply(tbl$sample,stripSubjectFromSample)
+					title <- concat(gene,'aa',aanum)
+					writeTableToWorksheet(wb, sheet, tbl, title=title)
+				})
+			}
+		}
+	}
+	saveWorkbook(wb)
+}
+#makeReferenceVsVariantTablesBySubject(config, minreads=100)
+#makeReferenceVsVariantTablesBySubject(config, subject='PXB0197-0053', minreads=100)
+#makeReferenceVsVariantTablesBySubject(config, subject='PXB0210-0024', minreads=100)
+#makeReferenceVsVariantTablesBySubject(config, subject='PXB0202-0008', minreads=100)
+#makeReferenceVsVariantTablesBySubject(config, subject='PXB0220-0030', minreads=100)
+

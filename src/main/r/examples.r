@@ -243,8 +243,10 @@ if(.Platform$OS.type=="windows") {
 
 #http://r.789695.n4.nabble.com/Stack-trace-td4021537.html
 traceback() #gets you a stack trace at the last error
+options(warn=-1) #ignore all warnings
+options(warn=0) #default
+options(warn=1) #warnings are printed as they occur
 options(warn=2) #makes warnings into errors
-options(error=recover) #starts the post-mortem debugger at any error, allowing you to inspect the stack interactively.
 options(warning.expression=quote(recover())) #starts the same debugger at each warning.
 
 
@@ -346,3 +348,5 @@ ggpairs(ds, columns=c("housing", "sex", "i1", "cesd"),
 		diag=list(continuous="density",   discrete="bar"), axisLabels="show")
 
 #http://www.r-bloggers.com/my-favorite-graphs/?utm_source=feedburner&utm_medium=email&utm_campaign=Feed%3A+RBloggers+%28R+bloggers%29
+
+#http://thebiobucket.blogspot.com/2011/11/some-more-regex-examples-added-to.html#more

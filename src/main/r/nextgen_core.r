@@ -33,6 +33,35 @@ fastq2fasta <- function(infile,outfile=NULL)
 }
 #fastq2fasta(concat(config@consensus.dir,'/PXB0218-0007.wk10__HCV-KT9.consensus.fastq'))
 
+convertConsensusToFasta <- function(config, sample)
+{
+	filename <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
+	lines <- readLines(filename)
+	str <- ''
+	for (line in lines[-1])
+	{
+		if (substring(line,1,1)=='+')
+			break
+		str <- concat(str,line)
+	}
+	outfile <- concat(config@consensus.dir,'/',sample,'.consensus.fasta')
+	writeFastaFile(outfile,str,sample)
+	return(outfile)
+}
+#convertConsensusToFasta(config,'CTE247-21__HCV-KT9')
+
+writeConsensusForBam <- function(config,sample,bam.dir=config@bam.dir, out.dir=config@consensus.dir)
+{
+	ref <- getRefForSample(sample)
+	reffile <- getRefFile(config,ref)
+	bamfile <- concat(bam.dir,'/',sample,'.bam')
+	fastqfile <- concat(out.dir,'/',sample,'.consensus.fastq')
+	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
+	checkFileExists(fastqfile)
+	convertConsensusToFasta(config,sample)
+}
+#writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
+
 readFastaFile <- function(filename)
 {
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
@@ -633,4 +662,9 @@ addReadGroup <- function(config, sample, bam.dir=config@bam.dir)
 	return(bamfile)
 }
 
+stripSubjectFromSample <- function(sample)
+{
+	return(strsplit(sample,'.', fixed=TRUE)[[1]][2])
+}
+#stripSubjectFromSample('PXB0220-0030.wk17')
 

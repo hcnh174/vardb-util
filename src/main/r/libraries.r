@@ -1,5 +1,7 @@
 #repos <- 'http://cran.md.tsukuba.ac.jp'
 
+update.packages()
+
 install.packages('plyr')
 install.packages('rms')
 install.packages('car')
@@ -29,6 +31,7 @@ install.packages("doSNOW")
 install.packages('MiscPsycho')
 install.packages('gplots')
 install.packages('XLConnect')
+install.packages('ape')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
@@ -56,6 +59,8 @@ installstatconnDCOM()
 
 #install.packages('ca')
 #install.packages('sqldf')
+
+
 
 
 http://unknownr.r-forge.r-project.org/toppkgs.html

@@ -232,22 +232,42 @@ bambino <- function(config, sample)
 #bambino(config,'PXB0220-0002.wk08__HCV-KT9')
 
 #########################################################################
+#
+#loadConsensusFile <- function(config, sample)
+#{
+#	filename <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
+#	lines <- readLines(filename)
+#	str <- ''
+#	for (line in lines[-1])
+#	{
+#		if (substring(line,1,1)=='+')
+#			break
+#		#print(line)
+#		str <- concat(str,line)
+#	}
+#	return(str)
+#}
+##loadConsensusFile(config,'CTE247-21__HCV-KT9')
+#
+#loadConsensusFiles <- function(config, samples=config@samples)
+#{
+#	# read each fasta file
+#	seqs <- list()
+#	for (sample in samples)
+#	{
+#		try(seqs[[sample]] <- loadConsensusFile(config,sample))
+#	}
+#	return(seqs)
+#}
+##loadConsensusFiles(config)
+#
+#makeConsensusFasta <- function(config, samples=config@samples)
+#{
+#	seqs <- loadConsensusFiles(config,samples)
+#	writeFastaFile(concat(config@tmp.dir,'/consensus.fasta'),seqs)
+#}
+#makeConsensusFasta(config)
 
-loadConsensusFile <- function(config, sample)
-{
-	filename <- concat(config@consensus.dir,'/',sample,'.consensus.fastq')
-	lines <- readLines(filename)
-	str <- ''
-	for (line in lines[-1])
-	{
-		if (substring(line,1,1)=='+')
-			break
-		#print(line)
-		str <- concat(str,line)
-	}
-	return(str)
-}
-#loadConsensusFile(config,'CTE247-21__HCV-KT9')
 
 loadConsensusFiles <- function(config, samples=config@samples)
 {
@@ -255,18 +275,36 @@ loadConsensusFiles <- function(config, samples=config@samples)
 	seqs <- list()
 	for (sample in samples)
 	{
-		try(seqs[[sample]] <- loadConsensusFile(config,sample))
+		filename <- concat(config@consensus.dir,'/',sample,'.consensus.fasta')
+		seq <- readFastaFile(filename)
+		seqname <- getStemForSample(sample)
+		try(seqs[[seqname]] <- seq[[sample]])
 	}
 	return(seqs)
 }
-#loadConsensusFiles(config)
+#loadConsensusFiles(config, samples)
 
-makeConsensusFasta <- function(config, samples=config@samples)
+makeConsensusFasta <- function(config, samples=config@samples, name='samples', start=NULL, end=NULL, outfile=NULL)
 {
 	seqs <- loadConsensusFiles(config,samples)
-	writeFastaFile(concat(config@tmp.dir,'/consensus.fasta'),seqs)
+	seqs <- lapply(seqs,function(seq){
+		return(gsub("n", "-", seq))
+	})
+	if (!is.null(start) & !is.null(end))
+	{
+		name <- concat(name,'.',start,'-',end)
+		seqs <- lapply(seqs,function(seq)
+		{
+			return(substring(seq,start,end))
+		})
+	}
+	if (is.null(outfile))
+		outfile <- concat(config@consensus.dir,'/consensus-',name,'.fasta')
+	print(outfile)
+	writeFastaFile(outfile,seqs)
+	return(outfile)
 }
-#makeConsensusFasta(config)
+#makeConsensusFasta(config, samples, name='PXB0219-0018', start=6321, end=6810)
 
 ###############################################################################
 
@@ -357,19 +395,6 @@ checkSampleMappingForSubject <- function(config, subject, refs)
 }
 
 ##########################################################################
-
-writeConsensusForBam <- function(config,sample,bam.dir=config@bam.dir, out.dir=config@consensus.dir)
-{
-	ref <- getRefForSample(sample)
-	reffile <- getRefFile(config,ref)
-	bamfile <- concat(bam.dir,'/',sample,'.bam')
-	fastqfile <- concat(out.dir,'/',sample,'.consensus.fastq')
-	runCommand('samtools mpileup -uf ',reffile,' ',bamfile,' | bcftools view -cg - | vcfutils.pl vcf2fq > ',fastqfile)
-	checkFileExists(fastqfile)
-	#fastq2fasta(fastqfile)
-}
-#writeConsensusForBam(config,'10464592.1__HCV-NS3-156')
-
 writeCoverageForBam <- function(config,sample)
 {
 	bamfile <- concat(config@bam.dir,'/',sample,'.bam')

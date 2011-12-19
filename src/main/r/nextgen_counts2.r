@@ -78,6 +78,28 @@ getCodonCountSubsetForSample <- function(config, sample, region, filetype)
 	return(data)
 }
 
+#getCodonCountSubset <- function(config, samples, region, filetype, start, end=start, minreads=0)
+#{
+#	data <- NULL
+#	for (sample in samples)
+#	{
+#		data.sample <- getCodonCountSubsetForSample(config,sample,region,filetype)
+#		if (nrow(data.sample)==0)
+#			next
+#		if (is.null(data))
+#			data <- data.sample
+#		else data <- rbind(data,data.sample)
+#	}
+#	data.subset <- data
+#	data.subset <- data[which(data$aanum>=start & data$aanum<=end & data$count>=minreads),]
+#	#data.subset <- data.subset[which(data.subset$region %in% splitFields(region)),]
+#	data.subset$column <- factor(data.subset$column)
+#	data.subset$aanum <- factor(data.subset$aanum)
+#	return(data.subset)
+#}
+##getCodonCountSubset(config,getSamplesForSubGroup(config,'hcv_infection','hcv_infection'), 'NS5Aaa31', 'aa', 31)
+#
+
 getCodonCountSubset <- function(config, samples, region, filetype, start, end=start, minreads=0)
 {
 	data <- NULL
@@ -90,11 +112,32 @@ getCodonCountSubset <- function(config, samples, region, filetype, start, end=st
 			data <- data.sample
 		else data <- rbind(data,data.sample)
 	}
-	data.subset <- data
-	data.subset <- data[which(data$aanum>=start & data$aanum<=end & data$count>=minreads),]
-	#data.subset <- data.subset[which(data.subset$region %in% splitFields(region)),]
+	if (is.null(data))
+		throw('No data for in region ',region, ' for samples: ',samples)
+	data.subset <- data[which(data$aanum>=start & data$aanum<=end & data$count>=minreads),]	
+	if (nrow(data.subset)==0)
+		throw('No data for in region ',region, ' for samples: ',samples)
+	
 	data.subset$column <- factor(data.subset$column)
 	data.subset$aanum <- factor(data.subset$aanum)
+	
+	#indicate whether the aa is the same as the ref or not
+	ref <- getRefForSamples(config,samples)
+	data.subset$isrefaa <- apply(data.subset, 1, function(row)
+	{ 
+		try({
+			refaa <- getReferenceAminoAcid(config, ref, region, row['aanum'])
+			return(row['aa']==refaa)
+		})
+	})
+	data.subset$isrefcodon <- apply(data.subset, 1, function(row)
+	{ 
+		refcodon <- getReferenceCodon(config, ref, region, row['aanum'])
+		return(row['codon']==refcodon)
+	})
+
+	data.subset$subtype <- ifelse(!data.subset$isrefaa, 'non-synonymous', ifelse(!data.subset$isrefcodon, 'synonymous', 'reference'))
+	
 	return(data.subset)
 }
-#getCodonCountSubset(config,getSamplesForSubGroup(config,'hcv_infection','hcv_infection'), 'NS5Aaa31', 'aa', 31)
+#data.subset <- getCodonCountSubset(config,getSamplesForSubject(config,'PXB0220-0030'), 'NS3aa36', 'codons', 36)
