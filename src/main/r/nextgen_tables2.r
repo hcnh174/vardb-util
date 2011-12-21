@@ -298,6 +298,7 @@ makeReferenceVsVariantTablesBySubject <- function(config, subjects=config@subjec
 	saveWorkbook(wb)
 }
 #makeReferenceVsVariantTablesBySubject(config, minreads=100)
+#makeReferenceVsVariantTablesBySubject(config, subject='KT9', minreads=100)
 #makeReferenceVsVariantTablesBySubject(config, subject='PXB0197-0053', minreads=100)
 #makeReferenceVsVariantTablesBySubject(config, subject='PXB0210-0024', minreads=100)
 #makeReferenceVsVariantTablesBySubject(config, subject='PXB0202-0008', minreads=100)

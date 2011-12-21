@@ -40,6 +40,7 @@ biocLite("RmiR")
 biocLite("hgu133plus2.db")
 biocLite("Biostrings")
 biocLite("Rsamtools")
+biocLite("topGO")
 
 install.packages('R2wd')
 library(R2wd)
@@ -63,31 +64,31 @@ installstatconnDCOM()
 
 
 
-http://unknownr.r-forge.r-project.org/toppkgs.html
-http://www.inside-r.org/packages/cran/debug
-http://www.inside-r.org/packages/cran/iterators
-http://www.inside-r.org/packages/cran/RSvgDevice
-http://www.inside-r.org/packages/cran/caret
-http://www.inside-r.org/packages/cran/reporttools
-http://www.inside-r.org/packages/cran/XML
-http://www.inside-r.org/packages/cran/rpart
-http://www.inside-r.org/packages/cran/classInt
-http://www.inside-r.org/packages/cran/hwriter
-http://www.inside-r.org/packages/cran/RExcelInstaller
-http://www.inside-r.org/packages/cran/FactoMineR
-http://www.inside-r.org/packages/cran/boot
-http://www.inside-r.org/packages/cran/misc3d
-http://www.inside-r.org/packages/cran/beeswarm
-http://www.inside-r.org/packages/cran/microbenchmark
-http://www.inside-r.org/packages/cran/animation
-http://www.inside-r.org/packages/cran/heatmap.plus
-http://www.inside-r.org/packages/cran/laercio
-http://www.inside-r.org/packages/cran/multcomp
-http://www.inside-r.org/packages/cran/mlbench
-http://www.inside-r.org/packages/cran/aaMI
-http://www.inside-r.org/packages/cran/RgoogleMaps
-http://www.inside-r.org/packages/cran/gplots
-http://www.inside-r.org/packages/cran/deal
+#http://unknownr.r-forge.r-project.org/toppkgs.html
+#http://www.inside-r.org/packages/cran/debug
+#http://www.inside-r.org/packages/cran/iterators
+#http://www.inside-r.org/packages/cran/RSvgDevice
+#http://www.inside-r.org/packages/cran/caret
+#http://www.inside-r.org/packages/cran/reporttools
+#http://www.inside-r.org/packages/cran/XML
+#http://www.inside-r.org/packages/cran/rpart
+#http://www.inside-r.org/packages/cran/classInt
+#http://www.inside-r.org/packages/cran/hwriter
+#http://www.inside-r.org/packages/cran/RExcelInstaller
+#http://www.inside-r.org/packages/cran/FactoMineR
+#http://www.inside-r.org/packages/cran/boot
+#http://www.inside-r.org/packages/cran/misc3d
+#http://www.inside-r.org/packages/cran/beeswarm
+#http://www.inside-r.org/packages/cran/microbenchmark
+#http://www.inside-r.org/packages/cran/animation
+#http://www.inside-r.org/packages/cran/heatmap.plus
+#http://www.inside-r.org/packages/cran/laercio
+#http://www.inside-r.org/packages/cran/multcomp
+#http://www.inside-r.org/packages/cran/mlbench
+#http://www.inside-r.org/packages/cran/aaMI
+#http://www.inside-r.org/packages/cran/RgoogleMaps
+#http://www.inside-r.org/packages/cran/gplots
+#http://www.inside-r.org/packages/cran/deal
 
 
 
