@@ -39,6 +39,7 @@ solexaqa <- function(config,stem)
 {
 	runCommand('cd ',config@qc.dir,'; SolexaQA.pl ../fastq/',stem,'.fastq -sanger')
 }
+#solexaqa(config,'nextgen1-1E')
 #solexaqa(config,'nextgen3-7L')
 
 trimSolexaqa <- function(config,stem, fastq.dir=config@fastq.dir, minlength=config@minlength)
@@ -225,35 +226,6 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	return(bamfile)
 }
 
-#runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim)
-#{
-#	print(ref)
-#	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
-#	reffile <- getRefFile(config,ref)
-#	print(reffile)
-#	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)	
-#	outstem <- concat(stem,'__',ref)
-#	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
-#	print(getMapStats(config,bamfile))
-#	return(bamfile)
-#}
-##runBwa(config,'nextgen1-3F') #'nextgen1-2E')#'nextgen2-5I')
-#
-#runBwa <- function(config, stem, ref=unique(config@data[which(config@data$id==stem | config@data$stem==stem),'ref']), trim=config@trim)
-#{
-#	printcat('stem=',stem,', ref=',ref)
-#	fastq.ext <- ifelse(trim,'.trimmed.fastq','.fastq')
-#	reffile <- getRefFile(config,ref)
-#	print(reffile)
-#	fqfile <- concat(config@fastq.dir,'/',stem,fastq.ext)
-#	print(fqfile)
-#	outstem <- concat(stem,'__',ref)
-#	bamfile <- bwa(fqfile,reffile,config@bam.dir,outstem)
-#	print(getMapStats(config,bamfile))
-#	return(bamfile)
-#}
-##runBwa(config,'nextgen4-7A')
-
 runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, dedup=TRUE)
 {
 	reffile <- getRefFile(config,ref)
@@ -264,7 +236,7 @@ runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, 
 	print(getMapStats(config,bamfile))
 	return(bamfile)
 }
-#runBwa(config,'nextgen3-2G')
+#runBwa(config,'nextgen1-1E')
 
 mapReadsByProfile <- function(config, profile)
 {
@@ -440,6 +412,7 @@ filterBam <- function(config, sample, bam.dir=config@bam.dir, map.quality=config
 	runCommand('samtools index ',outfile)
 	return(outfile)
 }
+#filterBam(config,'nextgen1-1E__HCV-KT9')
 
 filterBams <- function(config, samples=config@samples)
 {
@@ -452,44 +425,45 @@ filterBams <- function(config, samples=config@samples)
 #filterBams(config)
 
 ####################################################
-
-#exportPileupForSample <- function(config,sample,ref=getRefForSample(sample), bam.dir=config@bam.dir, out.dir=config@pileup.dir, filtered=TRUE)
+#
+#exportPileupForSample <- function(config,sample,ref=getRefForSample(sample), bam.dir=config@bam.dir, out.dir=config@pileup.dir, filtered=FALSE)
 #{
-#	#ref <- getRefForSample(sample)
 #	samplename <- ifelse(filtered,concat(sample,'.filtered'), sample)
-#	#runCommand('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',config@bam.dir,' ',config@pileup.dir)
 #	runCommand('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',bam.dir,' ',out.dir)
 #}
-##exportPileupForSample(config,'110617HBV-1.10348001.20020530__HBV-RT',filtered=FALSE)
-
-exportPileupForSample <- function(config,sample,ref=getRefForSample(sample), bam.dir=config@bam.dir, out.dir=config@pileup.dir, filtered=FALSE)
-{
-	samplename <- ifelse(filtered,concat(sample,'.filtered'), sample)
-	runCommand('python $VARDB_RUTIL_HOME/export_pileup.py ', samplename,' ',ref,' ',bam.dir,' ',out.dir)
-}
-#exportPileupForSample(config,'sample','ref','out','out')
-
-exportPileup <- function(config, samples=config@samples)
-{
-	for (sample in samples)
-	{
-		exportPileupForSample(config,sample,filtered=FALSE)
-		if (config@filter)
-			exportPileupForSample(config,sample,filtered=TRUE)
-	}
-}
-#exportPileup(config,getSamplesForSubject(config,'10464592'))
+##exportPileupForSample(config,'sample','ref','out','out')
+#
+#exportPileup <- function(config, samples=config@samples)
+#{
+#	for (sample in samples)
+#	{
+#		exportPileupForSample(config,sample,filtered=FALSE)
+#		if (config@filter)
+#			exportPileupForSample(config,sample,filtered=TRUE)
+#	}
+#}
+##exportPileup(config,getSamplesForSubject(config,'10464592'))
 
 ################################################
 
-countCodons <- function(config, samples=config@samples)
+#countCodons <- function(config, samples=config@samples)
+#{
+#	for (sample in samples)
+#	{
+#		try(countCodonsForSample(config,sample))
+#	}
+#}
+##countCodons(config)
+
+countCodons <- function(config, ids=rownames(config@data))
 {
-	for (sample in samples)
+	for (id in ids)
 	{
-		try(countCodonsForSample(config,sample))
+		try(countCodonsForSample(config,id))
 	}
 }
 #countCodons(config)
+
 
 makePiecharts <- function(config)
 {
@@ -521,7 +495,7 @@ analyzeReadsForSample <- function(config,sample)
 	if (config@filter) filterBams(config,sample)
 	writeConsensusForBams(config,sample)
 	findVariants(config,sample)
-	exportPileup(config,sample)
+	#exportPileup(config,sample)
 	countCodons(config,sample)
 }
 #analyzeReadsForSample(config,'KT9.random__HCV-KT9')

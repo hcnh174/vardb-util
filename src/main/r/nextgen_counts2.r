@@ -6,13 +6,13 @@ getCodonCountFilename <- function(config, sample, type)
 #getRefForSample('HCV-KT9.random__HCV-KT9')
 
 #uses GATK custom walker to count all the bases at each position
-countBasesForSample <- function(config, id, bam.dir=config@bam.dir)
+countCodonsForSample <- function(config, id, bam.dir=config@bam.dir, filter=config@filter)
 {
 	region <- config@data[id,'region']
 	ref <- config@data[id,'ref']
 	sample <- concat(id,'__',ref)
 	reffile <- getRefFile(config,ref)
-	bamfile <- concat(bam.dir,'/',sample,'.bam')
+	bamfile <- ifelse(filter, concat(bam.dir,'/',sample,'.filtered.bam'), concat(bam.dir,'/',sample,'.bam'))
 	ntcountsfile <- getCodonCountFilename(config,id,'nt')
 	codoncountsfile <- getCodonCountFilename(config,id,'codons')
 	aacountsfile <- getCodonCountFilename(config,id,'aa')
@@ -36,16 +36,16 @@ countBasesForSample <- function(config, id, bam.dir=config@bam.dir)
 	checkFileExists(codoncountsfile)
 	checkFileExists(aacountsfile)
 }
-#countBasesForSample(config,'nextgen1-7E')
+#countCodonsForSample(config,'nextgen1-1E',filter=TRUE)
 
-countBases <- function(config, ids=rownames(config@data))
-{
-	for (id in ids)
-	{
-		try(countBasesForSample(config,id))
-	}
-}
-#countBases(config)
+#countBases <- function(config, ids=rownames(config@data))
+#{
+#	for (id in ids)
+#	{
+#		try(countBasesForSample(config,id))
+#	}
+#}
+##countBases(config)
 
 
 getCodonCountSubsetForSample <- function(config, sample, region, filetype)
