@@ -8,3 +8,15 @@ git clone git@github.com:hcnh174/vardb-util.git vardb-util
 
 #discard uncommitted changes
 git reset HEAD
+
+# to find which process is using a port
+"netstat -a -o" then look up pid in Task Manager (add PID column to display)
+
+# throw away local committed changes
+git reset --hard origin/master
+
+#analyze dependencies
+mvn dependency:analyze
+
+# add deleted files to staging area
+git add -u 

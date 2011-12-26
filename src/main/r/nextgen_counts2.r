@@ -38,15 +38,6 @@ countCodonsForSample <- function(config, id, bam.dir=config@bam.dir, filter=conf
 }
 #countCodonsForSample(config,'nextgen1-1E',filter=TRUE)
 
-#countBases <- function(config, ids=rownames(config@data))
-#{
-#	for (id in ids)
-#	{
-#		try(countBasesForSample(config,id))
-#	}
-#}
-##countBases(config)
-
 
 getCodonCountSubsetForSample <- function(config, sample, region, filetype)
 {

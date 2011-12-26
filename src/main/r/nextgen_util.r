@@ -724,4 +724,129 @@ analyzeMapStats <- function(config)
 }
 #analyzeMapStats(config)
 
+###################################################################
+
+TRANSITIONS <- splitFields('C:T,T:C,G:A,A:G')
+TRANSVERSIONS <- splitFields('C:A,G:T,A:C,T:A,A:T,G:C,C:G,T:G')
+
+getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, minvariant=10, start=NULL, end=NULL)
+{
+	filename <- getCodonCountFilename(config,id,'nt')
+	printcat('filename=',filename)
+	checkFileExists(filename)
+	data <- loadDataFrame(filename)
+	data <- subset(data, depth>=mindepth)
+	if (!is.null(start))
+		data <- subset(data, position>=start)
+	if (!is.null(end))
+		data <- subset(data, position<=end)
+	data$id <- id
+	data$change <- apply(data,1,function(row)
+	{
+		try({
+			ntnum <- row[['position']]
+			counts <- data.frame()
+			for (nt in c('a','c','g','t'))
+			{
+				counts[nt,'nt'] <- nt
+				counts[nt,'count'] <- as.integer(row[[nt]])
+			}
+			counts <- counts[order(counts$count, decreasing=TRUE),]
+			#print(counts)
+			rank1 <- counts[1,'nt']
+			rank2 <- counts[2,'nt']
+			if (as.integer(row[[rank2]]) < minvariant)
+				return(toupper(rank1))
+			#print(rank1)
+			#print(rank2)
+			return(toupper(concat(rank1,':',rank2)))
+		})
+	})
+	data$transition <- sapply(data$change,function(value)
+	{
+		return(containsElement(TRANSITIONS,value))
+	})
+	data$transversion <- sapply(data$change,function(value)
+	{
+		return(containsElement(TRANSVERSIONS,value))
+	})
+	data$transtype <- sapply(data$change,function(value)
+	{
+		if (is.na(value))
+			return(NA)
+		else if (containsElement(TRANSITIONS,value))
+			return('transition')
+		else if (containsElement(TRANSVERSIONS,value))
+			return('transversion')
+		else return('constant')
+	})
+	return(data)
+}
+#getTransitionTransverionTypesForSample(config,'nextgen1-1E')
+
+getTransitionTransverionStats <- function(config, ids=rownames(config@data), minvariant=10)
+{
+	table <- data.frame(row.names=ids, id=ids, sample=config@data[ids,'sample'])
+	cols <- c(TRANSITIONS,TRANSVERSIONS)
+	for (type in cols)
+	{
+		table[[type]] <- integer(length(ids))
+	}
+	
+	for (id in ids)
+	{
+		data <- getTransitionTransverionTypesForSample(config,id,minvariant=minvariant)
+		counts <- sort(table(data$change), decreasing=TRUE)
+		for (type in names(counts))
+		{
+			table[id,type] <- counts[type][[1]]
+		}
+	}
+	
+	totals <- c()
+	for (type in cols)
+	{
+		colsum <- sum(table[[type]], na.rm=TRUE)
+		if (length(colsum)==0) colsum <- 0
+		totals <- c(totals,colsum)
+	}
+	
+	totalrow <- makeRow(table,list(id='total'))
+	totalrow[,cols] <- totals
+	table <- rbind(table,totalrow)
+	
+	filename <- 'out/changes.txt'
+	writeTable(table,filename,row.names=FALSE)
+	return(table)
+}
+#getTransitionTransverionStats(config, rownames(config@data[which(config@data$subject=='KT9'),]))
+#getTransitionTransverionStats(config)#,'nextgen1-1E')
+
+plotTransitionVsTransversionType <- function(config, ids, minvariant=10)
+{
+	col <- c('gray','green','red')
+	pdffile <- concat(config@out.dir,'/transitions-transversions.pdf')
+	pdf(pdffile)
+	for (id in ids)
+	{
+		row <- config@data[id,]
+		region <- row$region
+		loc <- getLocationForRegion(config, row$ref, region)
+		main <- concat(row$subject,' ',region)
+		
+		data <- getTransitionTransverionTypesForSample(config,id,minvariant=10, start=loc$start, end=loc$end)
+		chrt <- barchart(depth ~ position | id, data, group=transtype, horizontal=FALSE, stack=TRUE, box.width = 1,
+				main=main, xlab='position', sub=region, ylab='Read depth', #ylim=ylim,
+				par.settings=list(axis.text=list(cex=0.7), fontsize=list(text=10), 
+						superpose.polygon = list(col=col)),
+				auto.key = list(space = "right"))
+				#strip = FALSE, strip.left = strip.custom(bg='#F2F2F2',fg='#F2F2F2', horizontal = FALSE),
+				#layout = c(1,length(unique(data.subset$column))))
+		print(chrt)
+	}
+	dev.off()
+}
+#plotTransitionVsTransversionType(config,'nextgen1-1E')#rownames(config@data[which(config@data$subject=='KT9'),]))
+#plotTransitionVsTransversionType(config, rownames(config@data[which(config@data$subject=='KT9'),]))
+
 
