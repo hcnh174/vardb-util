@@ -729,22 +729,48 @@ analyzeMapStats <- function(config)
 TRANSITIONS <- splitFields('C:T,T:C,G:A,A:G')
 TRANSVERSIONS <- splitFields('C:A,G:T,A:C,T:A,A:T,G:C,C:G,T:G')
 
+#library(reshape)
+#id <- 'nextgen1-1A'
+#filename <- getCodonCountFilename(config,id,'nt')
+#data <- loadDataFrame(filename)
+#data <- data[,-7]
+#data.melted <- melt(data, id=c('position','refnt'))
+#colnames(data.melted) <- splitFields('ntnum,refnt,nt,count')
+#data.melted$nt <- toupper(data.melted$nt)
+##data.melted <- data.melted[order(data.melted$ntnum,data.melted$count),]
+#data.melted <- data.melted[order(data.melted$count, decreasing=TRUE),]
+#data.melted <- data.melted[order(data.melted$ntnum),]
+#head(data.melted)
+
+
 getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, minvariant=10, start=NULL, end=NULL)
 {
-	filename <- getCodonCountFilename(config,id,'nt')
-	printcat('filename=',filename)
-	checkFileExists(filename)
-	data <- loadDataFrame(filename)
+	row <- config@data[id,]
+	data <- getCodonCountSubsetForSample(config, row$sample, row$region, 'nt')
 	data <- subset(data, depth>=mindepth)
-	if (!is.null(start))
-		data <- subset(data, position>=start)
-	if (!is.null(end))
-		data <- subset(data, position<=end)
-	data$id <- id
+
+	data$freq <- apply(data,1,function(row)
+	{
+		try({
+			ntnum <- row[['ntnum']]
+			depth <- as.integer(row[['depth']])
+			counts <- data.frame()
+			for (nt in c('a','c','g','t'))
+			{
+				counts[nt,'nt'] <- nt
+				counts[nt,'count'] <- as.integer(row[[nt]])
+			}
+			counts <- counts[order(counts$count, decreasing=TRUE),]
+			rank2 <- counts[2,'nt']
+			rank2count <- as.integer(row[[rank2]])
+			rank2freq <- rank2count/depth 
+			return(rank2freq)
+		})
+	})
 	data$change <- apply(data,1,function(row)
 	{
 		try({
-			ntnum <- row[['position']]
+			ntnum <- row[['ntnum']]
 			counts <- data.frame()
 			for (nt in c('a','c','g','t'))
 			{
@@ -784,8 +810,59 @@ getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, mi
 }
 #getTransitionTransverionTypesForSample(config,'nextgen1-1E')
 
-getTransitionTransverionStats <- function(config, ids=rownames(config@data), minvariant=10)
+#getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, minvariant=10, start=NULL, end=NULL)
+#{
+#	row <- config@data[id,]
+#	data <- getCodonCountSubsetForSample(config, row$sample, row$region, 'nt')
+#	#data <- subset(data, depth>=mindepth)
+#	
+#	data$change <- apply(data,1,function(row)
+#			{
+#				try({
+#							ntnum <- row[['position']]
+#							counts <- data.frame()
+#							for (nt in c('a','c','g','t'))
+#							{
+#								counts[nt,'nt'] <- nt
+#								counts[nt,'count'] <- as.integer(row[[nt]])
+#							}
+#							counts <- counts[order(counts$count, decreasing=TRUE),]
+#							#print(counts)
+#							rank1 <- counts[1,'nt']
+#							rank2 <- counts[2,'nt']
+#							if (as.integer(row[[rank2]]) < minvariant)
+#								return(toupper(rank1))
+#							#print(rank1)
+#							#print(rank2)
+#							return(toupper(concat(rank1,':',rank2)))
+#						})
+#			})
+#	data$transition <- sapply(data$change,function(value)
+#			{
+#				return(containsElement(TRANSITIONS,value))
+#			})
+#	data$transversion <- sapply(data$change,function(value)
+#			{
+#				return(containsElement(TRANSVERSIONS,value))
+#			})
+#	data$transtype <- sapply(data$change,function(value)
+#			{
+#				if (is.na(value))
+#					return(NA)
+#				else if (containsElement(TRANSITIONS,value))
+#					return('transition')
+#				else if (containsElement(TRANSVERSIONS,value))
+#					return('transversion')
+#				else return('constant')
+#			})
+#	return(data)
+#}
+##getTransitionTransverionTypesForSample(config,'nextgen1-1E')
+
+
+getTransitionTransverionStats <- function(config, samples, regions, minvariant=10)
 {
+	ids <- rownames(config@data[which(config@data$sample %in% samples & config@data$region %in% regions),])
 	table <- data.frame(row.names=ids, id=ids, sample=config@data[ids,'sample'])
 	cols <- c(TRANSITIONS,TRANSVERSIONS)
 	for (type in cols)
@@ -819,34 +896,111 @@ getTransitionTransverionStats <- function(config, ids=rownames(config@data), min
 	writeTable(table,filename,row.names=FALSE)
 	return(table)
 }
-#getTransitionTransverionStats(config, rownames(config@data[which(config@data$subject=='KT9'),]))
-#getTransitionTransverionStats(config)#,'nextgen1-1E')
+#getTransitionTransverionStats(config, samples=config@data[which(config@data$subject=='KT9'),'sample'], regions=c('NS3aa156'))
 
-plotTransitionVsTransversionType <- function(config, ids, minvariant=10)
+#plotTransitionVsTransversionType <- function(config, samples, regions, minvariant=10)
+#{
+#	col <- c('lightgray','green','red')
+#	pdffile <- concat(config@out.dir,'/transitions-transversions.pdf')
+#	pdf(pdffile)
+#	for (sample in samples)
+#	{
+#		for (region in regions)
+#		{
+#			row <- config@data[which(config@data$sample==sample & config@data$region==region),]
+#			main <- concat(row$subject,' ',region)
+#			
+#			data <- getTransitionTransverionTypesForSample(config,row$id,minvariant=minvariant)#, start=loc$start, end=loc$end)
+#			data <- subset(data,aanum>150 & aanum<170)
+#			printcat('sample=',sample,' region=',region)
+#			print(head(data))
+#			chrt <- barchart(depth ~ position | id, data, group=transtype, horizontal=FALSE, stack=TRUE, box.width=1,
+#					main=main, xlab='position', sub=region, ylab='Read depth', #ylim=ylim,
+#					par.settings=list(axis.text=list(cex=0.7), fontsize=list(text=10), 
+#							superpose.polygon = list(col=col)),
+#					auto.key = list(space = "right"))
+#			#strip = FALSE, strip.left = strip.custom(bg='#F2F2F2',fg='#F2F2F2', horizontal = FALSE),
+#			#layout = c(1,length(unique(data.subset$column))))
+#			print(chrt)			
+#		}		
+#	}
+#	dev.off()
+#}
+##plotTransitionVsTransversionType(config, samples=config@data[which(config@data$subject=='KT9'),'sample'], regions=c('NS3aa156'))
+#
+
+plotTransitionVsTransversionType <- function(config, samples, regions, minvariant=10)
 {
-	col <- c('gray','green','red')
+	print(regions)
+	pastelgreen <- "#FFCCFF"
+	pastelred <- "#CCFFFF"
+	col <- c('lightgrey',pastelgreen,pastelred)
+	#col <- c("#CCFFFF","#FFCCFF","#CCFFCC","#FFE5CC","#CCE6FF","#FFFFCC","#FFCCCC")
+	#col <- c('lightgray','green','red')
 	pdffile <- concat(config@out.dir,'/transitions-transversions.pdf')
 	pdf(pdffile)
-	for (id in ids)
+	for (sample in samples)
 	{
-		row <- config@data[id,]
-		region <- row$region
-		loc <- getLocationForRegion(config, row$ref, region)
-		main <- concat(row$subject,' ',region)
-		
-		data <- getTransitionTransverionTypesForSample(config,id,minvariant=10, start=loc$start, end=loc$end)
-		chrt <- barchart(depth ~ position | id, data, group=transtype, horizontal=FALSE, stack=TRUE, box.width = 1,
-				main=main, xlab='position', sub=region, ylab='Read depth', #ylim=ylim,
-				par.settings=list(axis.text=list(cex=0.7), fontsize=list(text=10), 
-						superpose.polygon = list(col=col)),
-				auto.key = list(space = "right"))
-				#strip = FALSE, strip.left = strip.custom(bg='#F2F2F2',fg='#F2F2F2', horizontal = FALSE),
-				#layout = c(1,length(unique(data.subset$column))))
-		print(chrt)
+		for (region in regions)
+		{
+			row <- config@data[which(config@data$sample==sample & config@data$region==region),]
+			main <- concat(row$stem,' ',region)
+			
+			data <- getTransitionTransverionTypesForSample(config,row$id,minvariant=minvariant)#, start=loc$start, end=loc$end)
+			focus <- max(as.numeric(splitFields(config@regions[region,'focus'])))
+			#start <- config@regions[region,'start']
+			#end <- config@regions[region,'end']
+			start <- focus-3
+			end <- focus+3
+			data <- subset(data,aanum>start & aanum<end)
+			printcat('sample=',sample,' region=',region,' start=',start,' end=',end)
+			#print(data[1,])
+			data$ntnum <- factor(data$ntnum)
+			chrt <- barchart(freq ~ ntnum, data, group=transtype, horizontal=FALSE, stack=TRUE, box.width=1,
+					main=main, xlab='ntnum', sub=region, ylab='Read depth', #ylim=ylim,
+					par.settings=list(axis.text=list(cex=0.7), fontsize=list(text=10), 
+							superpose.polygon = list(col=col)),
+					auto.key = list(space = "bottom"))
+			#strip = FALSE, strip.left = strip.custom(bg='#F2F2F2',fg='#F2F2F2', horizontal = FALSE),
+			#layout = c(1,length(unique(data.subset$column))))
+			print(chrt)
+			for (aanum in as.numeric(splitFields(config@regions[region,'focus'])))
+			{
+				offset <- (aanum-start)*3
+				addLine(v = offset - 0.5, col='red', lty=2)
+				addLine(v = offset + 2 + 0.5, col='red', lty=2)
+			}
+		}
 	}
 	dev.off()
 }
-#plotTransitionVsTransversionType(config,'nextgen1-1E')#rownames(config@data[which(config@data$subject=='KT9'),]))
-#plotTransitionVsTransversionType(config, rownames(config@data[which(config@data$subject=='KT9'),]))
+#plotTransitionVsTransversionType(config, samples=config@data[which(config@data$subject=='KT9'),'sample'], regions=c('NS3aa36','NS3aa156','NS5Aaa31','NS5Aaa93'))
 
+
+#plotTransitionVsTransversionType <- function(config, samples, regions, minvariant=10)
+#{
+#	col <- c('gray','green','red')
+#	pdffile <- concat(config@out.dir,'/transitions-transversions.pdf')
+#	pdf(pdffile)
+#	for (id in ids)
+#	{
+#		row <- config@data[id,]
+#		region <- row$region
+#		loc <- getLocationForRegion(config, row$ref, region)
+#		main <- concat(row$subject,' ',region)
+#		
+#		data <- getTransitionTransverionTypesForSample(config,id,minvariant=minvariant)#, start=loc$start, end=loc$end)
+#		chrt <- barchart(depth ~ position | id, data, group=transtype, horizontal=FALSE, stack=TRUE, box.width = 1,
+#				main=main, xlab='position', sub=region, ylab='Read depth', #ylim=ylim,
+#				par.settings=list(axis.text=list(cex=0.7), fontsize=list(text=10), 
+#						superpose.polygon = list(col=col)),
+#				auto.key = list(space = "right"))
+#		#strip = FALSE, strip.left = strip.custom(bg='#F2F2F2',fg='#F2F2F2', horizontal = FALSE),
+#		#layout = c(1,length(unique(data.subset$column))))
+#		print(chrt)
+#	}
+#	dev.off()
+#}
+##plotTransitionVsTransversionType(config,'nextgen1-1E')#rownames(config@data[which(config@data$subject=='KT9'),]))
+##plotTransitionVsTransversionType(config, rownames(config@data[which(config@data$subject=='KT9'),]))
 

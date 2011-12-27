@@ -556,13 +556,45 @@ uniqueValues <- function(values1, values2)
 }
 #uniqueValues('A,B,C','B,D')
 
+
+renameColumn <- function(data, oldcol, newcol)
+{
+	newcols <- c() 
+	for (col in colnames(data))
+	{
+		if (col==oldcol)
+			col <- newcol
+		newcols <- c(newcols,col)
+	}
+	colnames(data) <- newcols
+	return(data)
+}
+#renameColumn(data,'position','ntnum')
+
+
 excludeColumns <- function(data, cols)
 {
 	cols <- splitFields(cols)
 	keep <- removeElements(colnames(data),cols)
+	print(keep)
 	return(data[,keep])
 }
-#data <- excludeColumns(data,'constant1,constant2')
+#data <- excludeColumns(data,'depth')
+
+
+removeColumns <- function(data, excludecols)
+{
+	excludecols <- splitFields(excludecols)
+	newcols <- c() 
+	for (col in colnames(data))
+	{
+		if (!(col %in% excludecols))
+			newcols <- c(newcols,col)
+	}
+	return(data[,newcols])
+}
+#removeColumns(data,'depth')
+
 
 ######################################################3
 

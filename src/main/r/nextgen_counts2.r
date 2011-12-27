@@ -38,7 +38,6 @@ countCodonsForSample <- function(config, id, bam.dir=config@bam.dir, filter=conf
 }
 #countCodonsForSample(config,'nextgen1-1E',filter=TRUE)
 
-
 getCodonCountSubsetForSample <- function(config, sample, region, filetype)
 {
 	printcat('sample=',sample,', region=',region)
@@ -53,8 +52,19 @@ getCodonCountSubsetForSample <- function(config, sample, region, filetype)
 	printcat('filename=',filename)
 	checkFileExists(filename)
 	data <- loadDataFrame(filename)
+	data <- renameColumn(data,'position','ntnum')
+#	if (filetype=='nt')
+#	{
+#		library(reshape)
+#		data <- excludeColumns(data,'depth')
+#		data.melted <- melt(data, id=c('ntnum','refnt'))
+#		colnames(data.melted) <- splitFields('ntnum,refnt,nt,count')
+#		data.melted$nt <- toupper(data.melted$nt)
+#		data.melted <- data.melted[order(data.melted$count, decreasing=TRUE),]
+#		data.melted <- data.melted[order(data.melted$ntnum),]
+#		data <- data.melted
+#	}
 	loc <- getLocationForRegion(config,row$ref,region)
-	data$ntnum <- data$position #hack - change this column name in walker output files
 	data$group <- row$group
 	data$column <- row$column
 	data$ref <- row$ref
@@ -68,6 +78,7 @@ getCodonCountSubsetForSample <- function(config, sample, region, filetype)
 	})
 	return(data)
 }
+#head(getCodonCountSubsetForSample(config,'KT9.plasmid__HCV-KT9','NS3aa36','nt'))
 
 #getCodonCountSubset <- function(config, samples, region, filetype, start, end=start, minreads=0)
 #{

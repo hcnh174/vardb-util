@@ -2,23 +2,23 @@ source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 #loadUtilFiles('nextgen2,nextgen_mapping,nextgen_counts,nextgen_tables')
 
 setClass("imputeconfig",
-		representation(
-			Ne='numeric',
-			chunksize='numeric',
-			ref.dir='character',
-			in.dir='character',
-			out.dir='character',
-			tmp.dir='character',
-			chr.lengths='data.frame'
-		),
-		prototype(
-			Ne=20000,
-			chunksize=5000000,
-			ref.dir='~/impute/ref',
-			in.dir='~/impute/in',
-			out.dir='~/impute/out',
-			tmp.dir='~/impute/tmp'
-		)
+	representation(
+		Ne='numeric',
+		chunksize='numeric',
+		ref.dir='character',
+		in.dir='character',
+		out.dir='character',
+		tmp.dir='character',
+		chr.lengths='data.frame'
+	),
+	prototype(
+		Ne=20000,
+		chunksize=5000000,
+		ref.dir='~/mnt/impute/ref',
+		in.dir='~/mnt/impute/in',
+		out.dir='~/mnt/impute/out',
+		tmp.dir='~/mnt/impute/tmp'
+	)
 )
 
 setMethod("initialize", "imputeconfig", function(.Object)
