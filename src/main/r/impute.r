@@ -9,15 +9,17 @@ setClass("imputeconfig",
 		in.dir='character',
 		out.dir='character',
 		tmp.dir='character',
+		imputed.dir='character',
 		chr.lengths='data.frame'
 	),
 	prototype(
 		Ne=20000,
 		chunksize=5000000,
-		ref.dir='~/mnt/impute/ref',
-		in.dir='~/mnt/impute/in',
+		ref.dir='~/impute/data/ref',#ref.dir='~/mnt/impute/ref',
+		in.dir='~/impute/data/in',#in.dir='~/mnt/impute/in',
 		out.dir='~/mnt/impute/out',
-		tmp.dir='~/mnt/impute/tmp'
+		tmp.dir='~/mnt/impute/tmp',
+		imputed.dir='~/impute/data/imputed' #imputed.dir='~/mnt/impute/imputed'		
 	)
 )
 
@@ -250,7 +252,7 @@ impute_interval <- function(config, chr, start, end)
 	
 	checkFileExists(outfile)
 }
-#impute(config, 22, 20.4e6, 20.5e6)
+#impute_interval(config, 22, 50000001, 51304566)
 
 impute_chromosome <- function(config, chr, partitions=NULL)
 {
@@ -269,12 +271,36 @@ impute_chromosome <- function(config, chr, partitions=NULL)
 impute <- function(config)
 {
 	print('prephase')
-	for (chr in 1:23)
+	for (chr in 1:22)
 	{		
 		try(impute_chromosome(config,chr))
 	}
 }
 #impute(config)
+
+###########################################################
+
+concatenate_impute_results_for_chromosome <- function(config, chr)
+{
+	print(concat('concatenate impute results: ',chr))
+	chrstr <- padChr(chr)
+	in.dir <- concat(config@out.dir,'/chr',chrstr)#/impute.',formatInterval(chr,start,end),'.impute2')
+	outfile <- concat(config@imputed.dir,'/chr',chrstr,'.impute2')
+	runCommand('cat ',in.dir,'/impute.chr',chrstr,'.*.impute2 > ',outfile)
+}
+#concatenate_impute_results_for_chromosome(config,22)
+
+
+concatenate_impute_results <- function(config)
+{
+	print('concate impute results')
+	for (chr in 1:22)
+	{		
+		try(concatenate_impute_results_for_chromosome(config,chr))
+	}
+}
+#concatenate_impute_results(config)
+
 
 ##########################################
 
@@ -303,7 +329,7 @@ snptest_chromosome <- function(config, phenofile, pheno, chr)
 
 
 
-concatenate_results <- function(pheno)
+concatenate_snptest_results <- function(pheno)
 {
 	runCommand("cat out/"+pheno+"-chr1.tmp > out/"+pheno+".out")	
 	for (n in 2:23)
