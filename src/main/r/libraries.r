@@ -32,6 +32,7 @@ install.packages('MiscPsycho')
 install.packages('gplots')
 install.packages('XLConnect')
 install.packages('ape')
+install.packages('Rserve')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")

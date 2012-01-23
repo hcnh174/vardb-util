@@ -10,16 +10,20 @@ setClass("imputeconfig",
 		out.dir='character',
 		tmp.dir='character',
 		imputed.dir='character',
+		analysis.dir='character',
+		pheno.dir='character',
 		chr.lengths='data.frame'
 	),
 	prototype(
 		Ne=20000,
 		chunksize=5000000,
-		ref.dir='~/impute/data/ref',#ref.dir='~/mnt/impute/ref',
-		in.dir='~/impute/data/in',#in.dir='~/mnt/impute/in',
+		ref.dir='~/impute/data/ref',
+		in.dir='~/impute/data/in',
 		out.dir='~/mnt/impute/out',
 		tmp.dir='~/mnt/impute/tmp',
-		imputed.dir='~/impute/data/imputed' #imputed.dir='~/mnt/impute/imputed'		
+		imputed.dir='~/impute/data/imputed',
+		analysis.dir='~/mnt/impute/analysis',
+		pheno.dir='~/impute/data/pheno'
 	)
 )
 
@@ -307,9 +311,13 @@ concatenate_impute_results <- function(config)
 snptest_chromosome <- function(config, phenofile, pheno, chr)
 {
 	chrstr <- padChr(chr)
-	infile <- concat('genome/chr',chrstr,'.impute2')
-	outfile <- concat(config@out.dir,'/',pheno,'-chr',chrstr,'.out')
-			
+	infile <- concat(config@imputed.dir,'/chr',chrstr,'.impute2')
+	phenofile <- concat(config@pheno.dir,'/',phenofile)
+	tmpfile <- concat(config@analysis.dir,'/',pheno,'-chr',chrstr,'.tmp')
+	outfile <- concat(config@analysis.dir,'/',pheno,'-chr',chrstr,'.out')
+	checkFileExists(infile)
+	checkFileExists(phenofile)
+	
 	str <- 'snptest'
 	str <- concat(str,' -pheno ',pheno)
 	str <- concat(str,' -frequentist 1')
@@ -317,25 +325,24 @@ snptest_chromosome <- function(config, phenofile, pheno, chr)
 	str <- concat(str,' -nowarn')
 	str <- concat(str,' -hwe')
 	str <- concat(str,' -data ',infile,' ',phenofile)
-	str <- concat(str,' -o out/',pheno,'-chr',chrstr,'.out')
+	str <- concat(str,' -o ',tmpfile)
 	print(str)
-	#runCommand(str)
+	runCommand(str)
+	checkFileExists(outfile)
 	
-	#runCommand("tr -s \"NA\" \""+str(n)+"\" < out/"+pheno+"-chr"+str(n)+".out > out/"+pheno+"-chr"+str(n)+".tmp")
+	#runCommand("tr -s \"NA\" \"",n,"\" < out/"+pheno+"-chr"+str(n)+".out > out/"+pheno+"-chr"+str(n)+".tmp")
+	runCommand('tr -s "NA" "',n,'" < ',tmpfile,' > ',outfile)
 }
 #snptest_chromosome(config,'patients.txt','svr',1)
-
-
-
 
 
 concatenate_snptest_results <- function(pheno)
 {
 	runCommand("cat out/"+pheno+"-chr1.tmp > out/"+pheno+".out")	
-	for (n in 2:23)
+	for (n in 2:22)
 	{
 		print(concat("concatening results for chr ",n))
-		write_chromosome_number(pheno,n)
+		#write_chromosome_number(pheno,n)
 		runCommand("tail -n +2 out/",pheno,"-chr",n,".tmp >> out/",pheno,".out")
 	}
 	runCommand("cut -f 1- --delimiter=' ' --output-delimiter='\t' out/",pheno,".out > out/",pheno,".txt")
@@ -354,7 +361,7 @@ snptest <- function(config, phenofile, pheno)
 	#add chrosome numbers
 	
 }
-#snptest('patients.txt','svr')
+#snptest(config, 'patients.txt','svr')
 
 #snptest(phenofile,pheno)
 #concatenate_results(pheno)

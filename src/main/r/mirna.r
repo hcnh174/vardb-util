@@ -18,18 +18,18 @@ makeHeatmapMatrix <- function(data, use.log2=TRUE)
 	return(data.matrix)
 }
 
-drawHeatmap <- function(data)
+drawHeatmap <- function(data, cexRow=0.2)
 {
 	data.matrix <- makeHeatmapMatrix(data, FALSE)
-	hv <- heatmap(data.matrix, na.rm=T, ylab='miRNAs', main='Heatmap', Colv=TRUE, Rowv=TRUE, cexRow=0.2, margins=c(10,5))
+	hv <- heatmap(data.matrix, na.rm=T, ylab='miRNAs', main='Heatmap', Colv=TRUE, Rowv=TRUE, cexRow=cexRow, cexRow=cexRow, margins=c(10,5))
 }
 
-drawHeatmap2 <- function(data)
+drawHeatmap2 <- function(data, cexRow=0.2)
 {
 	require(gplots)
 	data.matrix <- makeHeatmapMatrix(data, FALSE)
 	heatmap.2(data.matrix, col=redgreen(75), scale='row', #ColSideColors=patientcolors,
-			key=TRUE, symkey=FALSE, density.info='none', trace='none', cexRow=0.2, margins=c(10,5))
+			key=TRUE, symkey=FALSE, density.info='none', trace='none', cexRow=cexRow, margins=c(10,5))
 }
 
 
@@ -128,6 +128,14 @@ getMiRNATargets <- function(data, name, at.least=3, databases=splitFields('miran
 	targets2 <- annotateTargets(targets2)
 	filename <- concat('out/targets-',name,'.txt')
 	writeTable(targets2, filename, row.names=FALSE)
+	
+	targets3 <- targets2[which(!is.na(targets2$gene)),]
+	attributes <- data.frame()
+	attributes <- rbind(attributes,data.frame(node_id=targets3$gene, node_type='gene'))
+	attributes <- rbind(attributes,data.frame(node_id=targets3$mature_miRNA, node_type='mirna'))
+	filename <- concat('out/attributes-',name,'.txt')
+	writeTable(attributes, filename, row.names=FALSE)
+	
 	return(targets2)
 }
 

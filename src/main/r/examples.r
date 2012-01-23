@@ -3,11 +3,14 @@
 sys.source('c:/perf/bin/perfmon.r', envir=.my.env)
 attach(.my.env) 
 
+.libPaths()
+installed.packages()
 
 #installation
 install.packages("ggplot2") 
 
 library()
+
 
 #dataframes
 attributes(someframe)
@@ -350,3 +353,67 @@ ggpairs(ds, columns=c("housing", "sex", "i1", "cesd"),
 #http://www.r-bloggers.com/my-favorite-graphs/?utm_source=feedburner&utm_medium=email&utm_campaign=Feed%3A+RBloggers+%28R+bloggers%29
 
 #http://thebiobucket.blogspot.com/2011/11/some-more-regex-examples-added-to.html#more
+
+
+#windows version
+library(parallel)
+
+# Setting up the workers.  The function detectCores() used below is a
+# function from library(parallel) which finds the total number of
+# available cores. You can change the call below to a smaller number
+# if you don't want to use all of your cores for some reason.
+cl <- makeCluster(detectCores())
+
+# Send our functions to the workers
+clusterEvalQ(cl, rand5 <- function() sample(1:5, 1))
+
+clusterEvalQ(cl,
+		coin.flip <- function(){
+			n <- rand5()
+			if (n==1 || n==2) return(0) else
+			if (n==3 || n==4) return(1) else
+				coin.flip()
+		}
+)
+
+clusterEvalQ(cl,
+	rand7 <- function(){
+		x <- rand5() + (rand5() - 1)*5
+		while (x > 21) x <- rand5() + (rand5() - 1)*5
+		return(x%%7 + 1)
+	}
+)
+
+# Our many die rolls, stored as a list
+results <- clusterApply(cl, 1:1e5, rand7)
+table(unlist(results))
+
+
+
+
+#linux version
+rand5 <- function() sample(1:5, 1) # the given
+
+# Translate 5-sided die to fair coinflips
+coin.flip <- function(){
+	n <- rand5()
+	if (n==1 || n==2) return(0) else
+	if (n==3 || n==4) return(1) else
+		coin.flip()
+}
+
+# Fair 7-sided die
+rand7 <- function(){
+	x <- coin.flip() + coin.flip()*2 + coin.flip()*4
+	while(x == 0) x <- coin.flip() + coin.flip()*2 + coin.flip()*4
+	return(x)
+}
+
+library(parallel)
+results <- mclapply(X=1:1e5, FUN=rand7, mc.cores=detectCores())
+table(unlist(results))
+
+#subset a list based on a condition in another list
+list.condition <- sapply(input.list, function(x) class(x)=="desired.class")
+output.list  <- input.list[list.condition]
+
