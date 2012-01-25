@@ -8,8 +8,8 @@ getCodonCountFilename <- function(config, sample, type)
 #uses GATK custom walker to count all the bases at each position
 countCodonsForSample <- function(config, id, bam.dir=config@bam.dir, filter=config@filter)
 {
-	region <- config@data[id,'region']
-	ref <- config@data[id,'ref']
+	region <- getField(config@data,id,'region') #region <- config@data[id,'region']
+	ref <- getField(config@data,id,'ref') #ref <- config@data[id,'ref']
 	sample <- concat(id,'__',ref)
 	reffile <- getRefFile(config,ref)
 	bamfile <- ifelse(filter, concat(bam.dir,'/',sample,'.filtered.bam'), concat(bam.dir,'/',sample,'.bam'))
@@ -19,24 +19,30 @@ countCodonsForSample <- function(config, id, bam.dir=config@bam.dir, filter=conf
 	checkFileExists(reffile)
 	checkFileExists(bamfile)
 	
-	str <- 'java -Xmx8g'
-	str <- concat(str,' -cp $VARDB_UTIL_HOME/target/gatk-walkers.jar:$GATK_HOME/GenomeAnalysisTK.jar')
-	str <- concat(str,' org.broadinstitute.sting.gatk.CommandLineGATK -T CountVariants')
-	str <- concat(str,' -dt NONE')
-	str <- concat(str,' -et NO_ET')	
-	str <- concat(str,' -R ',reffile)
-	str <- concat(str,' -I ',bamfile)
-	str <- concat(str,' --validation_strictness strict')
-	str <- concat(str,' --ntcounts ',ntcountsfile)
-	str <- concat(str,' --codoncounts ',codoncountsfile)
-	str <- concat(str,' --aacounts ',aacountsfile)
-	str <- concat(str,' -L ',getIntervalForRegion(config,ref,region))
-	runCommand(str)
+	if (config@force | !file.exists(ntcountsfile) | !file.exists(codoncountsfile) | !file.exists(aacountsfile))
+	{
+		str <- 'java -Xmx8g'
+		str <- concat(str,' -cp $VARDB_UTIL_HOME/target/gatk-walkers.jar:$GATK_HOME/GenomeAnalysisTK.jar')
+		str <- concat(str,' org.broadinstitute.sting.gatk.CommandLineGATK -T CountVariants')
+		str <- concat(str,' -dt NONE')
+		str <- concat(str,' -et NO_ET')
+		str <- concat(str,' -R ',reffile)
+		str <- concat(str,' -I ',bamfile)
+		str <- concat(str,' --validation_strictness strict')
+		str <- concat(str,' --ntcounts ',ntcountsfile)
+		str <- concat(str,' --codoncounts ',codoncountsfile)
+		str <- concat(str,' --aacounts ',aacountsfile)
+		str <- concat(str,' -L ',getIntervalForRegion(config,ref,region))
+		runCommand(str)
+	}
+	else printcat('skipping CountVariants command because count files already exist for sample: ',id)
 	checkFileExists(ntcountsfile)
 	checkFileExists(codoncountsfile)
 	checkFileExists(aacountsfile)
 }
 #countCodonsForSample(config,'nextgen1-1E',filter=TRUE)
+#countCodons(config)
+
 
 getCodonCountSubsetForSample <- function(config, sample, region, filetype)
 {

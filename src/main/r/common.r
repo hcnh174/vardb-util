@@ -114,6 +114,7 @@ testCommand <- function(...)
 
 getField <- function(data, id, col, msg=concat('cannot find col [',col,'] for row [',id,'] in dataframe'))
 {
+	checkRowExists(data,id)
 	value <- data[id,col]
 	if (is.null(value) || is.na(value))
 	{
@@ -912,6 +913,28 @@ addRow <- function(data, vals=NULL)
 	return(data)
 }
 #addRow(counts, list(codon='ABC'))
+
+rowExists <- function(data, id)
+{
+	return(nrow(data[id,])>0 & !is.na(data[id,])[1])
+}
+#rowExists(config@refs,'HCV-KT9') # TRUE
+#rowExists(config@refs,'nobody') # FALSE
+#rowExists(config@refs,which(config@refs$ref=='HCV-KT9')) # TRUE
+#rowExists(config@refs,which(config@refs$ref=='nobody')) # FALSE
+
+#rowExists <- function(data, id)
+#{
+#	return(!is.na(data[id,])[1])
+#}
+##rowExists(subjects,'nobody')
+
+checkRowExists <- function(data, id)
+{
+	if (!rowExists(data,id))
+		throw('cannot find row with id: ',id)
+}
+#checkRowExists(subjects,'nobody')
 
 makeSubDirs <- function(dir, subdirs)
 {

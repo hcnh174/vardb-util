@@ -5,10 +5,9 @@ preprocess <- function(config, samples=config@samples, subdirs='ref,fastq,tmp,ba
 	
 	fastq.dir <- config@fastq.dir
 	temp.dir <- config@tmp.dir
-	#fastq.dir <- concat(config@tmp.dir,'/fastq')
 	fastq.tmp.dir <- concat(fastq.dir,'/tmp')
-	runCommand('mkdir ',fastq.dir,' -p; rm -r ',fastq.dir,'/*')
-	runCommand('mkdir ',fastq.tmp.dir,' -p; rm ',fastq.tmp.dir,'/*')
+	#runCommand('mkdir ',fastq.dir,' -p; rm -r ',fastq.dir,'/*')
+	#runCommand('mkdir ',fastq.tmp.dir,' -p; rm ',fastq.tmp.dir,'/*')
 	
 	stems <- getStemsForSamples(config,samples)
 	for (rowname in rownames(config@data[which(config@data$stem %in% stems),]))
@@ -221,6 +220,7 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 		checkFileExists(samfile)
 		sam2bam(samfile,bamfile)
 	}
+	else printcat('skipping bwa command because bamfile already exists: ',bamfile)
 	runCommand('rm ',samfile)
 	runCommand('rm ',saifile)
 	return(bamfile)
@@ -236,7 +236,7 @@ runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, 
 	print(getMapStats(config,bamfile))
 	return(bamfile)
 }
-#runBwa(config,'nextgen1-1E')
+#runBwa(config,'nextgen5-3L')
 
 mapReadsByProfile <- function(config, profile)
 {
@@ -459,7 +459,8 @@ countCodons <- function(config, ids=rownames(config@data))
 {
 	for (id in ids)
 	{
-		try(countCodonsForSample(config,id))
+		#try(countCodonsForSample(config,id))
+		countCodonsForSample(config,id)
 	}
 }
 #countCodons(config)
@@ -515,6 +516,15 @@ analyzeReadsForGroup <- function(config,group)
 #analyzeReadsForGroup(config,'MP-424')
 #analyzeReadsForGroup(config,'hcv_infection')
 #analyzeReadsForGroup(config,'KT9')
+
+analyzeReads <- function(config, groups=config@groups)
+{
+	for (group in groups)
+	{
+		try(analyzeReadsForGroup(config,group))
+	}
+}
+#analyzeReads(config)
 
 #analyzeReads<- function(config)
 #{

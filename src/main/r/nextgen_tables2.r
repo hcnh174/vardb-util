@@ -239,6 +239,8 @@ makeReferenceVsVariantTables <- function(config, groups=config@groups, minreads=
 {
 	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
 	filename <- 'tables-ref_vs_variants.xlsx'
+	if (length(groups)==1)
+		filename <- concat('tables-ref_vs_variants_',groups,'.xlsx')	
 	deleteFile(filename)
 	wb <- loadWorkbook(filename, create = TRUE)
 	for (group in groups)

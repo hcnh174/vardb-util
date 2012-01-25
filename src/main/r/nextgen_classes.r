@@ -9,9 +9,6 @@ setClass("nextgenconfig",
 				data='data.frame',
 				refs='data.frame',
 				regions='data.frame',
-				treatments='data.frame',
-				titers='data.frame',
-				goals='data.frame',
 				genes='data.frame',
 				positions='list',
 				subjects='vector',
@@ -42,9 +39,7 @@ setClass("nextgenconfig",
 				minlength='numeric'
 		),
 		prototype(
-				#out.dir='out',
 				index.dir='indexes',
-				goals=data.frame(),
 				profile='default',
 				force=FALSE,
 				trim=TRUE,
@@ -85,9 +80,12 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		slot(.Object,name) <- value
 	}	
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='id')
-	.Object@titers <- loadDataFrame(concat(.Object@config.dir,'/titers.txt'))
 	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
-	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')#
+	
+	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')
+	.Object@data <- excludeColumns(.Object@data, 'OLDgroup,OLDtable,OLDcolumn')
+	if (is.null(.Object@data$profile))
+		.Object@data$profile <- .Object@data$run
 	if (.Object@profile!='default')
 	{
 		printcat('subsetting samples from selected profile: ',.Object@profile)
@@ -95,37 +93,73 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		print(.Object@profile)
 		.Object@data <- .Object@data[which(.Object@data$profile %in% .Object@profile),]
 	}
-	
-	subjects <- loadDataFrame(concat(.Object@config.dir,'/subjects.txt'), idcol='id')
-	
-	for (row in row.names(.Object@data))
+
+	# add run information to the data table
+	runs <- loadDataFrame(concat(.Object@config.dir,'/runs.txt'), idcol='run')
+	for (id in row.names(.Object@data))
 	{
-		# if there is no table listed, use the group name
-		group <- .Object@data[row,'group']
-		if (is.na(.Object@data[row,'table']))
-			.Object@data[row,'table'] <- group
-		
-		subject <- .Object@data[row,'subject']
-		col <- .Object@data[row,'column']
-		stem <- subject
-		if (is.na(col) | col=='')
+		run <- .Object@data[id,'run']
+		checkRowExists(runs,run)
+		.Object@data[id,'rundata'] <- runs[run,'rundata']
+	}
+
+	# add region information to the data table
+	for (id in row.names(.Object@data))
+	{
+		region <- .Object@data[id,'region']
+		checkRowExists(.Object@regions,region)
+	}
+	
+	# add subject information to the data table
+	subjects <- loadDataFrame(concat(.Object@config.dir,'/subjects.txt'), idcol='id')
+	for (id in row.names(.Object@data))
+	{
+		subject <- .Object@data[id,'subject']
+		checkRowExists(subjects,subject)
+		.Object@data[id, 'group'] <- subjects[subject,'group']
+		.Object@data[id,'ref'] <- subjects[subject,'ref']
+	}
+	
+	# add repeat information to the data table
+	repeats <- loadDataFrame(concat(.Object@config.dir,'/repeats.txt'))
+	for (id in row.names(.Object@data))
+	{
+		subject <- .Object@data[id,'subject']
+		column <- .Object@data[id,'column']
+		if (!is.na(column))
 		{
-			col <- subject
-			.Object@data[row,'column'] <- col
+			row <- repeats[which(repeats$subject==subject & repeats$name==column),]
+			if (is.na(row)[1])
+			{
+				printcat('subject: ',subject,'; column: ',column)
+				throw('cannot find repeated measure with subject ',subject,' and name ',column)
+			}
+		}
+	}
+	#print(head(.Object@data))
+	
+	#set table names - use the group if no repeats; if repeats, use the group plus subject
+	for (id in row.names(.Object@data))
+	{		
+		group <- .Object@data[id,'group']
+		subject <- .Object@data[id,'subject']
+		column <- .Object@data[id,'column']
+		ref <- .Object@data[id,'ref']
+		stem <- subject
+		if (!is.na(column))
+		{
+			.Object@data[id,'table'] <- concat(group,'_',subject)
+			stem <- concat(subject,'.',column)
 		}
 		else 
 		{
-			stem <- concat(subject,'.',col)
+			.Object@data[id,'column'] <- subject
+			.Object@data[id,'table'] <- group
 		}
-		
-		.Object@data[row,'stem'] <- stem
-		ref <- subjects[subject,'ref']
-		if (is.na(ref))#check to make sure each subject is defined
-			throw('subject ',subject,' is not defined in subjects.txt')
-		sample <- concat(stem,'__',ref)
-		.Object@data[row,'ref'] <- ref
-		.Object@data[row,'sample'] <- sample
+		.Object@data[id,'stem'] <- stem
+		.Object@data[id,'sample'] <- concat(stem,'__',ref)		
 	}
+	#return(.Object)
 	
 	.Object@samples <- unique(.Object@data$sample)
 	.Object@subjects <- unique(.Object@data$subject)
@@ -167,6 +201,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	return(.Object)
 })
 
+
 ##############################################################
 
 setClass("variantdata",
@@ -188,3 +223,34 @@ setClass("sampleparams",
 )
 
 ##############################################################
+
+
+#	
+#	for (row in row.names(.Object@data))
+#	{
+#		# if there is no table listed, use the group name
+#		group <- .Object@data[row,'group']
+#		if (is.na(.Object@data[row,'table']))
+#			.Object@data[row,'table'] <- group
+#		
+#		subject <- .Object@data[row,'subject']
+#		col <- .Object@data[row,'column']
+#		stem <- subject
+#		if (is.na(col) | col=='')
+#		{
+#			col <- subject
+#			.Object@data[row,'column'] <- col
+#		}
+#		else 
+#		{
+#			stem <- concat(subject,'.',col)
+#		}
+#		
+#		.Object@data[row,'stem'] <- stem
+#		ref <- subjects[subject,'ref']
+#		if (is.na(ref))#check to make sure each subject is defined
+#			throw('subject ',subject,' is not defined in subjects.txt')
+#		sample <- concat(stem,'__',ref)
+#		.Object@data[row,'ref'] <- ref
+#		.Object@data[row,'sample'] <- sample
+#	}

@@ -296,19 +296,30 @@ getGroupForSubject <- function(config, subject)
 #}
 ##getIntervalsForSample(config,'KT9.random__HCV-KT9')
 
+#getLocationForRegion <- function(config, ref, region)
+#{
+#	mapref <- unique(config@refs[which(config@refs$ref==ref),'mapping'])
+#	#print(mapref)
+#	gene <- unique(config@regions[region,'gene'])
+#	#print(gene)
+#	row <- config@genes[which(config@genes$gene==gene & config@genes$ref==mapref),]
+#	#print(row)
+#	location <- list(ref=ref, start=row$start, end=row$end)
+#	return(location)	
+#}
+##getLocationForRegion(config,'HCV-KT9','NS3aa156')
+
 getLocationForRegion <- function(config, ref, region)
 {
-	mapref <- unique(config@refs[which(config@refs$ref==ref),'mapping'])
-	#print(mapref)
-	gene <- unique(config@regions[region,'gene'])
-	#print(gene)
-	row <- config@genes[which(config@genes$gene==gene & config@genes$ref==mapref),]
-	#print(row)
-	location <- list(ref=ref, start=row$start, end=row$end)
+	mapref <- getField(config@refs,which(config@refs$ref==ref),'mapping')#mapref <- unique(config@refs[which(config@refs$ref==ref),'mapping'])
+	gene <- getField(config@regions,region,'gene')#gene <- unique(config@regions[region,'gene'])
+	#printcat('mapref=',mapref,' gene=',gene)
+	start <- getField(config@genes,which(config@genes$gene==gene & config@genes$ref==mapref),'start')
+	end <- getField(config@genes,which(config@genes$gene==gene & config@genes$ref==mapref),'end')
+	location <- list(ref=ref, start=start, end=end)
 	return(location)	
 }
 #getLocationForRegion(config,'HCV-KT9','NS3aa156')
-
 
 getIntervalForRegion <- function(config, ref, region)
 {

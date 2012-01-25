@@ -13,7 +13,7 @@ writeRefs(config)
 	
 	mapReads(config)
 	mergeBamsForSamples(config)
-	countBases(config)
+	#countBases(config)
 	
 	#outputBams(config)
 	#fixBaiFiles(config)
