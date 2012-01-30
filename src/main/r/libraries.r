@@ -33,6 +33,7 @@ install.packages('gplots')
 install.packages('XLConnect')
 install.packages('ape')
 install.packages('Rserve')
+install.packages('wordcloud')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")
