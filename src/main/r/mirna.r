@@ -7,6 +7,7 @@ library(topGO)
 makeHeatmapMatrix <- function(data, use.log2=TRUE)
 {
 	data <- data[3:length(colnames(data))]
+	data <- data[complete.cases(data),]
 	if (use.log2)
 	{
 		for (col in colnames(data))
@@ -15,23 +16,28 @@ makeHeatmapMatrix <- function(data, use.log2=TRUE)
 		}
 	}
 	data.matrix <- as.matrix(data)
+	#data.matrix <- data.matrix[complete.cases(data.matrix),]
 	return(data.matrix)
 }
 
-drawHeatmap <- function(data, cexRow=0.2)
+drawHeatmap <- function(data, cexRow=0.2, use.log2=FALSE, main='Heatmap')
 {
-	data.matrix <- makeHeatmapMatrix(data, FALSE)
-	hv <- heatmap(data.matrix, na.rm=T, ylab='miRNAs', main='Heatmap', Colv=TRUE, Rowv=TRUE, cexRow=cexRow, cexRow=cexRow, margins=c(10,5))
+	data.matrix <- makeHeatmapMatrix(data, use.log2)
+	hv <- heatmap(data.matrix, na.rm=T, ylab='miRNAs', main=main, Colv=TRUE, Rowv=TRUE, cexRow=cexRow, margins=c(10,5))
 }
+#drawHeatmap(data.human)
 
-drawHeatmap2 <- function(data, cexRow=0.2)
+drawHeatmap2 <- function(data, cexRow=0.2, use.log2=FALSE, main='Heatmap', distmethod='euclidean', clustmethod='ward')
 {
 	require(gplots)
-	data.matrix <- makeHeatmapMatrix(data, FALSE)
-	heatmap.2(data.matrix, col=redgreen(75), scale='row', #ColSideColors=patientcolors,
-			key=TRUE, symkey=FALSE, density.info='none', trace='none', cexRow=cexRow, margins=c(10,5))
+	data.matrix <- makeHeatmapMatrix(data, use.log2)
+	heatmap.2(data.matrix, col=redgreen(75), scale='row', main=main, #ColSideColors=patientcolors,
+			key=TRUE, symkey=FALSE, density.info='none', trace='none', cexRow=cexRow, margins=c(10,5),
+			distfun=function(x){dist(x, method=distmethod)},# 'euclidean,maximum,manhattan,canberra,binary,minkowski'			
+			hclustfun=function(x){hclust(x, method=clustmethod)}, #'ward,single,complete,average,mcquitty,median,centroid'
+	)
 }
-
+#drawHeatmap2(data.human)
 
 getGeneSymbols <- function()
 {
