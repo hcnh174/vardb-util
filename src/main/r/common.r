@@ -166,6 +166,8 @@ splitFields <- function(str, delimiter=',')
 		return(c())
 	if (length(str)>1)
 		return(str)
+	if (length(nchar(str))>1)
+		return(str)
 	strsplit(str,delimiter)[[1]]
 }
 
