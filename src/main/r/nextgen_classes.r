@@ -94,13 +94,15 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		.Object@data <- .Object@data[which(.Object@data$profile %in% .Object@profile),]
 	}
 
+	#print(head(.Object@data))
 	# add run information to the data table
+	#return(.Object)
 	runs <- loadDataFrame(concat(.Object@config.dir,'/runs.txt'), idcol='run')
 	for (id in row.names(.Object@data))
 	{
 		run <- .Object@data[id,'run']
 		checkRowExists(runs,run)
-		.Object@data[id,'rundata'] <- runs[run,'rundata']
+		.Object@data[id,'rundata'] <- runs[run,'folder']
 	}
 
 	# add region information to the data table
@@ -116,7 +118,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	{
 		subject <- .Object@data[id,'subject']
 		checkRowExists(subjects,subject)
-		.Object@data[id, 'group'] <- subjects[subject,'group']
+		.Object@data[id,'group'] <- subjects[subject,'group']
 		.Object@data[id,'ref'] <- subjects[subject,'ref']
 	}
 	
@@ -129,6 +131,8 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		if (!is.na(column))
 		{
 			row <- repeats[which(repeats$subject==subject & repeats$name==column),]
+			#printcat('subject=',subject,', column=',column)
+			#print(row)
 			if (is.na(row)[1])
 			{
 				printcat('subject: ',subject,'; column: ',column)

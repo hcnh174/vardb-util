@@ -131,6 +131,7 @@ getField <- function(data, id, col, msg=concat('cannot find col [',col,'] for ro
 # check normality
 plotDistribution <- function(values, ylab='values')
 {	
+	require(car)
 	values <- values[!is.na(values)]
 	print(sort(values))
 	log.values <- log(values)

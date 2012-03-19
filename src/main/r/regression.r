@@ -41,6 +41,7 @@ univariateTests <- function(data, response, fields, showSummary=FALSE)
 
 multivariateTests <- function(data,response,sigfields,trace=0)
 {
+	require(MASS)
 	#data.subset <- data[,c(response,sigfields)]
 	#data.subset <- na.omit(data.subset)
 	data.sigfields <<- na.omit(data[,c(response,sigfields)])
