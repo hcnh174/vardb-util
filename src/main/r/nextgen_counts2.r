@@ -6,7 +6,7 @@ getCodonCountFilename <- function(config, sample, type)
 #getRefForSample('HCV-KT9.random__HCV-KT9')
 
 #uses GATK custom walker to count all the bases at each position
-countCodonsForSample <- function(config, id, bam.dir=config@bam.dir, filter=config@filter)
+countCodonsForId <- function(config, id, bam.dir=config@bam.dir, filter=config@filter)
 {
 	region <- getField(config@data,id,'region') #region <- config@data[id,'region']
 	ref <- getField(config@data,id,'ref') #ref <- config@data[id,'ref']
@@ -40,7 +40,7 @@ countCodonsForSample <- function(config, id, bam.dir=config@bam.dir, filter=conf
 	checkFileExists(codoncountsfile)
 	checkFileExists(aacountsfile)
 }
-#countCodonsForSample(config,'nextgen1-1E',filter=TRUE)
+#countCodonsForId(config,'nextgen1-1E',filter=TRUE)
 #countCodons(config)
 
 

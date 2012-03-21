@@ -455,12 +455,21 @@ filterBams <- function(config, samples=config@samples)
 #}
 ##countCodons(config)
 
+countCodonsForSample <- function(config, sample)
+{
+	for (id in config@data[which(config@data$sample==sample),'id'])
+	{
+		#try(countCodonsForSample(config,id))
+		countCodonsForId(config,id)
+	}
+}
+
 countCodons <- function(config, ids=rownames(config@data))
 {
 	for (id in ids)
 	{
 		#try(countCodonsForSample(config,id))
-		countCodonsForSample(config,id)
+		countCodonsForId(config,id)
 	}
 }
 #countCodons(config)
@@ -494,10 +503,10 @@ analyzeReadsForSample <- function(config,sample)
 	mapReads(config,sample)
 	mergeBamsForSamples(config,sample)
 	if (config@filter) filterBams(config,sample)
-	writeConsensusForBams(config,sample)
+	writeConsensusForBam(config,sample)
 	findVariants(config,sample)
 	#exportPileup(config,sample)
-	countCodons(config,sample)
+	countCodonsForSample(config,sample)
 }
 #analyzeReadsForSample(config,'KT9.random__HCV-KT9')
 

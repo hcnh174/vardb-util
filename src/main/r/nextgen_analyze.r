@@ -51,3 +51,8 @@ analyzeReadsForGroup(config,'NS5A_L31V_Y93H_mutations_maintained')
 analyzeReadsForGroup(config,'BMS-605339')
 analyzeReadsForGroup(config,'BMS-788329')
 analyzeReadsForGroup(config,'BMS-821095')
+
+analyzeReadsForGroup(config,'TMC435')
+analyzeReadsForGroup(config,'unknown')
+
+#"TMC435" ,"MK-7009","BMS-790052_BMS-650032","MP-424" ,"unknown","NS3_V36A_mutation_maintained"
