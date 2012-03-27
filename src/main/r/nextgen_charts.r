@@ -89,7 +89,7 @@ reportAminoAcidChangesForGroup <- function(config, group, make.pdf=FALSE)
 		for (subject in subjects)
 		{
 			printcat('subject: ',subject,', region: ',region)
-			reportAminoAcidChangeBarChart(config, subject, region, usecounts=TRUE)
+			try(reportAminoAcidChangeBarChart(config, subject, region, usecounts=TRUE))
 		}
 	}
 	if (make.pdf)

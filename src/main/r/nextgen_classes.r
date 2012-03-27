@@ -122,6 +122,15 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		.Object@data[id,'ref'] <- subjects[subject,'ref']
 	}
 	
+	# add group information to the data table
+	groups <- loadDataFrame(concat(.Object@config.dir,'/groups.txt'), idcol='id')
+	for (id in row.names(.Object@data))
+	{
+		group <- .Object@data[id,'group']
+		checkRowExists(groups,group)
+		.Object@data[id,'description'] <- groups[group,'description']
+	}
+	
 	# add repeat information to the data table
 	repeats <- loadDataFrame(concat(.Object@config.dir,'/repeats.txt'))
 	for (id in row.names(.Object@data))

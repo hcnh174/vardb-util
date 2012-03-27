@@ -113,12 +113,14 @@ getCodonCountSubset <- function(config, samples, region, filetype, start, end=st
 	data <- NULL
 	for (sample in samples)
 	{
-		data.sample <- getCodonCountSubsetForSample(config,sample,region,filetype)
-		if (nrow(data.sample)==0)
-			next
-		if (is.null(data))
-			data <- data.sample
-		else data <- rbind(data,data.sample)
+		try({
+			data.sample <- getCodonCountSubsetForSample(config,sample,region,filetype)
+			if (nrow(data.sample)==0)
+				next
+			if (is.null(data))
+				data <- data.sample
+			else data <- rbind(data,data.sample)
+		})
 	}
 	if (is.null(data))
 		throw('No data for in region ',region, ' for samples: ',samples)

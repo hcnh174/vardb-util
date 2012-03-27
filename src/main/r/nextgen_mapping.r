@@ -510,7 +510,7 @@ analyzeReadsForSample <- function(config,sample)
 }
 #analyzeReadsForSample(config,'KT9.random__HCV-KT9')
 
-analyzeReadsForGroup <- function(config,group)
+analyzeReadsForGroup <- function(config,group,make.pdf=FALSE)
 {
 	for (sample in getSamplesForGroup(config,group))
 	{
@@ -519,7 +519,7 @@ analyzeReadsForGroup <- function(config,group)
 	#writeCodonTables(config,group)
 	#writeAminoAcidTables(config,group)
 	#concatTablesByGroup(config,group)
-	reportAminoAcidChangesForGroup(config,group)
+	reportAminoAcidChangesForGroup(config,group,make.pdf=make.pdf)
 	makeReferenceVsVariantTables(config,group=group,minreads=100)
 }
 #analyzeReadsForGroup(config,'MP-424')
