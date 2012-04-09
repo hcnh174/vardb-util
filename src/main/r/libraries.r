@@ -48,6 +48,11 @@ install.packages('R2wd')
 library(R2wd)
 installstatconnDCOM()
 
+#only works in 32-bit version
+install.packages("RDCOMClient", repos = "http://www.omegahat.org/R")
+install.packages('R2PPT')
+
+
 #install.packages('agce')
 #install.packages('leaps')
 #install.packages('corrgram')

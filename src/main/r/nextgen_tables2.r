@@ -272,7 +272,7 @@ makeReferenceVsVariantTablesBySubject <- function(config, subjects=config@subjec
 	require(XLConnect, quietly=TRUE, warn.conflicts=FALSE)
 	filename <- 'tables-ref_vs_variants-by-subject.xlsx'
 	if (length(subjects)==1)
-		filename <- concat('tables-ref_vs_variants-',subjects,'.xlsx')	
+		filename <- concat('tables-ref_vs_variants-by-subject-',subjects,'.xlsx')
 	deleteFile(filename)
 	wb <- loadWorkbook(filename, create = TRUE)
 	for (subject in subjects)

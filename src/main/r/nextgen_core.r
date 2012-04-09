@@ -229,27 +229,39 @@ getRefSequence <- function(config, ref)
 }
 #getRefSequence(config,'HCV-KT9')
 
+sortRegions <- function(config, regions)
+{
+	sorted <- c()
+	for (region in config@regions$id)
+	{
+		if (region %in% regions)
+			sorted <- c(sorted,region)
+	}
+	return(sorted)
+}
+#sortRegions(config,splitFields('NS3aa156,NS3aa36'))
+
 getRegionsForSample <- function(config, sample)
 {
-	return(unique(config@data[which(config@data$sample==sample),'region']))
+	return(sortRegions(config,unique(config@data[which(config@data$sample==sample),'region'])))
 }
 #getRegionsForSample(config,'PXB0220-0030.8__HCV-KT9')
 
 getRegionsForSubject <- function(config, subject)
 {
-	return(unique(config@data[which(config@data$subject==subject),'region']))
+	return(sortRegions(config,unique(config@data[which(config@data$subject==subject),'region'])))
 }
 #getRegionsForSubject(config,'10348001')
 
 getRegionsForGroup <- function(config, group)
 {
-	return(unique(config@data[which(config@data$group==group),'region']))
+	return(sortRegions(config,unique(config@data[which(config@data$group==group),'region'])))
 }
 #getRegionsForGroup(config,'G9')
 
 getRegionsForSubGroup <- function(config, group, subgroup)
 {
-	return(unique(config@data[which(config@data$group==group & config@data$table==subgroup),'region']))
+	return(sortRegions(config,unique(config@data[which(config@data$group==group & config@data$table==subgroup),'region'])))
 }
 #getRegionsForSubGroup(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy')
 

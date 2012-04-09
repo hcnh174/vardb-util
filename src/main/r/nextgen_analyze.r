@@ -56,3 +56,26 @@ analyzeReadsForGroup(config,'BMS-790052')
 analyzeReadsForGroup(config,'TMC435')
 
 #"TMC435" ,"MK-7009","BMS-790052_BMS-650032","MP-424" ,"unknown","NS3_V36A_mutation_maintained"
+
+
+#nextgen_ppt.r - only runs on Win32 version
+minreads <- 100
+makeReferenceVsVariantPresentationByGroup(config,'KT9', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'confirm_plasmid_with_new_reagents', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'HBV_nucleoside_analogues', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'hcv_infection', minreads=minreads)
+
+makeReferenceVsVariantPresentationByGroup(config,'MP-424', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'MK-7009', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'BMS-790052_BMS-650032', minreads=minreads)
+
+makeReferenceVsVariantPresentationByGroup(config,'BMS-790052_MP-424', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'NS3_V36A_mutation_maintained', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'NS5A_L31V_mutation_maintained', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'NS5A_L31V_Y93H_mutations_maintained', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'BMS-605339', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'BMS-788329', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'BMS-821095', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'BMS-790052', minreads=minreads)
+makeReferenceVsVariantPresentationByGroup(config,'TMC435', minreads=minreads)
+
