@@ -19,6 +19,7 @@ library(R.oo)
 lattice.options(default.args = list(as.table = TRUE))
 options(contrasts=c("contr.sum","contr.poly"))
 options("width"=200)
+#options(error=function() traceback(2))
 #options(warnPartialMatchArgs=TRUE)
 #options(warnPartialMatchAttr=TRUE)
 #options(warnPartialMatchDollar=TRUE)
@@ -82,14 +83,33 @@ loadDataFrame <- function(filename, idcol=NULL, stringsAsFactors=FALSE)#default.
 	return(dataframe)
 }
 
-#temporarily alias the old version
-#loadDataframe <- loadDataFrame
-
 appendLog <- function(str, logfile='commands.log')
 {
 	str <- concat(str,'\n')
 	cat(str,file=logfile,append=TRUE)
 }
+
+clearErrorLog <- function(logfile='errors.log')
+{
+	cat('',file=logfile,append=FALSE)
+}
+
+logError <- function(str, logfile='errors.log')
+{
+	tstmp <- concat('[',Sys.time(),']')
+	str <- concat(tstmp,' ',str,'\n')
+	#stacktrace <- paste(capture.output(traceback()), collapse='\n')
+	#str <- concat(stacktrace,'\n\n')
+	cat(str,file=logfile,append=TRUE)
+}
+
+throw2 <- function(...)
+{
+	msg <- concat(...)
+	logError(msg)
+	throw(...)
+}
+#throw2('test exception: ', 'param1', 'param2')
 
 runCommand <- function(...)
 {
@@ -1057,3 +1077,8 @@ writeTableToWorksheet <- function(wb, sheet, tbl, startRow=NULL, startCol=1, tit
 		styleCells(wb,sheet,endRow,startCol,endRow,endCol,footerstyle)
 }
 
+isR64 <- function()
+{
+	.Machine[['sizeof.pointer']] == 8L
+}
+#isR64()

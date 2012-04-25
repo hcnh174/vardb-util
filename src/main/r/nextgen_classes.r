@@ -57,15 +57,15 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 {	
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	if (!file.exists(config.dir))
-		throw('config directory does not exist: ',config.dir)
+		throw2('config directory does not exist: ',config.dir)
 	.Object@config.dir <- config.dir
 	
 	if (!file.exists(data.dir))
-		throw('data directory does not exist: ',data.dir)
+		throw2('data directory does not exist: ',data.dir)
 	.Object@data.dir <- data.dir
 	
 	if (!file.exists(out.dir))
-		throw('out directory does not exist: ',out.dir)
+		throw2('out directory does not exist: ',out.dir)
 	.Object@out.dir <- out.dir
 	
 	params <- loadDataFrame(concat(.Object@config.dir,'/params.txt'), idcol='name')
@@ -83,7 +83,8 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
 	
 	.Object@data <- loadDataFrame(concat(.Object@config.dir,'/data.txt'), idcol='id')
-	.Object@data <- excludeColumns(.Object@data, 'OLDgroup,OLDtable,OLDcolumn')
+	.Object@data <- excludeColumns(.Object@data, 'OLDgroup,OLDtable,OLconfigDcolumn')
+	.Object@data$column <- sub("dt-","",.Object@data$column)
 	if (is.null(.Object@data$profile))
 		.Object@data$profile <- .Object@data$run
 	if (.Object@profile!='default')
@@ -133,6 +134,13 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	
 	# add repeat information to the data table
 	repeats <- loadDataFrame(concat(.Object@config.dir,'/repeats.txt'))
+	repeats$name <- sub("dt-","",repeats$name)
+	#check if there are any duplicates
+	keys <- paste(repeats$subject, repeats$name, sep='-')
+	dups <- keys[duplicated(keys)]
+	if (length(dups)>0)
+		throw2('The following repeats are duplicated:\n',paste(dups, collapse='\n'))
+	
 	for (id in row.names(.Object@data))
 	{
 		subject <- .Object@data[id,'subject']
@@ -145,7 +153,7 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 			if (is.na(row)[1])
 			{
 				printcat('subject: ',subject,'; column: ',column)
-				throw('cannot find repeated measure with subject ',subject,' and name ',column)
+				throw2('cannot find repeated measure with subject ',subject,' and name ',column)
 			}
 		}
 	}
@@ -207,10 +215,15 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 	#if (length(removeElements(needed,present)))
 	unmatched <- uniqueValues(unique(.Object@data$ref),rownames(.Object@refs))
 	if (length(unmatched)>0)
-		throw('ref(s) missing: ',unmatched)
+		throw2('ref(s) missing: ',unmatched)
 
-	.Object@data <- .Object@data[order(.Object@data$order),]
+	#check if there are any duplicates
+	keys <- paste(.Object@data$subject, .Object@data$column, .Object@data$region, sep='-')
+	dups <- keys[duplicated(keys)]
+	if (length(dups)>0)
+		throw2('The following subjects are duplicated:\n',paste(dups, collapse='\n'))
 	
+	.Object@data <- .Object@data[order(.Object@data$order),]
 	return(.Object)
 })
 
@@ -237,6 +250,10 @@ setClass("sampleparams",
 
 ##############################################################
 
+#config@data[,c('subject','column','region')]
+
+
+
 
 #	
 #	for (row in row.names(.Object@data))
@@ -262,7 +279,7 @@ setClass("sampleparams",
 #		.Object@data[row,'stem'] <- stem
 #		ref <- subjects[subject,'ref']
 #		if (is.na(ref))#check to make sure each subject is defined
-#			throw('subject ',subject,' is not defined in subjects.txt')
+#			throw2('subject ',subject,' is not defined in subjects.txt')
 #		sample <- concat(stem,'__',ref)
 #		.Object@data[row,'ref'] <- ref
 #		.Object@data[row,'sample'] <- sample

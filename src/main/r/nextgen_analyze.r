@@ -1,4 +1,5 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
+#clearErrorLog()
 loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts2,nextgen_tables2,nextgen_fragments,nextgen_charts')
 config <- loadConfig()
 
@@ -36,6 +37,9 @@ analyzeReads(config)
 
 clearNextgenOutput(config)
 
+#NS5A_L31V_Y93H_mutations_maintained
+#BMS-790052
+
 analyzeReadsForGroup(config,'KT9')
 analyzeReadsForGroup(config,'confirm_plasmid_with_new_reagents')
 analyzeReadsForGroup(config,'HBV_nucleoside_analogues')
@@ -59,6 +63,7 @@ analyzeReadsForGroup(config,'TMC435')
 
 
 #nextgen_ppt.r - only runs on Win32 version
+loadUtilFiles('nextgen_ppt')
 minreads <- 100
 makeReferenceVsVariantPresentationByGroup(config,'KT9', minreads=minreads)
 makeReferenceVsVariantPresentationByGroup(config,'confirm_plasmid_with_new_reagents', minreads=minreads)
@@ -76,6 +81,6 @@ makeReferenceVsVariantPresentationByGroup(config,'NS5A_L31V_Y93H_mutations_maint
 makeReferenceVsVariantPresentationByGroup(config,'BMS-605339', minreads=minreads)
 makeReferenceVsVariantPresentationByGroup(config,'BMS-788329', minreads=minreads)
 makeReferenceVsVariantPresentationByGroup(config,'BMS-821095', minreads=minreads)
-makeReferenceVsVariantPresentationByGroup(config,'BMS-790052', minreads=minreads)
+makeReferenceVsVariantPresentation(config,'BMS-790052', minreads=minreads)
 makeReferenceVsVariantPresentationByGroup(config,'TMC435', minreads=minreads)
 

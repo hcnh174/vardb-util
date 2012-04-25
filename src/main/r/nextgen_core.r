@@ -1,7 +1,7 @@
 loadConfig <- function(config.dir=NULL, data.dir=NULL, out.dir=NULL)
 {
 	if (is.null(config.dir))
-		config.dir <- concat('~/nextgen/config/',getCurDir())	#dir <- concat('../config/',getCurDir())
+		config.dir <- concat('~/nextgen/config/',getCurDir())
 	if (is.null(data.dir))
 		data.dir <-'~/nextgen/data/'
 	if (is.null(out.dir))
@@ -82,7 +82,7 @@ readFastaFiles <- function(dir, pattern='*.fasta')
 {
 	filenames <- list.files(dir,pattern)
 	if (length(filenames)==0)
-		throw('could not find any fasta files in directory: ',dir)
+		throw2('could not find any fasta files in directory: ',dir)
 	print(filenames)
 	data <- list()
 	for (filename in filenames)
@@ -131,16 +131,48 @@ writeRefs <- function(config)
 }
 #writeRefs(config)
 
+########################################3
+
+checkGroupExists <- function(config, group)
+{
+	if (!(group %in% config@groups))
+		throw2('group "',group,'" does not exist')
+}
+#checkGroupExists(config,'HCV')
+
+checkSubjectExists <- function(config, subject)
+{
+	if (!(subject %in% config@subjects))
+		throw2('subject "',subject,'" does not exist')
+}
+#checkSubjectExists(config,'HCV')
+
+checkSampleExists <- function(config, sample)
+{
+	if (!(sample %in% config@samples))
+		throw2('sample "',sample,'" does not exist')
+}
+#checkSampleExists(config,'KT9.plasmid__HCV-KT9')#'notexist')
+
+
+#####################################################
+
 getSamplesForSubject <- function(config, subject)
 {
+	checkSubjectExists(config,subject)
 	samples <- sort(unique(config@data[which(config@data$subject==subject),'sample']))
+	if (length(samples)==0)
+		throw2('could not find any samples for subject: ',subject)
 	return(samples)
 }
 #getSamplesForSubject(config,'10348001')
 
 getSamplesForGroup <- function(config, group)
 {
+	checkGroupExists(config,group)
 	samples <- sort(unique(config@data[which(config@data$group==group),'sample']))
+	if (length(samples)==0)
+		throw2('could not find any samples for group: ',group)
 	return(samples)
 }
 #getSamplesForGroup(config,'KT9')
@@ -148,26 +180,24 @@ getSamplesForGroup <- function(config, group)
 
 getSubjectsForGroup <- function(config, group)
 {
+	checkGroupExists(config,group)
 	subjects <- sort(unique(config@data[which(config@data$group==group),'subject']))
+	if (length(subjects)==0)
+		throw2('could not find any subjects for group: ',group)
 	return(subjects)
 }
 #getSubjectsForGroup(config,'KT9')
 
-
 getSamplesForSubGroup <- function(config, group, subgroup)
 {
+	checkGroupExists(config,group)
 	samples <- sort(unique(config@data[which(config@data$group==group & config@data$table==subgroup),'sample']))
+	if (length(samples)==0)
+		throw2('could not find any samples for group: ',group,' and subgroup ',subgroup)
 	return(samples)
 }
 #getSamplesForSubGroup(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy')
 #
-#getReplicatesForSubject <- function(config, subject)
-#{
-#	replicates <- config@samples[which(config@samples$subject==subject),c('replicate')]	
-#	return(replicates)
-#}
-##getReplicatesForSubject(config,'PXB0220-0002')
-
 getStemForSample <- function(sample)
 {
 	stem <- stripPath(sample)
@@ -186,20 +216,22 @@ getRefForSample <- function(sample)
 
 getRefForSubject <- function(config, subject)
 {
+	checkSubjectExists(config,subject)
 	ref <- unique(config@data[which(config@data$subject==subject),'ref'])
 	if (length(ref)>1)
-		throw('multiple refs found for subject+region: ',joinFields(ref,','))
+		throw2('multiple refs found for subject+region: ',joinFields(ref,','))
 	return(ref)
 }
 #getRefForSubject(config,'CTE247-21')
 
 getRefForGroup <- function(config, group)
 {
+	checkGroupExists(config,group)
 	refs <- unique(config@data[which(config@data$group==group),'ref'])
 	#print(refs)
 	mapref <- unique(config@refs[which(config@refs$ref %in% refs),'mapping'])
 	if (length(mapref)>1)
-		throw('multiple mapping refs found for group+region: ',joinFields(mapref,','))
+		throw2('multiple mapping refs found for group+region: ',joinFields(mapref,','))
 	return(mapref)
 }
 #getRefForGroup(config,'NS3_NS5A_inhibitors')
@@ -209,7 +241,7 @@ getRefForSamples <- function(config, samples)
 	refs <- unique(config@data[which(config@data$sample %in% samples),'ref'])
 	mapref <- unique(config@refs[which(config@refs$ref %in% refs),'mapping'])
 	if (length(mapref)>1)
-		throw('multiple mapping refs found for samples: ',joinFields(samples,','))
+		throw2('multiple mapping refs found for samples: ',joinFields(samples,','))
 	return(mapref)
 }
 #getRefForSamples(config,getSamplesForSubGroup(config,'hcv_infection','hcv_infection'))
@@ -243,30 +275,35 @@ sortRegions <- function(config, regions)
 
 getRegionsForSample <- function(config, sample)
 {
+	checkSampleExists(config,group)
 	return(sortRegions(config,unique(config@data[which(config@data$sample==sample),'region'])))
 }
 #getRegionsForSample(config,'PXB0220-0030.8__HCV-KT9')
 
 getRegionsForSubject <- function(config, subject)
 {
+	checkSubjectExists(config,group)
 	return(sortRegions(config,unique(config@data[which(config@data$subject==subject),'region'])))
 }
 #getRegionsForSubject(config,'10348001')
 
 getRegionsForGroup <- function(config, group)
 {
+	checkGroupExists(config,group)
 	return(sortRegions(config,unique(config@data[which(config@data$group==group),'region'])))
 }
 #getRegionsForGroup(config,'G9')
 
 getRegionsForSubGroup <- function(config, group, subgroup)
 {
+	checkGroupExists(config,group)
 	return(sortRegions(config,unique(config@data[which(config@data$group==group & config@data$table==subgroup),'region'])))
 }
 #getRegionsForSubGroup(config,'BMS-790052_BMS-650032','undetectable_in_absence_of_therapy')
 
 getTablesForGroup <- function(config, group)
 {
+	checkGroupExists(config,group)
 	return(unique(config@data[which(config@data$group==group),'table']))
 }
 #getTablesForGroup(config,'BMS-790052_BMS-650032')
@@ -279,6 +316,7 @@ getStemsForSamples <- function(config, samples)
 
 getGroupForSubject <- function(config, subject)
 {
+	checkSubjectExists(config,group)
 	return(unique(config@data[which(config@data$subject==subject),'group']))
 }
 ##getGroupForSubject(config, 'PXB0220-0002')
@@ -431,7 +469,7 @@ cleanSequence <- function(sequence)
 translateSequence <- function(sequence)
 {
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
-	try(return(c2s(translate(s2c(sequence)))))
+	try(return(c2s(seqinr::translate(s2c(sequence)))))
 }
 #translateCodon('GGG')
 
@@ -448,11 +486,11 @@ extractSequence <- function(sequence, start, end)
 {
 	require(seqinr, quietly=TRUE, warn.conflicts=FALSE)
 	if (start<1)
-		throw('start position is less than 1: ',start)
+		throw2('start position is less than 1: ',start)
 	if (end<1)
-		throw('end position is less than 1: ',start)
+		throw2('end position is less than 1: ',start)
 	if (end>nchar(sequence))
-		throw('end is beyond length of sequence: end=',end,' length=',nchar(sequence))#end <- nchar(sequence)
+		throw2('end is beyond length of sequence: end=',end,' length=',nchar(sequence))#end <- nchar(sequence)
 	sequence <- s2c(sequence)
 	return(c2s(sequence[start:end]))
 }
@@ -573,7 +611,7 @@ mergeBamFiles <- function(config, filenames, outfile)
 		return(outfile)
 	filenames <- splitFields(filenames)
 	if (length(filenames)==0)
-		throw('no bam files to merge')
+		throw2('no bam files to merge')
 	#throws an error if there is only one file, so copy it using the new name
 	if (length(filenames)==1)		
 	{

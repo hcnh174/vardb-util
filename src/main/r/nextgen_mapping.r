@@ -22,7 +22,8 @@ preprocess <- function(config, samples=config@samples, subdirs='ref,fastq,tmp,ba
 		lane <- row$lane
 		dir.from <- concat(config@data.dir,row$rundata,'/Unaligned/Project_',folder,'/Sample_',folder,'/')
 		dir.to <- concat(fastq.tmp.dir)
-		pattern <- concat(folder,'_',barcode,'_L00',lane,'_R1_*')
+		#pattern <- concat(folder,'_',barcode,'_L00',lane,'_R1_*')
+		pattern <- concat(folder,'_',barcode,'_L00',lane,'_R1_001*')
 		runCommand('cp ', dir.from, pattern,' ',fastq.tmp.dir)
 		runCommand('gunzip ',fastq.tmp.dir,'/*')		
 		runCommand('cat ',fastq.tmp.dir,'/* > ',fastqfile)
@@ -44,7 +45,7 @@ solexaqa <- function(config,stem)
 trimSolexaqa <- function(config,stem, fastq.dir=config@fastq.dir, minlength=config@minlength)
 {
 	outfile <- concat(stem,'.trimmed.fastq')
-	if (file.exists(concat(fastq.dir,'/',outfile)))
+	if (config@force==FALSE & file.exists(concat(fastq.dir,'/',outfile)))
 		return()
 	olddir <- getwd()
 	tryCatch({
@@ -76,7 +77,7 @@ trimSamples <- function(config, samples=config@samples)
 		trimSolexaqa(config,rowname)
 	}
 }
-#trimSamples(config)
+#trimSamples(config, getSamplesForGroup(config,'KT9'))
 
 ##########################################
 
@@ -525,6 +526,7 @@ analyzeReadsForGroup <- function(config,group,make.pdf=FALSE)
 #analyzeReadsForGroup(config,'MP-424')
 #analyzeReadsForGroup(config,'hcv_infection')
 #analyzeReadsForGroup(config,'KT9')
+
 
 analyzeReads <- function(config, groups=config@groups)
 {

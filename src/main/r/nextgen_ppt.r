@@ -7,48 +7,8 @@ loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen
 #setCurDir('nextgen/merged')
 setwd('\\\\ubuntu\\merged')
 config <- loadConfig('d:/projects/analysis/nextgen/merged','\\\\TS-XELF44\\share\\nextgendata')#
-#
-#makeReferenceVsVariantPresentationByGroup <- function(config, group, minreads=0, rowheight=20, colwidth=40, vspacer=5)
-#{
-#	filename <- concat('tables-ref_vs_variants-',group,'.ppt')
-#	deleteFile(filename)
-#	ppt <- PPT.Init(method='RDCOMClient', visible=FALSE)#FALSE
-#	ppt <- PPT.AddTitleSlide(ppt, title=concat('Results for ',group), subtitle=Sys.Date())
-#	subjects <- getSubjectsForGroup(config,group)
-#	for (subject in subjects)
-#	{
-#		title <- simpleCap(gsub ('_',' ',subject,ignore.case=T,perl=T))
-#		ppt <- PPT.AddTitleOnlySlide(ppt,title=title, title.fontsize=20)
-#		left <- 30;	top <- 100
-#		samples <- getSamplesForSubject(config,subject)
-#		for (region in getRegionsForSubject(config,subject))
-#		{
-#			gene <- strsplit(region,'aa', fixed=TRUE)[[1]][1]
-#			for (aanum in getFociForRegion(config,region))
-#			{
-#				try({
-#					tbl <- makeReferenceVsVariantTable(config,samples,region,aanum,minreads=minreads)			
-#					if (nrow(tbl)==1)
-#						tbl[1,1] <- 'sample'
-#					else tbl$sample <- sapply(tbl$sample,stripSubjectFromSample)
-#					tbl <- renameColumn(tbl,'sample',concat(gene,'aa',aanum))
-#					tbl <- replaceNAs(tbl)
-#					width <- (ncol(tbl)+1)*colwidth
-#					height <- (nrow(tbl)+1)*rowheight
-#					printcat('width=',width,', height=',height)
-#					ppt<-PPT.AddDataFrame(ppt, df=tbl, row.names=FALSE, col.names=TRUE, size=c(left,top,width,height))
-#					top <- top+height+vspacer
-#				})
-#			}
-#		}
-#	}
-#	PPT.SaveAs(ppt,filename)
-#}
-##makeReferenceVsVariantPresentationByGroup(config,'MP-424')
-#
 
-
-makeReferenceVsVariantPresentationByGroup <- function(config, group, ppt=NULL, minreads=0, rowheight=20, colwidth=40, vspacer=5)
+makeReferenceVsVariantPresentationByGroup <- function(config, group, ppt=NULL, minreads=0, rowheight=20, colwidth=50, vspacer=5)
 {
 	ppt <- PPT.AddTitleSlide(ppt, title=concat('Results for ',group), title.fontsize=25, subtitle.fontsize=20)		
 	subjects <- getSubjectsForGroup(config,group)

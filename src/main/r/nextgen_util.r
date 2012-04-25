@@ -743,11 +743,14 @@ TRANSVERSIONS <- splitFields('C:A,G:T,A:C,T:A,A:T,G:C,C:G,T:G')
 #head(data.melted)
 
 
-getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, minvariant=10, start=NULL, end=NULL)
+getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, minvariant=10, start=NULL, end=NULL, exclude.ntnums=NULL)
 {
+	require(rms)
 	row <- config@data[id,]
 	data <- getCodonCountSubsetForSample(config, row$sample, row$region, 'nt')
 	data <- subset(data, depth>=mindepth)
+	if (!is.null(exclude.ntnums))
+		data <- subset(data, ntnum %nin% exclude.ntnums)	
 
 	data$freq <- apply(data,1,function(row)
 	{
@@ -808,59 +811,9 @@ getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, mi
 	})
 	return(data)
 }
-#getTransitionTransverionTypesForSample(config,'nextgen1-1E')
+#getTransitionTransverionTypesForSample(config,'nextgen4-1B', exclude.ntnums=c(2555,2556,2557))#'nextgen1-1E')
 
-#getTransitionTransverionTypesForSample <- function(config, id, mindepth=1000, minvariant=10, start=NULL, end=NULL)
-#{
-#	row <- config@data[id,]
-#	data <- getCodonCountSubsetForSample(config, row$sample, row$region, 'nt')
-#	#data <- subset(data, depth>=mindepth)
-#	
-#	data$change <- apply(data,1,function(row)
-#			{
-#				try({
-#							ntnum <- row[['position']]
-#							counts <- data.frame()
-#							for (nt in c('a','c','g','t'))
-#							{
-#								counts[nt,'nt'] <- nt
-#								counts[nt,'count'] <- as.integer(row[[nt]])
-#							}
-#							counts <- counts[order(counts$count, decreasing=TRUE),]
-#							#print(counts)
-#							rank1 <- counts[1,'nt']
-#							rank2 <- counts[2,'nt']
-#							if (as.integer(row[[rank2]]) < minvariant)
-#								return(toupper(rank1))
-#							#print(rank1)
-#							#print(rank2)
-#							return(toupper(concat(rank1,':',rank2)))
-#						})
-#			})
-#	data$transition <- sapply(data$change,function(value)
-#			{
-#				return(containsElement(TRANSITIONS,value))
-#			})
-#	data$transversion <- sapply(data$change,function(value)
-#			{
-#				return(containsElement(TRANSVERSIONS,value))
-#			})
-#	data$transtype <- sapply(data$change,function(value)
-#			{
-#				if (is.na(value))
-#					return(NA)
-#				else if (containsElement(TRANSITIONS,value))
-#					return('transition')
-#				else if (containsElement(TRANSVERSIONS,value))
-#					return('transversion')
-#				else return('constant')
-#			})
-#	return(data)
-#}
-##getTransitionTransverionTypesForSample(config,'nextgen1-1E')
-
-
-getTransitionTransverionStats <- function(config, samples, regions, minvariant=10)
+getTransitionTransversionStats <- function(config, samples, regions, minvariant=10, exclude.ntnums=NULL)
 {
 	ids <- rownames(config@data[which(config@data$sample %in% samples & config@data$region %in% regions),])
 	table <- data.frame(row.names=ids, id=ids, sample=config@data[ids,'sample'])
@@ -872,7 +825,7 @@ getTransitionTransverionStats <- function(config, samples, regions, minvariant=1
 	
 	for (id in ids)
 	{
-		data <- getTransitionTransverionTypesForSample(config,id,minvariant=minvariant)
+		data <- getTransitionTransverionTypesForSample(config,id,minvariant=minvariant, exclude.ntnums=exclude.ntnums)
 		counts <- sort(table(data$change), decreasing=TRUE)
 		for (type in names(counts))
 		{
@@ -896,7 +849,7 @@ getTransitionTransverionStats <- function(config, samples, regions, minvariant=1
 	writeTable(table,filename,row.names=FALSE)
 	return(table)
 }
-#getTransitionTransverionStats(config, samples=config@data[which(config@data$subject=='KT9'),'sample'], regions=c('NS3aa156'))
+#getTransitionTransversionStats(config, samples=config@data[which(config@data$subject=='KT9'),'sample'], regions=c('NS3aa156'))
 
 #plotTransitionVsTransversionType <- function(config, samples, regions, minvariant=10)
 #{

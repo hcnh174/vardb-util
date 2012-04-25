@@ -51,7 +51,7 @@ getCodonCountSubsetForSample <- function(config, sample, region, filetype)
 	if (nrow(row)==0)
 		return(data.frame())
 	if (nrow(row)>1)
-		throw('more than one row returned for sample=',sample,' region=',region,': ',row)
+		throw2('more than one row returned for sample=',sample,' region=',region,': ',row)
 	rowname <- row$id
 	printcat('rowname=',rowname)
 	filename <- getCodonCountFilename(config,rowname,filetype)
@@ -123,10 +123,10 @@ getCodonCountSubset <- function(config, samples, region, filetype, start, end=st
 		})
 	}
 	if (is.null(data))
-		throw('No data for in region ',region, ' for samples: ',samples)
+		throw2('No data for in region ',region, ' for samples: ',samples)
 	data.subset <- data[which(data$aanum>=start & data$aanum<=end & data$count>=minreads),]	
 	if (nrow(data.subset)==0)
-		throw('No data for in region ',region, ' for samples: ',samples)
+		throw2('No data for in region ',region, ' for samples: ',samples)
 	
 	data.subset$column <- factor(data.subset$column)
 	data.subset$aanum <- factor(data.subset$aanum)
