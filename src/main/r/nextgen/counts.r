@@ -40,7 +40,7 @@ countCodonsForId <- function(config, id, bam.dir=config@bam.dir, filter=config@f
 	checkFileExists(codoncountsfile)
 	checkFileExists(aacountsfile)
 }
-#countCodonsForId(config,'nextgen1-1E',filter=TRUE)
+#countCodonsForId(config,'nextgen3-2H')#,filter=TRUE)
 #countCodons(config)
 
 
