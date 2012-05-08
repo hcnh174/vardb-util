@@ -6,7 +6,7 @@ library(topGO)
 
 makeHeatmapMatrix <- function(data, use.log2=TRUE)
 {
-	data <- data[3:length(colnames(data))]
+	#data <- data[3:length(colnames(data))]
 	data <- data[complete.cases(data),]
 	if (use.log2)
 	{
@@ -102,17 +102,57 @@ compareTreatments <- function(data.melted, trt1, trt2, pvalue=0.05, cutoff=NULL)
 	return(data)
 }
 #compareTreatments(data.melted,'healthy','hcc', cutoff=1.5)
+#
+#getMiRNATargets <- function(data, name, at.least=3, databases=splitFields('miranda,mirbase,mirtarget2,pictar,tarbase,targetscan'))
+#{
+#	#data <- makeContrast(data.melted, trt1, trt2)
+#	#data <- data[which(data$pvalue<=pvalue),]
+#	targets <- NULL
+#	for (db in databases)
+#	{
+#		rows <- dbGetQuery(RmiR.Hs.miRNA_dbconn(), 
+#				concat("SELECT * FROM ",db," WHERE mature_miRNA='",
+#						joinFields(data$mirna, delimiter="' OR mature_miRNA='"),"'"))
+#		if (nrow(rows)>0)
+#		{
+#			rows$db <- db
+#			rows <- rows[,splitFields('mature_miRNA,gene_id,db')]
+#			rows <- unique(rows)
+#			print(head(rows))
+#			if (is.null(targets))
+#				targets <- rows
+#			else targets <- rbind(targets,rows)
+#		}
+#	}
+#	targets$pair <- concat(targets$mature_miRNA,':',targets$gene_id)
+#	filename <- concat('out/targets-',name,'-all.txt')
+#	writeTable(targets, filename, row.names=FALSE)
+#	counts <- xtabs(~pair, targets)
+#	counts <- sort(counts, decreasing=TRUE)
+#	pairs <- names(counts[which(counts>=at.least)])
+#	targets2 <- unique(targets[which(targets$pair %in% pairs), splitFields('mature_miRNA,gene_id')])
+#	targets2 <- annotateTargets(targets2)
+#	filename <- concat('out/targets-',name,'.txt')
+#	writeTable(targets2, filename, row.names=FALSE)
+#	
+#	targets3 <- targets2[which(!is.na(targets2$gene)),]
+#	attributes <- data.frame()
+#	attributes <- rbind(attributes,data.frame(node_id=targets3$gene, node_type='gene'))
+#	attributes <- rbind(attributes,data.frame(node_id=targets3$mature_miRNA, node_type='mirna'))
+#	filename <- concat('out/attributes-',name,'.txt')
+#	writeTable(attributes, filename, row.names=FALSE)
+#	
+#	return(targets2)
+#}
 
-getMiRNATargets <- function(data, name, at.least=3, databases=splitFields('miranda,mirbase,mirtarget2,pictar,tarbase,targetscan'))
+getMiRNATargets <- function(mirnas, name, at.least=3, databases=splitFields('miranda,mirbase,mirtarget2,pictar,tarbase,targetscan'))
 {
-	#data <- makeContrast(data.melted, trt1, trt2)
-	#data <- data[which(data$pvalue<=pvalue),]
 	targets <- NULL
 	for (db in databases)
 	{
 		rows <- dbGetQuery(RmiR.Hs.miRNA_dbconn(), 
 				concat("SELECT * FROM ",db," WHERE mature_miRNA='",
-						joinFields(data$mirna, delimiter="' OR mature_miRNA='"),"'"))
+						joinFields(mirnas, delimiter="' OR mature_miRNA='"),"'"))
 		if (nrow(rows)>0)
 		{
 			rows$db <- db
@@ -124,6 +164,8 @@ getMiRNATargets <- function(data, name, at.least=3, databases=splitFields('miran
 			else targets <- rbind(targets,rows)
 		}
 	}
+	if (is.null(targets))
+		throw('no targets found for any database: Are miRNA names in the form hsa-miR-122?')
 	targets$pair <- concat(targets$mature_miRNA,':',targets$gene_id)
 	filename <- concat('out/targets-',name,'-all.txt')
 	writeTable(targets, filename, row.names=FALSE)
@@ -135,6 +177,10 @@ getMiRNATargets <- function(data, name, at.least=3, databases=splitFields('miran
 	filename <- concat('out/targets-',name,'.txt')
 	writeTable(targets2, filename, row.names=FALSE)
 	
+	genes <- unique(targets2$gene)
+	filename <- concat('out/genes-',name,'.txt')
+	writeTable(genes, filename, row.names=FALSE)
+	
 	targets3 <- targets2[which(!is.na(targets2$gene)),]
 	attributes <- data.frame()
 	attributes <- rbind(attributes,data.frame(node_id=targets3$gene, node_type='gene'))
@@ -144,7 +190,6 @@ getMiRNATargets <- function(data, name, at.least=3, databases=splitFields('miran
 	
 	return(targets2)
 }
-
 
 loadGOdata <- function(targets, ontology='BP')
 {
