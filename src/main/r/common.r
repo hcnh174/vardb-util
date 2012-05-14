@@ -631,7 +631,7 @@ removeColumns <- function(data, excludecols)
 #removeColumns(data,'depth')
 
 
-######################################################3
+######################################################
 
 getCounts <- function(data, field, values, separator='|')
 {
@@ -650,10 +650,22 @@ addCountRow <- function(table, data, field, label, values, subsets=c(), separato
 	table[field,'all'] <- paste(getCounts(data,field,values),collapse=separator)
 	if (length(subsets)>0)
 	{
+		df <- data.frame()
 		for (num in 1:length(subsets))
 		{
-			table[field,paste('subset',num,sep='')] <- paste(getCounts(subsets[num][[1]],field,values),collapse=separator)
+			subset <- subsets[num][[1]]
+			table[field,paste('subset',num,sep='')] <- paste(getCounts(subset,field,values),collapse=separator)
+			df <- rbind(df, data.frame(trt=concat('trt',num), value=subset[[field]]))
 		}
+		try({
+					counts <- xtabs(~ value + trt, data=df)
+					fit <- fisher.test(counts)
+					print(field)
+					print(head(df))
+					print(fit)
+					table[field,'pvalue'] <- fit$p.value
+					
+				})
 	}
 	return(table)	
 }
@@ -664,17 +676,29 @@ getMedianAndRange <- function(data.subset, field)
 	return(paste(smmry[3],' (',format(smmry[1], digits=2),'-',format(smmry[6], digits=2),')', sep=''))
 }
 
-addMedianRow <- function(table, data, field, label, subsets=c())
+addMedianRow <- function(table, data, field, label, subsets=NULL)
 {
 	#if (label=='') label=field
 	table[field,'variable'] <- label
 	table[field,'all'] <- getMedianAndRange(data,field)
-	if (length(subsets)>0)
+	if (!is.null(subsets)>0)
 	{
+		df <- data.frame()
 		for (num in 1:length(subsets))
 		{
-			table[field,paste('subset',num,sep='')] <- getMedianAndRange(subsets[num][[1]],field)
+			subset <- subsets[num][[1]]
+			#print(head(subset))
+			table[field,paste('subset',num,sep='')] <- getMedianAndRange(subset,field)
+			df <- rbind(df, data.frame(trt=concat('trt',num), value=subset[[field]]))
 		}
+		
+		try({
+					fit <- kruskal.test(value ~ trt, df)
+					#print(field)
+					#print(fit)
+					table[field,'pvalue'] <- fit$p.value
+					#print(head(df))
+				})
 	}
 	return(table)	
 }

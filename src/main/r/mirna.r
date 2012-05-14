@@ -27,7 +27,7 @@ drawHeatmap <- function(data, cexRow=0.2, use.log2=FALSE, main='Heatmap')
 }
 #drawHeatmap(data.human)
 
-drawHeatmap2 <- function(data, cexRow=0.2, use.log2=FALSE, main='Heatmap', distmethod='euclidean', clustmethod='ward')
+drawHeatmap2 <- function(data, cexRow=0.2, use.log2=FALSE, main='Heatmap', distmethod='euclidean', clustmethod='ward', ...)
 {
 	require(gplots)
 	data.matrix <- makeHeatmapMatrix(data, use.log2)
@@ -35,6 +35,7 @@ drawHeatmap2 <- function(data, cexRow=0.2, use.log2=FALSE, main='Heatmap', distm
 			key=TRUE, symkey=FALSE, density.info='none', trace='none', cexRow=cexRow, margins=c(10,5),
 			distfun=function(x){dist(x, method=distmethod)},# 'euclidean,maximum,manhattan,canberra,binary,minkowski'			
 			hclustfun=function(x){hclust(x, method=clustmethod)}, #'ward,single,complete,average,mcquitty,median,centroid'
+			...
 	)
 }
 #drawHeatmap2(data.human)
