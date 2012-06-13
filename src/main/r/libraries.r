@@ -35,6 +35,7 @@ install.packages('gplots')
 install.packages('ape')
 install.packages('Rserve')
 install.packages('wordcloud')
+install.packages('assertive')
 
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("limma")

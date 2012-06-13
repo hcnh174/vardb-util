@@ -172,12 +172,57 @@ runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, 
 }
 #runBwa(config,'nextgen3-2H')
 
+#############################################################################################
+
+tmap <- function(fqfile, reffile, outdir, outstem=NULL)
+{
+	checkFileExists(fqfile)
+	checkFileExists(reffile)
+	sample <- stripPath(fqfile)
+	sample <- stripExtension(sample)
+	if (is.null(outstem)) outstem=sample
+	
+	samfile <- concat(outdir,'/',outstem,'.sam')
+	saifile <- concat(outdir,'/',outstem,'.sai')
+	bamfile <- concat(outdir,'/',outstem,'.bam')
+	baifile <- concat(outdir,'/',outstem,'.bai')
+	if (config@force | !file.exists(bamfile))
+	{
+		if (config@force | !file.exists(concat(reffile,'.tmap.anno')))
+			runCommand('tmap index -f ',reffile)
+		#delete any existing files
+		runCommand('rm ',outdir,'/',outstem,'.*')
+		runCommand('tmap map1 --fn-fasta ',reffile,' --fn-reads ',fqfile,' --reads-format fastq --duplicate-window -1 -s ',samfile)
+		checkFileExists(samfile)
+		sam2bam(samfile,bamfile)
+	}
+	else printcat('skipping bwa command because bamfile already exists: ',bamfile)
+	runCommand('rm ',samfile)
+	runCommand('rm ',saifile)
+	return(bamfile)
+}
+
+runTmap <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, dedup=TRUE)
+{
+	reffile <- getRefFile(config,ref)
+	fqfile <- getFastqFilename(config,stem)
+	outstem <- concat(stem,'__',ref)
+	bamfile <- tmap(fqfile,reffile,config@bam.dir,outstem)
+	addReadGroup(config,outstem)
+	print(getMapStats(config,bamfile))
+	return(bamfile)
+}
+#runTmap(config,'nextgen3-2H')
+
+###################################################################################################
+
 mapReadsByProfile <- function(config, profile)
 {
 	for (rowname in rownames(config@data[which(config@data$profile==profile),]))
 	{
-		printcat('runBwa: ',rowname)
-		try(runBwa(config,rowname))
+		printcat('runTmap: ',rowname)
+		try(runTmap(config,rowname))
+		#try(runBwa(config,rowname))
 	}
 	#outputBams(config, samples)
 }
@@ -188,8 +233,9 @@ mapReads <- function(config, samples=config@samples)
 	stems <- getStemsForSamples(config,samples)
 	for (rowname in rownames(config@data[which(config@data$stem %in% stems),]))
 	{
-		printcat('runBwa: ',rowname)
-		try(runBwa(config,rowname))
+		#printcat('runBwa: ',rowname)
+		#try(runBwa(config,rowname))
+		try(runTmap(config,rowname))
 	}
 	#outputBams(config, samples)
 }

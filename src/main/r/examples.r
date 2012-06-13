@@ -417,3 +417,6 @@ table(unlist(results))
 list.condition <- sapply(input.list, function(x) class(x)=="desired.class")
 output.list  <- input.list[list.condition]
 
+
+#http://4dpiecharts.com/2012/05/30/be-assertive/
+		

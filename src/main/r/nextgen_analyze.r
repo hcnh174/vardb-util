@@ -1,6 +1,5 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 #clearErrorLog()
-#loadUtilFiles('nextgen_classes,nextgen_core,nextgen_util,nextgen_mapping,nextgen_counts,nextgen_tables,nextgen_fragments,nextgen_charts')
 loadUtilFiles('classes,core,util,mapping,counts,tables,fragments,charts', subdir='nextgen')
 config <- loadConfig()
 
