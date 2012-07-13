@@ -36,7 +36,8 @@ setClass("nextgenconfig",
 				map.quality='character',
 				minfreq='numeric',
 				minreads='numeric',
-				minlength='numeric'
+				minlength='numeric',
+				maptool='character'
 		),
 		prototype(
 				index.dir='indexes',
@@ -49,7 +50,8 @@ setClass("nextgenconfig",
 				map.quality='>30',
 				minfreq=0.0,
 				minreads=0,
-				minlength=34
+				minlength=34,
+				maptool='bwa'
 		)
 )
 
@@ -78,7 +80,9 @@ setMethod("initialize", "nextgenconfig", function(.Object, config.dir='.', data.
 		if (type=='numeric')
 			value <- as.numeric(value)
 		slot(.Object,name) <- value
-	}	
+	}
+	if (!(.Object@maptool %in% c('bwa','tmap')))
+		throw('unrecognized mapping tool (bwa or tmap): ',.Object@maptool)
 	.Object@regions <- loadDataFrame(concat(.Object@config.dir,'/regions.txt'), idcol='id')
 	.Object@genes <- loadDataFrame(concat(.Object@config.dir,'/genes.txt'), idcol='id')
 	

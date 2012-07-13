@@ -3,7 +3,6 @@ library(RmiR.Hs.miRNA)
 library(org.Hs.eg.db)
 library(topGO)
 
-
 makeHeatmapMatrix <- function(data, use.log2=TRUE)
 {
 	#data <- data[3:length(colnames(data))]

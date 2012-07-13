@@ -157,6 +157,16 @@ checkSampleExists <- function(config, sample)
 
 #####################################################
 
+getIdsForGroup <- function(config, group)
+{
+	checkGroupExists(config,group)
+	ids <- sort(unique(config@data[which(config@data$group==group),'id']))
+	if (length(ids)==0)
+		throw2('could not find any ids for group: ',group)
+	return(ids)
+}
+#getIdsForGroup(config,'KT9')
+
 getSamplesForSubject <- function(config, subject)
 {
 	checkSubjectExists(config,subject)
@@ -678,25 +688,28 @@ getTrimmedExtension <- function(config, trim=config@trim)
 {
 	return(ifelse(trim,'.trimmed',''))
 }
+#getTrimmedExtension(config,TRUE)
 
-getMaskedExtension <- function(config, mask=config@mask)
+#getMaskedExtension <- function(config, mask=config@mask)
+#{
+#	return(ifelse(mask,'.masked',''))
+#}
+#
+#getDedupExtension <- function(config, dedup=config@dedup)
+#{
+#	return(ifelse(dedup,'.dedup',''))
+#}
+
+getFastqExtension <- function(config, trim=config@trim)#, mask=config@mask, dedup=config@dedup)
 {
-	return(ifelse(mask,'.masked',''))
+	return(concat(getTrimmedExtension(config,trim),'.fastq'))
+	#return(concat(getTrimmedExtension(config,trim),getMaskedExtension(config,mask),getDedupExtension(config,dedup),'.fastq'))
 }
+#getFastqExtension(config,TRUE)
 
-getDedupExtension <- function(config, dedup=config@dedup)
+getFastqFilename <- function(config, stem, fastq.dir=config@fastq.dir, trim=config@trim)#, dedup=config@dedup)
 {
-	return(ifelse(dedup,'.dedup',''))
-}
-
-getFastqExtension <- function(config, trim=config@trim, mask=config@mask, dedup=config@dedup)
-{
-	return(concat(getTrimmedExtension(config,trim),getMaskedExtension(config,mask),getDedupExtension(config,dedup),'.fastq'))
-}
-
-getFastqFilename <- function(config, stem, fastq.dir=config@fastq.dir, trim=config@trim, dedup=config@dedup)
-{
-	ext <- getFastqExtension(config,trim,dedup)
+	ext <- getFastqExtension(config,trim=trim)#,dedup)
 	return(concat(config@fastq.dir,'/',stem,ext))
 }
 #getFastqFilename(config, 'nextgen3-4C')

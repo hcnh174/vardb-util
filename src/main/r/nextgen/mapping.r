@@ -160,7 +160,7 @@ bwa <- function(fqfile, reffile, outdir, outstem=NULL)
 	return(bamfile)
 }
 
-runBwa <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim, dedup=TRUE)
+runBwa <- function(config, stem, ref=config@data[stem,'ref'])#, trim=config@trim)#, dedup=TRUE)
 {
 	reffile <- getRefFile(config,ref)
 	fqfile <- getFastqFilename(config,stem)
@@ -216,17 +216,17 @@ runTmap <- function(config, stem, ref=config@data[stem,'ref'], trim=config@trim,
 
 ###################################################################################################
 
-mapReadsByProfile <- function(config, profile)
-{
-	for (rowname in rownames(config@data[which(config@data$profile==profile),]))
-	{
-		printcat('runTmap: ',rowname)
-		try(runTmap(config,rowname))
-		#try(runBwa(config,rowname))
-	}
-	#outputBams(config, samples)
-}
-#mapReadsByProfile(config,'nextgen1')
+#mapReadsByProfile <- function(config, profile)
+#{
+#	for (rowname in rownames(config@data[which(config@data$profile==profile),]))
+#	{
+#		printcat('runTmap: ',rowname)
+#		try(runTmap(config,rowname))
+#		#try(runBwa(config,rowname))
+#	}
+#	#outputBams(config, samples)
+#}
+##mapReadsByProfile(config,'nextgen1')
 
 mapReads <- function(config, samples=config@samples)
 {
@@ -234,8 +234,10 @@ mapReads <- function(config, samples=config@samples)
 	for (rowname in rownames(config@data[which(config@data$stem %in% stems),]))
 	{
 		#printcat('runBwa: ',rowname)
-		#try(runBwa(config,rowname))
-		try(runTmap(config,rowname))
+		if (config@maptool=='bwa')
+			try(runBwa(config,rowname))
+		else if (config@maptool=='tmap')
+			try(runTmap(config,rowname))
 	}
 	#outputBams(config, samples)
 }

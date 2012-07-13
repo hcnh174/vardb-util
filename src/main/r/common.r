@@ -591,6 +591,17 @@ uniqueValues <- function(values1, values2)
 }
 #uniqueValues('A,B,C','B,D')
 
+renameColumns <- function(data, oldcols, newcols)
+{
+	oldcols <- splitFields(oldcols)
+	newcols <- splitFields(newcols)
+	for (num in 1:length(oldcols))
+	{
+		data <- renameColumn(data,oldcols[num],newcols[num])
+	}
+	return(data)
+}
+#renameColumns(data.serum,concat('serum',1:6),concat('hcc',11:16))
 
 renameColumn <- function(data, oldcol, newcol)
 {
@@ -971,6 +982,12 @@ addRow <- function(data, vals=NULL)
 	return(data)
 }
 #addRow(counts, list(codon='ABC'))
+
+colExists <- function(data, colname)
+{
+	return(!is.na(match(colname, names(data)))) 	
+}
+#colExists(counts,'ratio6')
 
 rowExists <- function(data, id)
 {

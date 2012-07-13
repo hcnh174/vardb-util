@@ -1,6 +1,6 @@
 source(paste(Sys.getenv("VARDB_RUTIL_HOME"),'/common.r',sep=''))
 #clearErrorLog()
-loadUtilFiles('classes,core,util,mapping,counts,tables,fragments,charts', subdir='nextgen')
+loadUtilFiles('classes,core,util,mapping,counts,tables,fragments,charts,hbv', subdir='nextgen')
 config <- loadConfig()
 
 writeRefs(config)
