@@ -12,6 +12,7 @@ install.packages('seqinr')
 install.packages('gsubfn')
 install.packages('reshape')
 install.packages('XLConnect')
+install.packages('gridExtra')
 
 install.packages('nlme')
 install.packages('LDheatmap')
