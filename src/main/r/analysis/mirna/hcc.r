@@ -39,7 +39,7 @@ appendSubjectData <- function(data.long, filename='subjects.txt')
 {
 	subjects <- loadDataFrame(filename,id='subject')
 	
-	for (field in splitFields('healthy,hcc,chbv,advanced,hbv,hcv,nbnc,hbvhcc,hcvhcc,nbnchcc,virus,age,BH,BW,WBC,NE,HGB,PLT,AST,ALT,gGTP,TB,DB,ALPH,ALB,CRE,AFP,PT,BS,A1C,hdl,cholesterol,ha,ft4,ft3,TSH,Fe,TG,FERRITIN,HBsAg,HBsAb,HBeAg,HBeAb,BUN,PIVKA,PCR'))#PCR
+	for (field in splitFields('healthy,hcc,chbv,early,advanced,hbv,hcv,nbnc,hbvhcc,hcvhcc,nbnchcc,virus,age,BH,BW,WBC,NE,HGB,PLT,AST,ALT,gGTP,TB,DB,ALPH,ALB,CRE,AFP,PT,BS,A1C,hdl,cholesterol,ha,ft4,ft3,TSH,Fe,TG,FERRITIN,HBsAg,HBsAb,HBeAg,HBeAb,BUN,PIVKA,PCR'))#PCR
 	{
 		data.long[[field]] <- sapply(data.long$subject, function(subject)
 		{
@@ -79,7 +79,7 @@ as.yesno <- function(value)
 }
 #as.yesno('y')
 
-getPatientSubset <- function(data.long, trt=NULL, healthy=NULL, hcc=NULL, chbv=NULL, hbv=NULL, hcv=NULL, nbnc=NULL, advanced=NULL)
+getPatientSubset <- function(data.long, trt=NULL, healthy=NULL, hcc=NULL, chbv=NULL, hbv=NULL, hcv=NULL, nbnc=NULL, advanced=NULL, verbose=FALSE)
 {
 	tmp <- data.long
 	if (!is.null(trt)) tmp <- tmp[which(tmp$trt %in% splitFields(trt)),]
@@ -87,103 +87,125 @@ getPatientSubset <- function(data.long, trt=NULL, healthy=NULL, hcc=NULL, chbv=N
 	if (!is.null(hcc)) tmp <- tmp[which(tmp$hcc==as.yesno(hcc)),]
 	if (!is.null(chbv)) tmp <- tmp[which(tmp$chbv==as.yesno(chbv)),]
 	if (!is.null(hbv)) tmp <- tmp[which(tmp$hbv==as.yesno(hbv)),]
-	if (!is.null(hcv)) tmp <- tmp[which(tmp$hcv==as.yesno(healthy)),]
+	if (!is.null(hcv)) tmp <- tmp[which(tmp$hcv==as.yesno(hcv)),]
 	if (!is.null(advanced)) tmp <- tmp[which(tmp$advanced==as.yesno(advanced)),]
 	if (!is.null(nbnc)) tmp <- tmp[which(tmp$nbnc==as.yesno(nbnc)),]
-	print(nrow(tmp))
-	print(table(tmp$trt))
-	print(unique(tmp$subject))
+	if (verbose)
+	{
+		print(nrow(tmp))
+		print(table(tmp$trt))
+		print(unique(tmp$subject))
+	}
 	return(tmp)
 }
 #data.tmp <- getPatientSubset(data.serum.long, chbv=FALSE)
 
-plotMirna <- function(data.long, mirna, field, xlab=field, geom=c("boxplot","point"), ylim=NULL)
+plotMirna <- function(data.long, mirna, field, xlab=field, geom=c("boxplot","point"), ylim=NULL, paired=FALSE, fontsize=10, color='black')
 {
 	data.mirna <- data.long[which(data.long$mirna==mirna),]
 	data.mirna <- data.mirna[!is.na(data.mirna$value),]
 	data.mirna <- data.mirna[!is.na(data.mirna[[field]]),]
 	
-	fit <- kruskal.test(as.formula(concat('value ~ as.factor(',field,')')), data.mirna)
+	#fit <- kruskal.test(as.formula(concat('value ~ as.factor(',field,')')), data.mirna)
+	fit <- wilcox.test(as.formula(concat('value ~ as.factor(',field,')')), data.mirna, paired=paired)
 	fit$table <- aggregate(as.formula(concat('value ~ ',field)), data = data.mirna, median)
 	main <- concat('P=',format(fit$p.value, digits=5))
+	if (fit$p.value<0.05) color='red'
 	if (!is.null(ylim))
 		fit$plot <- qplot(data.mirna[[field]], data.mirna$value, geom=geom, main=main, xlab=xlab, ylab=mirna, ylim=ylim)
 	else fit$plot <- qplot(data.mirna[[field]], data.mirna$value, geom=geom, main=main, xlab=xlab, ylab=mirna)
+	fit$plot <- fit$plot + opts(
+							plot.title=theme_text(size=fontsize, colour=color),
+							axis.title.x=theme_text(size=fontsize),
+							axis.title.y=theme_text(size=fontsize, angle = 90)
+							) 
 	if (nrow(fit$table==2))
 		fit$ratio <- log2(fit$table[2,2])/log2(fit$table[1,2])
 	return(fit)
 }
-#fit <- plotMirna(data.serum.long, 'hsa-miR-122', 'hcc')
+#fit <- plotMirna(data.serum.long, 'hsa-miR-122', 'hcc'); fit$plot
+
 
 analyzeMirna <- function(data.paired.long, data.serum.long, mirna, geom=c("boxplot","point"), make.plots=TRUE)
 {
 	ylim <- c(0,ceiling(max(data.serum.long[which(data.serum.long$mirna==mirna),'value'])))
 	data.tmp <- data.serum.long
-	fit.hcc_vs_healthyhbv <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy/HBV vs. HCC', ylim=ylim)
+	fit.hcc_vs_healthyhbv <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy/HBV v HCC', ylim=ylim)
 	
 	data.tmp <- getPatientSubset(data.serum.long, trt='healthy,hcc')
-	fit.hcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy controls vs. HCC', ylim=ylim)
+	fit.hcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy v HCC', ylim=ylim)
 
 	data.tmp <- data.serum.long[which(data.serum.long$trt=='healthy' | (data.serum.long$trt=='hcc' & data.serum.long$advanced=='n')),]
-	fit.early_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy controls vs. early HCC', ylim=ylim)
+	fit.early_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy v early HCC', ylim=ylim)
 	
 	data.tmp <- data.serum.long[which(data.serum.long$trt=='healthy' | (data.serum.long$trt=='hcc' & data.serum.long$advanced=='y')),]
-	fit.advanced_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy controls vs. advanced HCC', ylim=ylim)
+	fit.advanced_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy v advanced HCC', ylim=ylim)
 	
-	data.tmp <- getPatientSubset(data.paired.long, trt='tumor,nontumor')	
-	fit.tumor_vs_nontumor <- plotMirna(data.tmp, mirna, 'trt', xlab='Paired liver samples', ylim=ylim)	
+	data.tmp <- getPatientSubset(data.paired.long, trt='tumor,nontumor')
+	fit.tumor_vs_nontumor <- plotMirna(data.tmp, mirna, 'trt', xlab='Paired liver samples', paired=TRUE)
 	
 	###	
+	data.tmp <- getPatientSubset(data.serum.long, trt='healthy,hcc', hcv=FALSE, nbnc=FALSE)
+	fit.hbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='healthy v HBV-HCC', ylim=ylim)
+
 	data.tmp <- getPatientSubset(data.serum.long, trt='healthy,hcc', hbv=FALSE)
-	fit.healthy_vs_nonhbvhcc <- plotMirna(data.tmp, mirna, 'hcc', xlab='healthy vs. non-HBV-HCC', ylim=ylim)
+	fit.nonhbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='healthy v non-HBV-HCC', ylim=ylim)
 	
 	data.tmp <- getPatientSubset(data.serum.long, trt='hcc')
-	fit.nonhbvhcc_vs_hbvhcc <- plotMirna(data.tmp, mirna, 'hbvhcc', xlab='Non-HBV-HCC vs. HBV-HCC', ylim=ylim)
+	fit.nonhbvhcc_vs_hbvhcc <- plotMirna(data.tmp, mirna, 'hbvhcc', xlab='Non-HBV-HCC v HBV-HCC', ylim=ylim)
 	
 	data.tmp <- getPatientSubset(data.serum.long, trt='hcc')
-	fit.nonhcvhcc_vs_hcvhcc <- plotMirna(data.tmp, mirna, 'hcvhcc', xlab='Non-HCV-HCC vs. HCV-HCC', ylim=ylim)
+	fit.nonhcvhcc_vs_hcvhcc <- plotMirna(data.tmp, mirna, 'hcvhcc', xlab='Non-HCV-HCC v HCV-HCC', ylim=ylim)
 	
 	data.tmp <- getPatientSubset(data.serum.long, trt='healthy,hbv')
-	fit.hbv_vs_healthy <- plotMirna(data.tmp, mirna, 'hbv', xlab='healthy vs. HBV', ylim=ylim)
+	fit.hbv_vs_healthy <- plotMirna(data.tmp, mirna, 'hbv', xlab='healthy v HBV', ylim=ylim)
+	
+	data.tmp <- getPatientSubset(data.serum.long, trt='hcc,hbv', hbv=TRUE)
+	fit.hbvhcc_vs_hbv <- plotMirna(data.tmp, mirna, 'hcc', xlab='HBV v HBV-HCC', ylim=ylim)
 	
 	data.tmp <- data.serum.long[which(data.serum.long$trt=='healthy' | (data.serum.long$trt=='hcc' & data.serum.long$advanced=='n' & data.serum.long$hbv=='y')),]
-	fit.early_hbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy controls vs. early HBV-related HCC', ylim=ylim)
+	fit.early_hbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy v early HBV-HCC', ylim=ylim)
 	
 	data.tmp <- data.serum.long[which(data.serum.long$trt=='healthy' | (data.serum.long$trt=='hcc' & data.serum.long$advanced=='y' & data.serum.long$hbv=='y')),]
-	fit.advanced_hbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy controls vs. advanced HBV-related HCC', ylim=ylim)
+	fit.advanced_hbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy v advanced HBV-HCC', ylim=ylim)
 	
 	data.tmp <- data.serum.long[which(data.serum.long$trt=='healthy' | (data.serum.long$trt=='hcc' & data.serum.long$advanced=='n' & data.serum.long$hbv=='n')),]
-	fit.early_nonhbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy controls vs. early non-HBV-related HCC', ylim=ylim)
+	fit.early_nonhbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy v early non-HBV-HCC', ylim=ylim)
 	
 	data.tmp <- data.serum.long[which(data.serum.long$trt=='healthy' | (data.serum.long$trt=='hcc' & data.serum.long$advanced=='y' & data.serum.long$hbv=='n')),]
-	fit.advanced_nonhbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy controls vs. advanced non-HBV-related HCC', ylim=ylim)
+	fit.advanced_nonhbvhcc_vs_healthy <- plotMirna(data.tmp, mirna, 'hcc', xlab='Healthy v advanced non-HBV-HCC', ylim=ylim)
 	
 	if (make.plots)
 	{
-		pdf(concat('out/plots-',make.names(mirna),'.pdf'))
+		pdf(concat('plots/plots-',make.names(mirna),'.pdf'))
 		#age.plot <- plot(value ~ age, data.serum.long[which(data.serum.long$mirna==mirna),], main=mirna)
-		print(grid.arrange(fit.hcc_vs_healthyhbv$plot,
+		print(grid.arrange(
+				fit.hcc_vs_healthyhbv$plot,
 				fit.hcc_vs_healthy$plot,
 				fit.tumor_vs_nontumor$plot, 
 				fit.early_vs_healthy$plot,
-				fit.advanced_vs_healthy$plot, nrow=2))
+				fit.advanced_vs_healthy$plot,
+				fit.hbvhcc_vs_hbv$plot, nrow=2, main='Early and advanced HCC'))
 		print(grid.arrange(
-				fit.healthy_vs_nonhbvhcc$plot,
+				fit.hbvhcc_vs_healthy$plot,
+				fit.nonhbvhcc_vs_healthy$plot,		
+				fit.early_hbvhcc_vs_healthy$plot,
+				fit.early_nonhbvhcc_vs_healthy$plot,
+				fit.advanced_hbvhcc_vs_healthy$plot,
+				fit.advanced_nonhbvhcc_vs_healthy$plot, nrow=2, main='HBV- and non-HBV-related HCC'))
+		print(grid.arrange(	
 				fit.nonhbvhcc_vs_hbvhcc$plot,
 				fit.nonhcvhcc_vs_hcvhcc$plot,
-				fit.hbv_vs_healthy$plot, nrow=2))
-		print(grid.arrange(
-				fit.early_hbvhcc_vs_healthy$plot,
-				fit.advanced_hbvhcc_vs_healthy$plot,
-				fit.early_nonhbvhcc_vs_healthy$plot,
-				fit.advanced_nonhbvhcc_vs_healthy$plot, nrow=2))			
+				fit.hbv_vs_healthy$plot, nrow=2, main='Differences attributable to HBV or HCV'))
 		dev.off()
 	}
 	return(list(
 			tumor_vs_nontumor=fit.tumor_vs_nontumor,
 			hcc_vs_healthyhbv=fit.hcc_vs_healthyhbv,
-			hcc_vs_healthy=fit.hcc_vs_healthy, 
-			healthy_vs_nonhbvhcc=fit.healthy_vs_nonhbvhcc,
+			hcc_vs_healthy=fit.hcc_vs_healthy,
+			hbvhcc_vs_healthy=fit.hbvhcc_vs_healthy,
+			hbvhcc_vs_hbv=fit.hbvhcc_vs_hbv,
+			nonhbvhcc_vs_healthy=fit.nonhbvhcc_vs_healthy,
 			nonhbvhcc_vs_hbvhcc=fit.nonhbvhcc_vs_hbvhcc,
 			nonhcvhcc_vs_hcvhcc=fit.nonhcvhcc_vs_hcvhcc,
 			hbv_vs_healthy=fit.hbv_vs_healthy,
@@ -199,7 +221,7 @@ analyzeMirna <- function(data.paired.long, data.serum.long, mirna, geom=c("boxpl
 getMirnaList <- function(filename='list.txt')
 {
 	data <- loadDataFrame(filename)
-	return(data$mirna)
+	return(unique(data$mirna))
 }
 #getMirnaList()
 
@@ -212,28 +234,43 @@ analyzeMirnas <- function(data.paired.long, data.serum.long, mirnas=unique(data.
 		try({
 			fits <- analyzeMirna(data.paired.long, data.serum.long, mirna=mirna, make.plots=make.plots)	
 			results[mirna,'hcc_vs_healthyhbv'] <- fits$hcc_vs_healthyhbv$p.value
+			results[mirna,'R_hcc_vs_healthyhbv'] <- fits$hcc_vs_healthyhbv$ratio
 			results[mirna,'hcc_vs_healthy'] <- fits$hcc_vs_healthy$p.value
+			results[mirna,'R_hcc_vs_healthy'] <- fits$hcc_vs_healthy$ratio
+			results[mirna,'early_vs_healthy'] <- fits$early_vs_healthy$p.value
+			results[mirna,'R_early_vs_healthy'] <- fits$early_vs_healthy$ratio
+			results[mirna,'advanced_vs_healthy'] <- fits$advanced_vs_healthy$p.value
+			results[mirna,'R_advanced_vs_healthy'] <- fits$advanced_vs_healthy$ratio
 			results[mirna,'tumor_vs_nontumor'] <- fits$tumor_vs_nontumor$p.value
-			results[mirna,'healthy_vs_nonhbvhcc'] <- fits$healthy_vs_nonhbvhcc$p.value
+			results[mirna,'R_tumor_vs_nontumor'] <- fits$tumor_vs_nontumor$ratio
+			results[mirna,'tumor_vs_nontumor'] <- fits$tumor_vs_nontumor$p.value
+			results[mirna,'R_tumor_vs_nontumor'] <- fits$tumor_vs_nontumor$ratio
+			results[mirna,'hbvhcc_vs_hbv'] <- fits$hbvhcc_vs_hbv$p.value
+			results[mirna,'R_hbvhcc_vs_hbv'] <- fits$hbvhcc_vs_hbv$ratio
+			
+			results[mirna,'hbvhcc_vs_healthy'] <- fits$hbvhcc_vs_healthy$p.value
+			results[mirna,'nonhbvhcc_vs_healthy'] <- fits$nonhbvhcc_vs_healthy$p.value
+			results[mirna,'early_hbvhcc_vs_healthy'] <- fits$early_hbvhcc_vs_healthy$p.value
+			results[mirna,'early_nonhbvhcc_vs_healthy'] <- fits$early_nonhbvhcc_vs_healthy$p.value
+			results[mirna,'advanced_hbvhcc_vs_healthy'] <- fits$advanced_hbvhcc_vs_healthy$p.value			
+			results[mirna,'advanced_nonhbvhcc_vs_healthy'] <- fits$advanced_nonhbvhcc_vs_healthy$p.value			
+			
+			results[mirna,'hbv_vs_healthy'] <- fits$hbv_vs_healthy$p.value
 			results[mirna,'nonhbvhcc_vs_hbvhcc'] <- fits$nonhbvhcc_vs_hbvhcc$p.value
 			results[mirna,'nonhcvhcc_vs_hcvhcc'] <- fits$nonhcvhcc_vs_hcvhcc$p.value
-			results[mirna,'hbv_vs_healthy'] <- fits$hbv_vs_healthy$p.value		
-			results[mirna,'early_vs_healthy'] <- fits$early_vs_healthy$p.value
-			results[mirna,'advanced_vs_healthy'] <- fits$advanced_vs_healthy$p.value
-			results[mirna,'early_hbvhcc_vs_healthy'] <- fits$early_hbvhcc_vs_healthy$p.value
-			results[mirna,'advanced_hbvhcc_vs_healthy'] <- fits$advanced_hbvhcc_vs_healthy$p.value
-			results[mirna,'early_nonhbvhcc_vs_healthy'] <- fits$early_nonhbvhcc_vs_healthy$p.value
-			results[mirna,'advanced_nonhbvhcc_vs_healthy'] <- fits$advanced_nonhbvhcc_vs_healthy$p.value
 		})
 	}
 	results <- results[order(
 					results$hcc_vs_healthyhbv,
 					results$hcc_vs_healthy,
-					results$tumor_vs_nontumor,
-					results$nonhbvhcc_vs_hbvhcc,
-					results$nonhbvhcc_vs_hbvhcc,
-					results$nonhcvhcc_vs_hcvhcc,
-					results$hbv_vs_healthy),]
+					results$early_vs_healthy,
+					results$advanced_vs_healthy,
+					results$tumor_vs_nontumor),]
+#					results$nonhbvhcc_vs_hbvhcc,
+#					results$nonhbvhcc_vs_hbvhcc,
+#					results$nonhcvhcc_vs_hcvhcc,
+#					results$hbv_vs_healthy
+				
 	writeTable(results,concat('out/results.txt'), row.names=FALSE)
 	return(results)
 }
